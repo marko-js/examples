@@ -1,0 +1,45 @@
+import footer from './footer'
+
+<style>
+  .container {
+    margin-left: auto;
+    margin-right: auto;
+    width: 800px;
+  }
+  header {
+    font-size: 2.5em;
+    font-weight: 300;
+    background-color: #f1f1f1;
+    padding: 1em;
+    margin: 0 auto;
+    text-align: center;
+  }
+  body {
+    font-family: "Helvetica Neue", Roboto, "Arial Nova", "Segoe UI", Arial,
+      sans-serif;
+    margin: 0;
+  }
+}
+</style>
+
+<html>
+  <head>
+    <title>Marko | HTTP</title>
+  </head>
+  <body>
+    <header>
+      <div>Marko HTTP</div>
+    </header>
+    <div class="container">
+      <p>Hello ${input.name}! You have ${input.count} messages!</p>
+      <if(input.colors && input.colors.length)>
+        <ul>
+          <for|color| of=input.colors>
+            <li style=`color: ${color}`>${color}</li>
+          </for>
+        </ul>
+      </if>
+    </div>
+    <${footer} name=input.name/>
+  </body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "name": "f7",
+  "version": "1.0.1",
+  "description": "A sample project to showcase Marko.js with Framework7",
+  "main": "index.js",
+  "license": "ISC",
+  "keywords": [
+    "marko",
+    "framework7"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marko-js/examples.git"
+  },
+  "bugs": {
+    "url": "https://github.com/marko-js/examples/issues"
+  },
+  "homepage": "https://github.com/marko-js/examples",
+  "dependencies": {
+    "@lasso/marko-taglib": "^1.0.15",
+    "express": "^4.15.2",
+    "framework7": "^1.6.0",
+    "framework7-icons": "^0.8.9",
+    "lasso": "^3.3.1",
+    "lasso-less": "^3",
+    "lasso-marko": "^2.4.8",
+    "marko": "^4.18.20",
+    "serve-static": "^1.12.1"
+  },
+  "devDependencies": {
+    "gulp": "^4"
+  }
+}

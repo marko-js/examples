@@ -1,0 +1,15 @@
+class {
+    onCreate() {
+        this.state = { count:0 };
+    }
+    increment() {
+        this.state.count++;
+    }
+}
+
+<div.count>
+    ${state.count}
+</div>
+<button.example-button on-click('increment')>
+    Click me!
+</button>

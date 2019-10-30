@@ -1,0 +1,28 @@
+{
+  "name": "redux",
+  "version": "1.0.1",
+  "description": "Sample app: Marko + Redux",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "Patrick Steele-idem <pnidem@gmail.com>",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marko-js/examples.git"
+  },
+  "bugs": {
+    "url": "https://github.com/marko-js/examples/issues"
+  },
+  "homepage": "https://github.com/marko-js/examples",
+  "dependencies": {
+    "@lasso/marko-taglib": "^1.0.15",
+    "compression": "^1.6.2",
+    "express": "^4.15.2",
+    "lasso": "^3.3.1",
+    "lasso-marko": "^2.4.8",
+    "marko": "^4.18.20",
+    "redux": "^3.6.0"
+  }
+}

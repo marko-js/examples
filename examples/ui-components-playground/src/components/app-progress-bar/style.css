@@ -1,0 +1,60 @@
+.app-progress-bar {
+  font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #333333;
+}
+
+.app-progress-bar a {
+  color: #2980b9;
+  text-decoration: none;
+}
+
+.app-progress-bar .progress-step {
+  display: inline-block;
+  height: 2em;
+}
+
+.app-progress-bar a.progress-step {
+  display: inline-block;
+  background-color: #999999;
+  color: #ffffff;
+  padding-left: 28px;
+  padding-right: 8px;
+  height: 2em;
+  font-size: 1em;
+  line-height: 2em;
+  vertical-align: middle;
+}
+
+.app-progress-bar div.progress-step:first-child a.progress-step {
+  padding-left: 8px;
+}
+
+.app-progress-bar .progress-step.active a.progress-step {
+  background-color: #2980b9;
+  color: #ffffff;
+}
+
+div.progress-step-end {
+  display: inline-block;
+  width: 20px;
+  height: 2em;
+  position: relative;
+  font-size: 1em;
+  line-height: 2em;
+  vertical-align: middle;
+  margin-right: -20px;
+}
+
+svg.progress-step-end {
+  display: inline-block;
+  width: 100%;
+  height: 100%;
+}
+
+polygon.progress-step-end {
+  fill: #999999;
+}
+
+.app-progress-bar .progress-step.active polygon.progress-step-end {
+  fill: #2980b9;
+}

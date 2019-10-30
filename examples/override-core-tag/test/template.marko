@@ -1,0 +1,11 @@
+$ var personPromise = new Promise((resolve, reject) => {
+  setTimeout(function() {
+    resolve({
+      name: "Frank"
+    });
+  }, 15000);
+});
+<await(personPromise)>
+  <@placeholder>Loading…</@placeholder>
+  <@then|person|>Hello ${person.name}!</@then>
+</await>

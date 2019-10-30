@@ -1,0 +1,14 @@
+class {
+    onCreate() {
+        this.state = { selectedLanguage: "English" };
+    }
+
+    onLanguageSelect(selectedLanguage) {
+        this.state.selectedLanguage = selectedLanguage;
+    }
+}
+
+<div>
+    <p>${state.selectedLanguage}</p>
+    <language-selector on-select-language("onLanguageSelect")/>
+</div>

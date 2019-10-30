@@ -1,0 +1,17 @@
+{
+    "<app-base64>": {
+        "renderer": "./marko/base64-tag.js",
+        "@path": "string",
+        "@var": "var",
+        "var": {
+            "name-from-attribute": "var"
+        }
+    },
+    "<img>": {
+        "transformer": "./marko/img-transformer.js"
+    },
+    "<*>": {
+        "@repeat": "integer",
+        "transformer": "./marko/repeat-transformer.js"
+    }
+}

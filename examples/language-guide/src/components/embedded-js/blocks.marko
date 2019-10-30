@@ -1,0 +1,21 @@
+<!-- Static JS block (runs once when template is loaded) -->
+static {
+    var uniqueId = 0;
+
+    function getNextId() {
+        return uniqueId++;
+    }
+
+    console.log("Template loaded!");
+}
+
+<!-- Non-static JS block (runs every render) -->
+$ {
+    let name = input.name || "Frank";
+    name = name.toUpperCase();
+    console.log("Name:", name);
+}
+<div>
+    Hello ${name}!
+    <span>${getNextId()}</span>
+</div>

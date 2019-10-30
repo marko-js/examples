@@ -1,0 +1,22 @@
+.color-picker-footer {
+  width: 200px;
+  height: 100px;
+  border-radius: 0px 0px 20px 20px;
+  font: 30px Arial;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  color: white;
+  box-shadow: 0px 3px 5px #888888;
+}
+.color-picker-selection-container {
+  width: 75%;
+  margin: 5px 0px 0px 20px;
+}
+.color-picker-selection-container input {
+  margin-top: 8px;
+  border-radius: 0px 0px 0px 0px;
+  border-width: 0px 0px 1px 0px;
+  outline: none;
+  color: #A9A9A9;
+}

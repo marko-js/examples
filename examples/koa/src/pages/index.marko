@@ -1,0 +1,32 @@
+<lasso-page/>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8"/>
+    <title>Marko | Koa</title>
+    <lasso-head/>
+    <style>
+      .container{
+        margin-left: auto;
+        margin-right: auto;
+        width: 800px;
+    }
+    </style>
+  </head>
+  <body>
+    <sample-header title="Marko-Koa"/>
+    <div class="container">
+      <app-hello name=input.name/>
+      <p>You have ${input.count} messages</p>
+      <if(input.colors.length)>
+        <ul>
+          <for|color| of=data.colors>
+            <li style=`color: ${color}`>${color}</li>
+          </for>
+        </ul>
+      </if>
+    </div>
+    <lasso-body/>
+    <browser-refresh/>
+  </body>
+</html>

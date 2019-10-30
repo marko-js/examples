@@ -1,0 +1,23 @@
+.app-button.app-checkbox {
+  background-color: #999999;
+  color: #ffffff;
+}
+
+.app-button.app-checkbox.checked {
+  background-color: #2980b9;
+  color: #ffffff;
+}
+
+.app-checkbox-icon:after {
+  opacity: 1.0;
+  content: '☐';
+  display: inline-block;
+  color: white;
+  font-size: 24px;
+  margin-right: 5px;
+  line-height: 18px;
+}
+
+.app-checkbox.checked .app-checkbox-icon:after {
+  content: '☑';
+}

@@ -1,0 +1,51 @@
+class {
+  onInput(input) {
+    var activeIndex = 0;
+
+    var tabs = input.tabs;
+
+    if (tabs) {
+      tabs.forEach(function(tab, i) {
+        if (tab.active) {
+          activeIndex = i;
+        }
+      });
+    }
+
+    this.state = {
+      activeIndex: activeIndex
+    };
+  }
+
+  setActiveIndex(newActiveIndex) {
+    this.state.activeIndex = newActiveIndex;
+  }
+
+  handleTabClick(tabIndex, event) {
+    this.setActiveIndex(tabIndex);
+    event.preventDefault();
+  }
+}
+
+<div class="app-tabs">
+  <ul class="tab-nav">
+    <for|tab, i| of=input.tabs>
+      <li class=["tab", i === state.activeIndex && "active"]>
+        <a href="#" onClick("handleTabClick", i)>
+          <if(typeof tab.label === "string")>${tab.label}</if>
+          <else>
+            <${tab.label}/>
+          </else>
+        </a>
+      </li>
+    </for>
+  </ul>
+  <div style="clear: both"/>
+  <div class="tab-panes">
+    <for|tab, i| of=input.tabs>
+      <div class=["tab-pane", i === state.activeIndex && "active"]>
+        <${tab.renderBody}/>
+      </div>
+    </for>
+  </div>
+</div>

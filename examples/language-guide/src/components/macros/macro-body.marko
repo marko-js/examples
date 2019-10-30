@@ -1,0 +1,18 @@
+<macro|{ title, url, renderBody }| name="section">
+    <div class="section">
+        <h2>
+            <a href=url>${title}</a>
+        </h2>
+        <p>
+            <${renderBody}/>
+        </p>
+    </div>
+</macro>
+<section
+    title="Neil Armstrong"
+    url="http://en.wikipedia.org/wiki/Neil_Armstrong">
+    American astronaut and the first person to walk on the Moon
+</section>
+<section title="Ernest Hemingway" url="http://en.wikipedia.org/wiki/Hemingway">
+    American author and journalist.
+</section>

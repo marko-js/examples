@@ -1,0 +1,17 @@
+{
+    "plugins": [ {
+        "plugin": "lasso-marko"
+
+    }],
+    "fileWriter": {
+        "outputDir": "static",
+        "fingerprintsEnabled": false,
+        "includeSlotNames": false,
+        "urlPrefix": "/static"
+
+    },
+    "minify": false,
+    "resolveCssUrls": true,
+    "bundlingEnabled": false,
+    "bundles": []
+}

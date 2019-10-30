@@ -1,0 +1,11 @@
+<macro|{ name, color }| name="greeting">
+    <div
+        class="greeting"
+        style={
+            backgroundColor: color
+        }>
+        Hello ${name}!
+    </div>
+</macro>
+<!-- Macros can be used like any other tag -->
+<greeting name="World" color="green"/>

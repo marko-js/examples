@@ -1,0 +1,40 @@
+import store from '../store';
+
+class {
+  onCreate(input, out) {
+    // out.global is received from the $global object from route.js
+    this.PRELOADED_STATE = out.global.PRELOADED_STATE;
+
+    // create redux store on the server-side
+    this.reduxStore = store.initialize(this.PRELOADED_STATE);
+  }
+
+  onMount() {
+    // recreate redux store on the client-side
+    this.reduxStore = store.initialize(this.PRELOADED_STATE);
+    this.reduxStore.subscribe(() => {
+      this.forceUpdate();
+    });
+  }
+
+  dispatch(type) {
+    this.reduxStore.dispatch({ type: type });
+  }
+}
+
+$ var reduxState = {};
+/*
+ * On the client-side, Marko first does a "lightweight re-render" of the UI
+ * component tree before the `onMount` event is fired. The DOM is not actually
+ * updated in this "lightweight re-render".
+ * We check for the existence of `this.reduxStore` because it is first created in
+ * the `onMount` event.
+ */
+$ if(typeof component.reduxStore.getState === 'function') {
+  reduxState = component.reduxStore.getState();
+}
+
+<counter
+  value=reduxState.value
+  on-increment('dispatch', 'INCREMENT')
+  on-decrement('dispatch', 'DECREMENT') />

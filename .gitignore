@@ -1,0 +1,13 @@
+**/.git/
+**/node_modules/**
+**/build/**
+**/static/**
+**/dist/
+**/.cache/
+**/*.log
+**/*.marko.js
+**/package-lock.json
+**/yarn.lock
+**/.DS_STORE
+lerna-debug.log
+npm-debug.log

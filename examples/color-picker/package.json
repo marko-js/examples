@@ -1,0 +1,26 @@
+{
+  "name": "color-picker",
+  "version": "0.0.4",
+  "description": "Color Picker",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marko-js/examples.git"
+  },
+  "bugs": {
+    "url": "https://github.com/marko-js/examples/issues"
+  },
+  "homepage": "https://github.com/marko-js/examples",
+  "license": "MIT",
+  "scripts": {
+    "dev": "npx marko-cli serve ./src/pages/index.marko",
+    "build": "npx marko-cli build ./src/pages/index.marko",
+    "start": "node ./build/index.js"
+  },
+  "private": true,
+  "dependencies": {
+    "flat-colors": "^3.3.11",
+    "flat-ui-colors": "^2.1.8",
+    "marko": "^4.18.20",
+    "marko-cli": "^6.0.3"
+  }
+}

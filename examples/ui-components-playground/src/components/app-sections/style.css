@@ -1,0 +1,29 @@
+.tableOfContents {
+  font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #333333;
+}
+
+.tableOfContents ul, ol {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.tableOfContents {
+  position: fixed;
+  right: 15px;
+  top: 250px;
+  background-color: #f7f7f9;
+  box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.2);
+  padding: 1em;
+}
+
+.app-sections .section {
+  margin-top: 40px;
+}
+
+.app-sections .section > h2 {
+  border-bottom: 1px solid #c0c0c0;
+  margin-bottom: 0.5em;
+}

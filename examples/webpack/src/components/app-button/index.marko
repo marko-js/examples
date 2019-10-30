@@ -1,0 +1,26 @@
+class {
+  handleClick(event) {
+    // Every Widget instance is also an EventEmitter instance.
+    // We will emit a custom "click" event when a DOM click event
+    // is triggered
+    this.emit("click", {
+      event: event // Pass along the DOM event in case it is helpful to others
+    });
+  }
+}
+
+$ const size = input.size || "normal";
+$ const variant = input.variant || "primary";
+$ const variantClassName = variant !== "primary" && "app-button-" + variant;
+$ const sizeClassName = size !== "normal" && "app-button-" + size;
+<button
+  ...input["*"]
+  class=["app-button", variantClassName, sizeClassName, input["class"]]
+  onClick("handleClick")>
+  <span>
+    <if(input.label)>${input.label}</if>
+    <else>
+      <${input}/>
+    </else>
+  </span>
+</button>

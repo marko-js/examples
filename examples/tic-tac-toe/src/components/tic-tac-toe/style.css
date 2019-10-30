@@ -1,0 +1,174 @@
+.tic-tac-toe {
+  width: 240px;
+  position: relative;
+  margin: auto auto;
+  font-size: 100%;
+  font: inherit;
+  line-height: 1.65em;
+  font-family: "Helvetica Neue",Helvetica,Roboto,Arial,sans-serif;
+  font-weight: normal;
+  box-sizing: border-box;
+}
+
+.tic-tac-toe div {
+  box-sizing: border-box;
+}
+
+.board-container {
+  width: 100%;
+  height: 240px;
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+}
+
+.board {
+  width: 100%;
+  height: 100%;
+}
+
+.row {
+  height: 33.333%;
+  width: 100%;
+  clear: both;
+}
+
+.row > .cell {
+  display: inline-block;
+  width: 33.333%;
+  height: 100%;
+  border: 2px solid black;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.cell.row-0 {
+  border-top: 2px solid transparent;
+}
+
+.cell.row-2 {
+  border-bottom: 2px solid transparent;
+}
+
+.cell.col-0 {
+  border-left: 2px solid transparent;
+}
+
+.cell.col-2 {
+  border-right: 2px solid transparent;
+}
+
+.player-icon {
+  transform: scale(0, 0);
+  transition: transform 0.2s;
+  transition-timing-function: ease-in-out;
+}
+
+.player-icon.X {
+  transform: scale(1, 1);
+}
+
+.player-icon.O {
+  transform: scale(1, 1);
+}
+
+.player-icon > span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  font-size: 50px;
+  transform: translate(-50%, -50%);
+}
+
+.player-icon.X > span:before {
+  content: '✕';
+  vertical-align: middle;
+}
+
+.player-icon.O > span:before {
+  content: '◯';
+  vertical-align: middle;
+}
+
+.player-icon.cell {
+  width: 100%;
+  height: 100%;
+}
+
+.current-player {
+  height: 100px;
+  position: relative;
+}
+
+.player-icon.current-player {
+  width: 80px;
+  height: 80px;
+  position: absolute;
+  border-bottom: 3px solid transparent;
+}
+
+.player-icon.current-player.X {
+  left: 0px;
+  top: 0px;
+}
+
+.player-icon.current-player.O {
+  right: 0px;
+  top: 0px;
+}
+
+
+.player-icon.current-player.active {
+  border-bottom: 3px solid #7d0;
+}
+
+.overlay {
+  visibility: hidden;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  background-color: #ffc400;
+  transition: opacity 1s;
+  opacity: 0;
+}
+
+.overlay.game-over {
+  visibility: visible;
+  opacity: 100;
+}
+
+.game-over .player-icon.winner {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+h2.winner {
+  position: absolute;
+  bottom: 1em;
+  text-align: center;
+  width: 100%;
+}
+
+button.new-game {
+  margin-top: 10px;
+  font-size: 1.5em;
+  height: 60px;
+  width: 100%;
+  align-items: flex-start;
+  text-align: center;
+  cursor: pointer;
+  color: buttontext;
+  background-color: buttonface;
+  box-sizing: border-box;
+  padding: 2px 6px 3px;
+  border-width: 2px;
+  border-style: outset;
+  border-color: buttonface;
+  border-image: initial;
+}

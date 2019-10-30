@@ -1,0 +1,9 @@
+<!-- runs when template is loaded -->
+static const dateLoaded = new Date();
+
+<!-- runs when template is rendered -->
+$ let name = "Frank";
+$ name = name.toUpperCase();
+$ console.log(name);
+<div>Hello ${name}!</div>
+<p>This template was loaded at ${dateLoaded.toString()}</p>

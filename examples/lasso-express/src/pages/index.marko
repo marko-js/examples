@@ -1,0 +1,40 @@
+<lasso-page/>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8"/>
+    <title>Marko | Lasso + Express</title>
+    <lasso-head/>
+    <style>
+      .container{
+        margin-left: auto;
+        margin-right: auto;
+        width: 800px;
+    }
+    </style>
+  </head>
+  <body>
+    <sample-header title="Lasso + Express"/>
+    <div class="container">
+      <app-hello name=data.name/>
+      You have ${data.count} new messages!
+      <if(data.colors && data.colors.length)>
+        <ul>
+          <for|color| of=data.colors>
+            <li style=`color: ${color}`>${color}</li>
+          </for>
+        </ul>
+      </if>
+      <else>
+        <div>No colors!</div>
+      </else>
+    </div>
+    <lasso-body/>
+    <!--
+    Page will automatically refresh any time a template is modified
+    if launched using the browser-refresh Node.js process launcher:
+    https://github.com/patrick-steele-idem/browser-refresh
+    -->
+    <browser-refresh/>
+  </body>
+</html>
