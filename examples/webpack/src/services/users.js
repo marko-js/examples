@@ -1,26 +1,27 @@
-var mockUsersData = require('./mock-users-data.json');
+import mockUsersData from "./mock-users-data.json";
 
 const pageSize = 10;
 
-exports.getUsers = function(options) {
-    var pageIndex = options.pageIndex || 0;
-    var start = pageIndex * pageSize;
+export async function getUsers(options) {
+  const pageIndex = options.pageIndex || 0;
+  const start = pageIndex * pageSize;
+  const users = [];
 
-    var users = [];
+  for (let i = start; i < start + pageSize; i++) {
+    users.push(mockUsersData[i % mockUsersData.length]);
+  }
 
-    for (var i=start; i<start+pageSize; i++) {
-        users.push(mockUsersData[i % mockUsersData.length]);
-    }
+  const results = {
+    users,
+    pageIndex,
+    totalMatches: mockUsersData.length
+  };
 
-    var results = {
-        pageIndex: pageIndex,
-        totalMatches: mockUsersData.length,
-        users: users
-    };
+  await sleep(1000);
 
-    return new Promise((resolve, reject) => {
-        setTimeout(function() {
-            resolve(results);
-        }, 1000);
-    });
+  return results;
 };
+
+function sleep(timeout) {
+  return new Promise(resolve => setTimeout(resolve, timeout));
+}

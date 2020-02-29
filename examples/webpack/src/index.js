@@ -6,11 +6,12 @@ const port = process.env.PORT || 8080;
 // Enable gzip compression for all HTTP responses
 import compression from "compression";
 app.use(compression());
-app.use(express.static('public'));
 
-// Allow all of the generated files to be served up by Express
-import serveStatic from "serve-static";
-app.use("/static", serveStatic("dist/client"));
+// Serve assets from the "./assets" folder.
+app.use("/assets", express.static("assets"));
+
+// Serve assets generated from webpack.
+app.use("/assets", express.static("dist/client"));
 
 // Initialize mock service routes
 import initServices from "./services/routes";

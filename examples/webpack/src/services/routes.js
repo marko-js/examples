@@ -1,21 +1,20 @@
-var usersService = require('./users');
+import { getUsers } from "./users";
 
-module.exports = function(app) {
-    app.get('/services/users', function(req, res) {
-        var pageIndex = req.query.pageIndex;
-        if (typeof pageIndex === 'string') {
-            pageIndex = parseInt(pageIndex, 10);
-        } else {
-            pageIndex = 0;
-        }
+export default function(app) {
+  app.get("/services/users", async (req, res) => {
+    let pageIndex = req.query.pageIndex;
 
-        usersService.getUsers({ pageIndex: pageIndex })
-            .then(function(data) {
-                res.json(data);
-            })
-            .catch(function(err) {
-                console.log(err);
-                res.status(500).send('Unable to load users');
-            });
-    });
+    if (typeof pageIndex === "string") {
+      pageIndex = parseInt(pageIndex, 10);
+    } else {
+      pageIndex = 0;
+    }
+
+    try {
+      res.json(await getUsers({ pageIndex }));
+    } catch (err) {
+      console.log(err);
+      res.status(500).send("Unable to load users");
+    }
+  });
 };

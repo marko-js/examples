@@ -1,12 +1,10 @@
-<div class=["app-overlay", state.visible && "visible"]>
+<div class=["app-overlay", { visible: state.visible }]>
   <div class="app-overlay-mask" onClick("handleMaskClick")/>
   <div
     class="app-overlay-container"
-    style={
-      width: state.width
-    }>
+    style={ width: input.width || "80%" }>
     <div class="app-overlay-body" key="body">
-      <${input}/>
+      <${input.renderBody}/>
     </div>
     <div class="app-overlay-footer">
       <app-button

@@ -1,11 +1,11 @@
-import { getUsers } from "../../services/users"
+import { getUsers } from "../../services/users";
 
 class {
   onInput(input) {
-    let users = [];
+    const { usersData } = input;
     let pageIndex = -1;
+    let users = [];
 
-    const usersData = input.usersData;
     if (usersData) {
       users = usersData.users;
       pageIndex = usersData.pageIndex;
@@ -19,31 +19,27 @@ class {
   }
 
   onMount() {
-    this.fetchPromise = Promise.resolve();
+    this.pending = Promise.resolve();
 
     if (this.state.users.length === 0) {
       this.loadMore();
     }
   }
 
-  loadMore() {
-    const state = this.state;
-    state.loading = true;
+  async loadMore() {
+    const { state } = this;
 
-    this.fetchPromise = this.fetchPromise
-      .then(function() {
-        return getUsers({
-          pageIndex: ++state.pageIndex
-        });
-      })
-      .then(function(usersData) {
-        state.users = state.users.concat(usersData.users);
-        state.loading = false;
-      })
-      .catch(function(e) {
-        state.loading = false;
-        console.log("Fetch failed:", e);
-      });
+    state.loading = true;
+    await this.pending;
+
+    try {
+      const usersData = await (this.pending = getUsers({ pageIndex: ++state.pageIndex }));
+      state.users = state.users.concat(usersData.users);
+    } catch (err) {
+      console.log("Fetch failed:", err);
+    }
+
+    state.loading = false;
   }
 
   handleLoadMoreClick() {
@@ -88,5 +84,5 @@ class {
   <app-button
     label=(state.users.length ? "Load more users" : "Load users")
     onClick("handleLoadMoreClick")/>
-  <span class=[state.loading ? "loading" : null]/>
+  <span class={ loading: state.loading }/>
 </div>

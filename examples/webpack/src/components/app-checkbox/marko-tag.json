@@ -2,5 +2,6 @@
     "@label": "string",
     "@data": "expression",
     "@checked": "boolean",
-    "@class": "string"
+    "@class": "string",
+    "@*": "string"
 }

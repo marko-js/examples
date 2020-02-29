@@ -1,6 +1,6 @@
 const path = require("path");
 const webpack = require("webpack");
-const { CleanWebpackPlugin } = require("clean-webpack-plugin");
+const nodeExternals = require("webpack-node-externals");
 const MarkoPlugin = require("@marko/webpack/plugin").default;
 const CSSExtractPlugin = require("mini-css-extract-plugin");
 const SpawnServerPlugin = require("spawn-server-webpack-plugin");
@@ -10,42 +10,87 @@ const { NODE_ENV } = process.env;
 const isProd = NODE_ENV === "production";
 const isDev = !isProd;
 const markoPlugin = new MarkoPlugin();
-const spawnedServer = isDev && new SpawnServerPlugin();
+const spawnedServer =
+  isDev &&
+  new SpawnServerPlugin({
+    args: ["--inspect-brk", "--enable-source-maps"]
+  });
 
 module.exports = [
+  ...["modern", isProd && "legacy"].filter(Boolean).map(name =>
+    compiler({
+      name,
+      target: "web",
+      devtool: "source-map",
+      stats: isDev && "minimal",
+      module: {
+        rules: [{
+          test: /\.(less|css)$/,
+          use: [
+            CSSExtractPlugin.loader,
+            "css-loader",
+            {
+              loader: "postcss-loader",
+              options: {
+                config: {
+                  ctx: {
+                    env: name
+                  }
+                }
+              }
+            },
+            "less-loader"
+          ]
+        }]
+      },
+      optimization: {
+        splitChunks: {
+          chunks: "all",
+          maxInitialRequests: 3
+        }
+      },
+      output: {
+        filename: "[name].[contenthash:8].js",
+        path: path.join(__dirname, "dist/client")
+      },
+      devServer: isDev
+        ? {
+            overlay: true,
+            host: "0.0.0.0",
+            contentBase: false,
+            disableHostCheck: true,
+            ...spawnedServer.devServerConfig
+          }
+        : undefined,
+      plugins: [
+        new webpack.DefinePlugin({
+          "typeof window": "'object'"
+        }),
+        new CSSExtractPlugin({
+          filename: "[name].[contenthash:8].css"
+        }),
+        isProd && new OptimizeCssAssetsPlugin(),
+        markoPlugin.browser
+      ]
+    })
+  ),
   compiler({
-    name: "Client",
-    optimization: {
-      splitChunks: {
-        chunks: "all",
-        maxInitialRequests: 3
-      }
-    },
-    output: {
-      filename: "[name].[contenthash:8].js",
-      path: path.join(__dirname, "dist/client")
-    },
-    devServer: isDev ? {
-      overlay: true,
-      stats: "minimal",
-      contentBase: false,
-      ...spawnedServer.devServerConfig
-    }: undefined,
-    plugins: [
-      new webpack.DefinePlugin({
-        "process.browser": true
-      }),
-      new CSSExtractPlugin({
-        filename: "[name].[contenthash:8].css"
-      }),
-      isProd && new OptimizeCssAssetsPlugin(),
-      markoPlugin.browser
-    ]
-  }),
-  compiler({
-    name: "Server",
+    name: "node",
     target: "async-node",
-    externals: [/^[^./!]/], // excludes node_modules
+    devtool: "inline-source-map",
+    externals: [
+      // Exclude node_modules, but ensure non js files are bundled.
+      // Eg: `.marko`, `.css`, etc.
+      nodeExternals({
+        whitelist: [/\.(?!(?:js|json)$)[^.]+$/]
+      })
+    ],
+    module: {
+      rules: [{
+        test: /\.(less|css)$/,
+        loader: "ignore-loader"
+      }]
+    },
     optimization: {
       minimize: false
     },
@@ -55,15 +100,7 @@ module.exports = [
     },
     plugins: [
       new webpack.DefinePlugin({
-        "process.browser": undefined,
-        "process.env.BUNDLE": true
-      }),
-      new webpack.BannerPlugin({
-        banner: 'require("source-map-support").install();',
-        raw: true
-      }),
-      new CSSExtractPlugin({
-        filename: "[name].[contenthash:8].css"
+        "typeof window": "'undefined'"
       }),
       isDev && spawnedServer,
       markoPlugin.server
@@ -73,26 +110,37 @@ module.exports = [
 
 // Shared config for both server and client compilers.
 function compiler(config) {
+  const publicPath = "/assets/";
+  const babelConfig = {
+    caller: {
+      target: config.target,
+      compiler: config.name
+    }
+  };
+
   return {
     ...config,
     mode: isProd ? "production" : "development",
-    devtool: isProd ? "source-map" : "inline-source-map",
     output: {
-      publicPath: "/static/",
+      publicPath,
       ...config.output
     },
     resolve: {
       extensions: [".js", ".json", ".marko"]
     },
     module: {
+      ...config.module,
       rules: [
+        ...config.module.rules,
         {
           test: /\.marko$/,
-          loader: "@marko/webpack/loader"
+          loader: "@marko/webpack/loader",
+          options: { babelConfig }
         },
         {
-          test: /\.(less|css)$/,
-          use: [CSSExtractPlugin.loader, "css-loader", "less-loader"]
+          test: /\.js$/,
+          loader: "babel-loader",
+          options: babelConfig
         },
         {
           test: /\.svg/,
@@ -103,11 +151,12 @@ function compiler(config) {
           loader: "file-loader",
           options: {
             // File assets from server & browser compiler output to client folder.
-            outputPath: "../client"
+            outputPath: "../client",
+            publicPath
           }
         }
       ]
     },
-    plugins: [...config.plugins, isProd && new CleanWebpackPlugin()].filter(Boolean)
+    plugins: config.plugins.filter(Boolean)
   };
 }
