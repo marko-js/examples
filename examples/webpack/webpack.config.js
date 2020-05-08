@@ -13,35 +13,48 @@ const markoPlugin = new MarkoPlugin();
 const spawnedServer =
   isDev &&
   new SpawnServerPlugin({
-    args: ["--inspect-brk", "--enable-source-maps"]
+    args: [
+      // "--inspect", // Allows for debugging the dev process
+      "--enable-source-maps"
+    ]
   });
 
 module.exports = [
-  ...["modern", isProd && "legacy"].filter(Boolean).map(name =>
-    compiler({
-      name,
+  ...["modern", isProd && "legacy"].filter(Boolean).map(browserEnv => {
+    const filenameTemplate = `${
+      isProd ? "[id]" : `[name].${browserEnv}`
+    }.[contenthash:8]`;
+    return compiler({
+      name: browserEnv,
       target: "web",
       devtool: "source-map",
       stats: isDev && "minimal",
       module: {
-        rules: [{
-          test: /\.(less|css)$/,
-          use: [
-            CSSExtractPlugin.loader,
-            "css-loader",
-            {
-              loader: "postcss-loader",
-              options: {
-                config: {
-                  ctx: {
-                    env: name
+        rules: [
+          {
+            test: /\.(less|css)$/,
+            use: [
+              CSSExtractPlugin.loader,
+              {
+                loader: "css-loader",
+                options: {
+                  sourceMap: true
+                }
+              },
+              {
+                loader: "postcss-loader",
+                options: {
+                  config: {
+                    ctx: {
+                      env: browserEnv
+                    }
                   }
                 }
-              }
-            },
-            "less-loader"
-          ]
-        }]
+              },
+              "less-loader"
+            ]
+          }
+        ]
       },
       optimization: {
         splitChunks: {
@@ -50,7 +63,7 @@ module.exports = [
         }
       },
       output: {
-        filename: "[name].[contenthash:8].js",
+        filename: `${filenameTemplate}.js`,
         path: path.join(__dirname, "dist/client")
       },
       devServer: isDev
@@ -59,6 +72,7 @@ module.exports = [
             host: "0.0.0.0",
             contentBase: false,
             disableHostCheck: true,
+            headers: { "Access-Control-Allow-Origin": "*" },
             ...spawnedServer.devServerConfig
           }
         : undefined,
@@ -67,13 +81,13 @@ module.exports = [
           "typeof window": "'object'"
         }),
         new CSSExtractPlugin({
-          filename: "[name].[contenthash:8].css"
+          filename: `${filenameTemplate}.css`
         }),
         isProd && new OptimizeCssAssetsPlugin(),
         markoPlugin.browser
       ]
-    })
-  ),
+    });
+  }),
   compiler({
     name: "node",
     target: "async-node",
@@ -86,17 +100,20 @@ module.exports = [
       })
     ],
     module: {
-      rules: [{
-        test: /\.(less|css)$/,
-        loader: "ignore-loader"
-      }]
+      rules: [
+        {
+          test: /\.(less|css)$/,
+          loader: "ignore-loader"
+        }
+      ]
     },
     optimization: {
       minimize: false
     },
     output: {
       libraryTarget: "commonjs2",
-      path: path.join(__dirname, "dist/server")
+      path: path.join(__dirname, "dist/server"),
+      devtoolModuleFilenameTemplate: "[resource-path]"
     },
     plugins: [
       new webpack.DefinePlugin({
@@ -120,6 +137,7 @@ function compiler(config) {
 
   return {
     ...config,
+    bail: true,
     mode: isProd ? "production" : "development",
     output: {
       publicPath,
@@ -140,7 +158,11 @@ function compiler(config) {
         {
           test: /\.js$/,
           loader: "babel-loader",
-          options: babelConfig
+          exclude: /node_modules/,
+          options: {
+            cacheDirectory: true,
+            ...babelConfig
+          }
         },
         {
           test: /\.svg/,
