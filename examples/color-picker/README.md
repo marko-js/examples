@@ -62,7 +62,7 @@ npm install # Or `yarn`
 ```
 
 We can now start our demo project to ensure that everything is working
-properly (the dev script uses `marko serve` - a browser is automatically launched and live-reloads as you make changes):
+properly (the dev script uses `marko-serve` - a browser is automatically launched and live-reloads as you make changes):
 
 ```bash
 # Start the project!

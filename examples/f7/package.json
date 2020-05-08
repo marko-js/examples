@@ -15,19 +15,19 @@
   "bugs": {
     "url": "https://github.com/marko-js/examples/issues"
   },
+  "scripts": {
+    "dev": "marko-serve ./src/pages/index.marko",
+    "build": "marko-build ./src/pages/index.marko",
+    "start": "node ./build/index.js"
+  },
   "homepage": "https://github.com/marko-js/examples",
   "dependencies": {
-    "@lasso/marko-taglib": "^1.0.15",
-    "express": "^4.15.2",
     "framework7": "^1.6.0",
     "framework7-icons": "^0.8.9",
-    "lasso": "^3.3.1",
-    "lasso-less": "^3",
-    "lasso-marko": "^2.4.8",
-    "marko": "^4.18.20",
-    "serve-static": "^1.12.1"
+    "marko": "^4.18.20"
   },
   "devDependencies": {
-    "gulp": "^4"
+    "@marko/build": "^1.2.0",
+    "@marko/serve": "^1.2.0"
   }
 }

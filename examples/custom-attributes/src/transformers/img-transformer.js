@@ -41,25 +41,6 @@ module.exports = function transform(el, context) {
         // End result:
         // <img width=150 height=125 src="data:image/png;base64,...">
     } else {
-        /*
-        Otherwise, the attribute value is a dynamic JavaScript expression that can only be handled
-        at runtime.
-
-        Our goal is to wrap the current HTML element in a new `<app-base64>` tag that is equivalent to the following
-
-        <app-base64 path=data.logo var="__base64Url">
-            <img src=__base64Url .../>
-        </app-base64>
-
-        The <app-base64> tag will render the body asynchronously after asynchronously reading the image file and
-        base64 encoding the image data.
-        */
-        var base64Tag = context.createNodeForEl('app-base64', {
-            path: base64SrcExpression,
-            var: builder.literal('__base64Url')
-        });
-
-        el.wrapWith(base64Tag);
-        el.setAttributeValue('src', builder.identifier('__base64Url'));
+        context.error("The base64-src attribute must be a literal string value.")
     }
 };

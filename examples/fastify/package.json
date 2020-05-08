@@ -24,5 +24,8 @@
     "lasso-marko": "^2.4.8",
     "marko": "^4.18.20",
     "point-of-view": "^0.3.0"
+  },
+  "scripts": {
+    "start": "node server.js"
   }
 }

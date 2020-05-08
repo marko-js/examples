@@ -1,5 +1,0 @@
-{
-    "<await>": {
-        "transformer": "./await-timeout-transformer"
-    }
-}

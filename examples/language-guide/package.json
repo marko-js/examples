@@ -12,8 +12,8 @@
   },
   "homepage": "https://github.com/marko-js/examples",
   "scripts": {
-    "dev": "npx marko-cli serve src/pages/index.marko",
-    "build": "npx marko-cli build ./src/pages/index.marko",
+    "dev": "marko-serve src/pages/index.marko",
+    "build": "marko-build ./src/pages/index.marko",
     "start": "node ./build/index.js",
     "format": "marko prettyprint ./src/pages/index.marko ./src/components",
     "build-prod": "LASSO_TIMEOUT=200000 NODE_ENV=production npm run build"
@@ -23,7 +23,10 @@
     "defaultOutputMode": "html"
   },
   "dependencies": {
-    "marko": "^4.18.20",
-    "marko-cli": "^6.0.3"
+    "marko": "^4.18.20"
+  },
+  "devDependencies": {
+    "@marko/build": "^1.2.0",
+    "@marko/serve": "^1.2.0"
   }
 }

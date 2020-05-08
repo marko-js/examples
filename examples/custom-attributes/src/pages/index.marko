@@ -15,26 +15,11 @@
     <sample-header title="Custom Attributes"/>
     <div class="container">
       <h2>
-        Static
         <code>base64-src</code>
         attribute:
       </h2>
       <img base64-src="./marko-logo.png" width=150 height=125/>
-      <h2>
-        Dynamic
-        <code>base64-src</code>
-        attribute:
-      </h2>
-      <img base64-src=data.logo width=150 height=125/>
-      <h2>
-        Using the
-        <code>&lt;app-base64></code>
-        tag directly:
-      </h2>
-      <app-base64 path=data.logo var="__base64Url">
-        <img src=__base64Url width=150 height=125/>
-      </app-base64>
-      <h2>Repeat</h2>
+      <h2><code>repeat()</code> attribute:</h2>
       <div repeat(5)>This DIV will be repeated 5 times</div>
     </div>
   </body>
