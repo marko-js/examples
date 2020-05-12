@@ -1,0 +1,3 @@
+node_modules
+*.marko.js
+*.log
