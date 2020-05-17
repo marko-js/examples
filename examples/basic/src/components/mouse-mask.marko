@@ -21,16 +21,6 @@ style {
   .mouse-mask,
   .mouse-mask-base {
     position: absolute;
-    top: 0;
-    right: 0;
-    left: 0;
-    bottom: 0;
-    display:flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    font-size:2em; 
-    color: #fff;
   }
   .mouse-mask-base {
     filter: grayscale(100%) brightness(50%);
@@ -41,8 +31,6 @@ style {
     mask-image: radial-gradient(circle, black 20%, transparent 70%);
     mask-repeat: no-repeat;
     mask-size: 100vmin 100vmin;
-    mask-position-x: calc(0px - 50vmin);
-    mask-position-y: calc(0px - 50vmin);
     -webkit-mask-position-x: calc(var(--mouse-x) - 50vmin);
     -webkit-mask-position-y: calc(var(--mouse-y) - 50vmin);
     background: transparent;
