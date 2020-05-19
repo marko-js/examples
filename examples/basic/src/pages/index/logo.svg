@@ -30,7 +30,7 @@
         <stop offset="1" stop-color="#2073ba" />
       </linearGradient>
     </g>
-    <g style="mask: url(#j);">
+    <g>
       <path fill="url(#b)" d="M854 697h361L788 0H427z" />
       <linearGradient id="b" x2="0" y2="1">
         <stop offset="0" stop-color="#8ed0e1" />
@@ -42,7 +42,7 @@
         <stop offset="1" />
       </linearGradient>
     </g>
-    <g style="mask: url(#k);">
+    <g>
       <path fill="url(#d)" d="M1281 0h361l-427 697H854z" />
       <linearGradient id="d" x2="0" y2="1">
         <stop offset="0" stop-color="#698932" />
@@ -54,7 +54,7 @@
         <stop offset="1" stop-opacity="0" />
       </linearGradient>
     </g>
-    <g style="mask: url(#l);">
+    <g>
       <path fill="url(#f)" d="M1642 0h-361l428 697-428 697h361l428-697z" />
       <linearGradient id="f" x2="0" y2="1" stop-color="#f9bc00">
         <stop offset="0" stop-color="#ffed01" />
