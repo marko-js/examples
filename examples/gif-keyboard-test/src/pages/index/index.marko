@@ -1,0 +1,62 @@
+import fetch from 'node-fetch'
+
+class {
+  onCreate(){
+    this.state = {
+        searchTerm: null,
+        APIKey: // API Key should be recieved from the GIPHY API Request, let me know if you need the key
+        giphyResponse: null,
+        numberOfGifsToShow: 7,
+        gifsToIndex: 5,
+        currentIndex: 0,
+    };
+  }
+  updateSearch(searchTerm){
+    this.state.searchTerm = searchTerm.searchTerm;
+    this.updateIndex();
+  }
+  updateIndex(newIndex={currentIndex: 0}){
+    this.state.currentIndex = newIndex.currentIndex;
+    this.getGifs();
+  }
+  getGifs(){
+    let APITestKey = `http://api.giphy.com/v1/gifs/search?q=${this.state.searchTerm}&rating=g&api_key=${this.state.APIKey}&limit=${this.state.numberOfGifsToShow}&offset=${this.state.currentIndex}`;
+    fetch(APITestKey)
+      .then(
+        response => response.json()
+      )
+      .then(
+        data => this.state.giphyResponse = data.data
+      )
+      .catch(
+        error => console.log('Error from getGifs() signature: ', error)
+      );
+  }
+}
+
+style {
+  body {
+    background-color: black;
+    display: flex;
+    flex-direction: column;
+  }
+  .gif-keyboard {
+    position: relative;
+    top: 40%;
+    left: 40%;
+    width: 500px;
+  }
+}
+
+<div class="gif-keyboard">
+  <search-bar
+    on-update-search-term("updateSearch")
+  />
+  <display-gifs
+    searchTerm=state.searchTerm
+    giphyResponse=state.giphyResponse
+    currentIndex=state.currentIndex
+    numberOfGifsToShow=state.numberOfGifsToShow
+    on-refreshIndex("updateIndex")
+  />
+</div>
