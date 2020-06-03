@@ -1,10 +1,11 @@
 import fetch from 'node-fetch'
+import {GIPHYAPIKEY} from './../../../APIKEY.const.js'
 
 class {
   onCreate(){
     this.state = {
         searchTerm: null,
-        APIKey: // API Key should be recieved from the GIPHY API Request, let me know if you need the key
+        APIKey: GIPHYAPIKEY, // API Key should be recieved from the GIPHY API Request, let me know if you need the key
         giphyResponse: null,
         numberOfGifsToShow: 7,
         gifsToIndex: 5,
