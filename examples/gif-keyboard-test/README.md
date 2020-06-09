@@ -260,7 +260,7 @@ There are a couple of things that we need to do before we starting writing the c
 
 We need to install [node-fetch](https://github.com/node-fetch/node-fetch), which can be done by:
 
-```npm install node-fetch```
+```npm install --save node-fetch```
 
 Next, we should create a `.constants` file that we will use to access the API key that we got from .giphy. In `marko-giphy-keyboard`, create a script called `APIKEY.constants.js`. Then in that file, save the following line:
 
@@ -279,11 +279,100 @@ package-lock.json
 
 This is to prevent your git repo from getting too big as well as preventing your GIPHY API Key from being public. This may not be the best practice in a normal environment. For purpose of this tutorial, the hiding of the `package-lock` and the API key are suffice.
 
-Finally, add the following two lines at the top of `/src/pages/index/index.marko`:
+In `/src/pages/index/index.marko`, remove all the generated code and then add the following lines at the top:
 
 ```js
 import fetch from 'node-fetch'
 import {GIPHYAPIKEY} from './../../../APIKEY.constants.js'
+
+class {
+  displayAPIKey(){
+    console.log('The API Key: ', GIPHYAPIKEY);
+  }
+}
+
+<p on-click("displayAPIKey")>
+  Hello Marko!
+</p>
 ```
 
-We installed our require dependacy, prevented our API key from accidentally being made public and made our API key useable. 
+Run the program (`npm run dev`), then run go into the browswer console and make sure you're able to see your GIPHY API key in the console by clicking on `Hello Marko`. If you're able to see the API key after clicking on the element, you are good to go! You may also remove the `logo.svg` in the `index` folder.
+
+We installed our require dependacy, prevented our API key from accidentally being made public and made our API key useable.
+
+## Writing Code with Marko
+
+As stated before, the purpose of this tutorial is to not necessarily write the most elegant or follow all the best practices of Marko. The purpose of this tutorial is to get an overview of Marko main features and how we can use them. This tutorial will first set up the appropriate HTML and JavaScript logic for each component. Then once each component is integrated with each other, we will focus on the styling (CSS).
+
+### Searchbox in GIPHY and `state` in Marko
+
+Before we implement the actual searching, what we are going to do first is implement the search box.
+
+In `/src/pages/index/index.marko`, replace the `<p>` tag with the following:
+
+```html
+<input
+  type="text"
+  on-input("updateSearchTerm")
+  placeholder="Enter a value"
+  value=state.searchTerm
+/>
+<p>
+  The current search term ${state.searchTerm}
+</p>
+```
+
+In the class, remove the entire `displayAPIKey` signature and then add the following lines of code to the class:
+
+```js
+onCreate(){
+  this.state = {
+    searchTerm: '',
+  }
+}
+updateSearchTerm(event){
+  this.state = {
+    searchTerm: event.target.value,
+  }
+}
+```
+
+Your code should look like this in the following dropdown in `/src/pages/index/index.marko`:
+
+<details>
+
+```js
+import fetch from 'node-fetch'
+import {GIPHYAPIKEY} from './../../../APIKEY.constants.js'
+
+class {
+  onCreate(){
+    this.state = {
+      searchTerm: '',
+    }
+  }
+  updateSearchTerm(event){
+    this.state = {
+      searchTerm: event.target.value,
+    }
+  }
+}
+
+<input
+  type="text"
+  on-input("updateSearchTerm")
+  placeholder="Enter a value"
+  value=state.searchTerm
+/>
+<p>
+  The current search term ${state.searchTerm}
+</p>
+
+```
+</details>
+
+The result is that as you type, the text should also change. Should look something like the following GIF:
+
+![State Only Implementation](tutorial-images/demo1.gif)
+
+Alright, that was a lot of new code that we added that you may not be familar with. Lets breakdown what we have added.
