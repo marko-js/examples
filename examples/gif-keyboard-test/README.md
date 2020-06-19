@@ -57,7 +57,7 @@ Open `http://localhost:3000` in the browser, you see this following:
 
 [Insert the marko start image here]
 
-We recommend following [using a Marko Syntax Highlighting Editor plugin](hhttps://markojs.com/docs/editor-plugins/) for your editor.
+We recommend following [using a Marko Syntax Highlighting Editor plugin](https://markojs.com/docs/editor-plugins/) for your editor.
 
 ### Help, I'm Stuck! {#help-im-stuck}
 
@@ -898,7 +898,7 @@ The main takeaway of this section is that we can set our own custom events. In o
 
 * In a parent component, add an attribute with `on-[emitted event name to listen to]` followed by function that should be invoked when the event is emitted.
 
-## Styling and Code Splitting
+## Styling
 
 In this last part, we will be styling our components using CSS and splitting our code. This part isn't as heavy in terms of Marko features but it is something you may see often in Marko projects. It is therefore worth looking over.
 
@@ -1020,3 +1020,21 @@ Now we just need to apply the classes at the right places in the HTML portion of
 [What your code should look like to make it look like the demo](https://github.com/bvi1994/marko-keyboard-example/tree/95ef6a852387619487dba624ff5daf216fae4143)
 
 [Learn more about styling with Marko](https://markojs.com/docs/styles/)
+
+## Wrapping Up
+
+Congratulations! You have created an application does searches GIFs from GIPHY as the user types! We hope that you have a decent grasp on how Marko works and its features.
+
+Check out the final result here. [Final Result]()
+
+If you want extra practice of your new Marko skills, here are some ideas, in no particular order:
+
+* Implement search with other GIF services like [Tenor](https://tenor.com/) with this application
+* Create an application that displays the local weather based on the user's location
+* Build an [eBay](https://www.ebay.com/) clone!
+
+Really, the skies the limit! Throughout this tutorial, we have gone over basic Marko concepts like `this.state`, `this.emit`, conditional tags, components and events. There is a lot more to Marko. For more detailed explanations of each of these concepts and to learn more features avialable in Marko, check out [the rest of the Marko docs!](https://markojs.com/docs/guides-overview/). You can also play with [more Marko examples](https://markojs.com/try-online/).
+
+If you have any questions about this tutorial or Marko in general, check out our [StackOverFlow page](https://stackoverflow.com/questions/tagged/marko). You can also check out our [Marko Glitter Chat](https://gitter.im/marko-js/marko) and post your questions.
+
+If you have any suggestions to improve this tutorial, that I got something wrong or just made a typo, feel free to submit a PR and I will take a look at it as soon as I can!
