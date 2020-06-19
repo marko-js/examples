@@ -1020,16 +1020,3 @@ Now we just need to apply the classes at the right places in the HTML portion of
 [What your code should look like to make it look like the demo](https://github.com/bvi1994/marko-keyboard-example/tree/95ef6a852387619487dba624ff5daf216fae4143)
 
 [Learn more about styling with Marko](https://markojs.com/docs/styles/)
-
-### Splitting the HTML, CSS and JavaScript Components
-
-Marko allows the splitting of code component through multiple files. We can actually split a component in the following manner:
-
-```
-[component-name]/
-  component.js
-  index.marko
-  style.css
-```
-
-Go ahead and split each component in the application with the following names. Make sure that the HTML portion is in `index.marko`, the CSS in `style.css` and Javascript in the `component.js`. The styling and functionaity of the application should not change when the code has been split up.
