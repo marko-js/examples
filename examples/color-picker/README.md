@@ -472,26 +472,24 @@ Now let's talk about some additional topics that will turn you into a Marko pro!
 
 Marko also supports importing modules. We can easily import a module using
 the familiar ES2015 `import` syntax for single file components.
-Let's fetch the default `<color-picker>` colors from an external module:
 
-```bash
-npm install flat-colors --save
-```
+Let's create a new helper module for generating the default colors:
 
-Let's create a new helper module for generating colors:
-
-**src/util/getColors.js**
+**src/util/getDefaultColors.js**
 ```js
-const flatColors = require('flat-colors').colors;
-
-const HEX_INDEX = 3;
-
-module.exports = function getColors () {
-  let colors = [];
-  for (let i = 0; i < 10; i++) {
-    colors.push(flatColors[i][HEX_INDEX]);
-  }
-  return colors;
+module.exports = function getDefaultColors () {
+  return [
+    "#1ABC9C",
+    "#2ECC71",
+    "#3498DB",
+    "#9B59B6",
+    "#34495E",
+    "#16A085",
+    "#27AE60",
+    "#2980B9",
+    "#8E44AD",
+    "#2C3E50"
+  ];
 };
 ```
 
@@ -500,11 +498,11 @@ colors as the default when none are passed as part of the `input`:
 
 **components/color-picker/index.marko**
 ```marko
-import getColors from './util/getColors';
+import getDefaultColors from './util/getDefaultColors';
 
 class {
   onInput(input) {
-    var colors = input.colors || getColors();
+    var colors = input.colors || getDefaultColors();
 
     this.state = {
       selectedColor: colors[0],
@@ -524,7 +522,7 @@ class {
 ```
 
 If we do not pass `colors` to the `<color-picker>`, the colors will default
-to the colors obtained from `flat-colors`.
+to the colors obtained our `getDefaultColors` helper.
 
 [Try Online: marko-color-picker](http://markojs.com/try-online/?file=%2Fcolor-picker%2Findex.marko)
 

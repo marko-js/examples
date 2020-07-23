@@ -1,8 +1,8 @@
-import getColors from '../../util/getColors.js'
+import getDefaultColors from '../../util/getDefaultColors.js'
 
 class {
   onInput(input) {
-    var colors = input.colors || getColors();
+    var colors = input.colors || getDefaultColors();
 
     this.state = {
       selectedColor: colors[0],
