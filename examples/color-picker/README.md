@@ -11,7 +11,6 @@ to build a color picker component from scratch. We are going to learn how to:
 
 - Create a project using [marko-cli](https://github.com/marko-js/cli)
 - Create a basic and customizable color picker component
-- Write component tests using [marko-cli](https://github.com/marko-js/cli)
 
 Our final goal for today is create this component:
 
@@ -21,53 +20,25 @@ Our final goal for today is create this component:
 </p>
 <!-- </> -->
 
-[Try Online](http://markojs.com/try-online/?file=%2Fmarko-color-picker%2Findex.marko)
+[Try Online](https://markojs.com/try-online/?example=Color+Picker)
 
 ## Getting Started
 
-[marko-cli](https://github.com/marko-js/cli) comes packaged with
-useful commands for building Marko projects. Projects created using
-[marko-cli](https://github.com/marko-js/cli) come bundled with
-an HTTP server, and a build pipeline using [lasso](https://github.com/lasso-js/lasso)
-making it very easy to get started.
+The quickest way to get up and running with Marko is to use the [`@marko/create`](https://github.com/marko-js/cli/blob/master/packages/create/README.md) cli.
 
-Let's first install [marko-cli](https://github.com/marko-js/cli)
-globally, so we can create our project:
-
-Using `npm`:
-
+For this tutorial lets tell `@marko/create` to give us a basic boilerplate by running the following command:
 ```bash
-npm install -g marko-cli
+npx @marko/create --template basic --dir ./color-picker-tutorial
 ```
 
-Using `yarn`:
+Once the create command has finished, we can move into our new directory and get a development server up and running like so:
 
 ```bash
-yarn global add marko-cli
-```
-
-Now we are ready to create our Marko project:
-
-```bash
-# Creates a `color-picker-tutorial` project in the current directory
-marko create color-picker-tutorial
-```
-
-Let's navigate to the newly created project and install the necessary
-dependencies:
-
-```bash
-cd color-picker-tutorial
-npm install # Or `yarn`
-```
-
-We can now start our demo project to ensure that everything is working
-properly (the dev script uses `marko-serve` - a browser is automatically launched and live-reloads as you make changes):
-
-```bash
-# Start the project!
+cd ./color-picker-tutorial
 npm run dev
 ```
+
+This should open the browser for your automatically.
 
 ## Creating Components
 
@@ -142,9 +113,8 @@ parent component can use our `color-picker`:
 </html>
 ```
 
-Navigating to [localhost:3000](http://localhost:3000) should show us an
-unordered list with list items for each of the colors that we passed as `input`
-to our component.
+Our dev server will indicate that the changes are being compiled and our browser will refresh for us once the process completes.
+The page should now display an unordered list with list items for each of the colors that we passed as `input` to our component.
 
 <!-- <color-list colors=['#333745','#E63462','#FE5F55','#C7EFCF','#EEF5DB','#00B4A6','#007DB6','#FFE972','#9C7671','#0C192B']/>() -->
 <p align="center">
@@ -229,7 +199,7 @@ style {
 
 // In Marko, we immediately start writing a single JavaScript statement by using
 // `$`. For multiple JavaScript statements, use `$ { /* JavaScript here */ }
-$ var color = input.color;
+$ const color = input.color;
 
 <!-- Our markup! -->
 <div.color-picker-header style={backgroundColor: color}>
@@ -258,7 +228,7 @@ tag to it, so it will be rendered.
 ```marko
 class {
   onInput(input) {
-    var colors = input.colors;
+    const colors = input.colors;
 
     this.state = {
       selectedColor: colors[0],
@@ -274,8 +244,7 @@ class {
 
 Marko will automatically watch the `state` object for changes using getters and setters, and if the state changes then the UI component will be re-rendered and the DOM will automatically be updated.
 
-Navigating to [localhost:8080](http://localhost:8080), we should see the
-rendered `<color-picker-header>` with a gray background like so:
+We should now see see the rendered `<color-picker-header>` with a gray background like so:
 
 <!-- <color-picker-header color='#333745'/>() -->
 <p align="center">
@@ -315,7 +284,7 @@ style {
 ```
 
 In this component, we've introduced `on-click` and `on-touchstart` listeners and a single event handler function.
-[Marko components inherit from EventEmitter](http://markojs.com/docs/class-components/#events).
+[Marko components inherit from EventEmitter](https://markojs.com/docs/events/).
 When this color is selected, it will emit a `click` event and get handled by the
 `handleColorSelected` function. The handler then emits a `color-selected` event to be handled by its parent. We will eventually write code to relay this information back to the `<color-picker-header>`, so its background
 color and text can be changed.
@@ -338,25 +307,27 @@ components/
 
 **src/components/color-picker-footer/index.marko**
 ```marko
-$ var colors = input.colors;
+$ const colors = input.colors;
 
 <div.color-picker-footer>
   <div.color-picker-selection-container>
-    <div for(color in colors)>
-      <!--
-      Listen for the `color-selected` event emitted from the
-      <color-picker-selection> component and handle it in this
-      component's `handleColorSelected` method.
-      NOTE: We pass along the `color` to the event handler method
-      -->
-      <color-picker-selection
-        color=color
-        on-color-selected('handleColorSelected', color)/>
-    </div>
-    <input
-      key="hexInput"
-      placeholder="Hex value"
-      on-input('handleHexInput')/>
+    <for|color| of=colors>
+      <div>
+        <!--
+        Listen for the `color-selected` event emitted from the
+        <color-picker-selection> component and handle it in this
+        component's `handleColorSelected` method.
+        NOTE: We pass along the `color` to the event handler method
+        -->
+        <color-picker-selection
+          color=color
+          on-color-selected('handleColorSelected', color)/>
+      </div>
+      <input
+        key="hexInput"
+        placeholder="Hex value"
+        on-input('handleHexInput')/>
+    </for>
   </div>
 </div>
 ```
@@ -429,7 +400,7 @@ component and add the `<color-picker-footer>`:
 ```marko
 class {
   onInput(input) {
-    var colors = input.colors;
+    const colors = input.colors;
 
     this.state = {
       selectedColor: colors[0],
@@ -502,7 +473,7 @@ import getDefaultColors from './util/getDefaultColors';
 
 class {
   onInput(input) {
-    var colors = input.colors || getDefaultColors();
+    const colors = input.colors || getDefaultColors();
 
     this.state = {
       selectedColor: colors[0],
@@ -524,7 +495,7 @@ class {
 If we do not pass `colors` to the `<color-picker>`, the colors will default
 to the colors obtained our `getDefaultColors` helper.
 
-[Try Online: marko-color-picker](http://markojs.com/try-online/?file=%2Fcolor-picker%2Findex.marko)
+[Try Online: marko-color-picker](https://markojs.com/try-online/?example=Color+Picker)
 
 ## Testing
 
@@ -542,8 +513,8 @@ today!
 
 ## Additional Resources
 
-- [GitHub: marko-color-picker](https://github.com/marko-js-samples/samples/color-picker)
-- [Try Online: Color Picker](http://markojs.com/try-online/?file=%2Fmarko-color-picker%2Findex.marko)
+- [GitHub: marko-color-picker](https://github.com/marko-js/examples/tree/master/examples/color-picker)
+- [Try Online: Color Picker](https://markojs.com/try-online/?example=Color+Picker)
 - [marko-cli](https://github.com/marko-js/cli)
 - [Marko Testing Library](https://github.com/marko-js/testing-library)
 
