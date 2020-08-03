@@ -24,7 +24,7 @@ Our final goal for today is create this component:
 
 ## Getting Started
 
-The quickest way to get up and running with Marko is to use the [`@marko/create`](https://github.com/marko-js/cli/blob/master/packages/create/README.md) cli.
+The quickest way to get up and running with Marko is to use the [`@marko/create` cli](https://github.com/marko-js/cli/blob/master/packages/create/README.md).
 
 For this tutorial lets tell `@marko/create` to give us a basic boilerplate by running the following command:
 ```bash
@@ -38,7 +38,7 @@ cd ./color-picker-tutorial
 npm run dev
 ```
 
-This should open the browser for your automatically.
+This should open your default browser automatically.
 
 ## Creating Components
 
