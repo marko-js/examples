@@ -9,10 +9,10 @@
   },
   "private": true,
   "dependencies": {
-    "marko": "^4.21.8"
+    "marko": "^4.22.5"
   },
   "devDependencies": {
-    "@marko/build": "^1.4.0",
-    "@marko/serve": "^1.4.0"
+    "@marko/build": "^2.2.2",
+    "@marko/serve": "^2.2.2"
   }
 }

@@ -18,6 +18,6 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "marko": "^4.18.20"
+    "marko": "^4.22.5"
   }
 }

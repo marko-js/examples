@@ -23,10 +23,10 @@
     "defaultOutputMode": "html"
   },
   "dependencies": {
-    "marko": "^4.18.20"
+    "marko": "^4.22.5"
   },
   "devDependencies": {
-    "@marko/build": "^1.2.0",
-    "@marko/serve": "^1.2.0"
+    "@marko/build": "^2.2.2",
+    "@marko/serve": "^2.2.2"
   }
 }
