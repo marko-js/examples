@@ -28,7 +28,7 @@ The quickest way to get up and running with Marko is to use the [`@marko/create`
 
 For this tutorial lets tell `@marko/create` to give us a basic boilerplate by running the following command:
 ```bash
-npx @marko/create --template basic --dir ./color-picker-tutorial
+npx @marko/create --template basic --name color-picker-tutorial
 ```
 
 Once the create command has finished, we can move into our new directory and get a development server up and running like so:
