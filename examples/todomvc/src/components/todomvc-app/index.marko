@@ -42,11 +42,14 @@ class {
 }
 
 style {
-  @import url("https://unpkg.com/todomvc-app-css@2.0.6/index.css");
+  @import url("https://unpkg.com/todomvc-app-css@2.2.0/index.css");
 }
 
-<div.todoapp>
+<section.todoapp>
   <todomvc-header/>
-  <todomvc-main ...getTodoData()/>
-  <todomvc-footer/>
-</div>
+  <if(todoApp.todos.length)>
+    $ const todoData = getTodoData();
+    <todomvc-main ...todoData/>
+    <todomvc-footer ...todoData/>
+  </if>
+</section>
