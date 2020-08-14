@@ -1,0 +1,83 @@
+class {
+  displayMoreGifs(direction){
+    if(direction.direction === 'left'){
+      if(this.input.currentIndex === 0){
+        return;
+      }
+      this.emit("refreshIndex", {
+        currentIndex: this.input.currentIndex - this.input.numberOfGifsToShow
+      });
+    }
+    if(direction.direction === 'right') {
+      this.emit("refreshIndex", {
+        currentIndex: this.input.currentIndex + this.input.numberOfGifsToShow
+      });
+    }
+  }
+}
+
+<div class="displayGifs">
+  <if(!input.searchTerm)>
+    <p class="displayGifs__error">
+      Search for GIFs as you type!
+    </p>
+  </if>
+  <else-if(!input.giphyResponse || input.giphyResponse.length === 0)>
+    <p class="displayGifs__error">
+      Unable to find GIFs relating to ${input.searchTerm}
+    </p>
+  </else-if>
+  <else-if(input.giphyResponse)>
+    <div class="displayGifs__gifGallery">
+      <scroll-button
+        direction="Prev"
+        on-paginate('displayMoreGifs')
+      />
+      <for|image| of=input.giphyResponse>
+        <div class="displayGifs__gifGalley__image">
+          <a
+            href=image.bitly_url
+            key=image.id
+          >
+            <img
+              class="displayGifs__gifGalley__image__link"
+              src=image.images.fixed_width_small.url
+            >
+          </a>
+        </div>
+      </for>
+      <scroll-button
+        direction="Next"
+        on-paginate(`displayMoreGifs`)
+      />
+    </div>
+  </else-if>
+</div>
+
+style {
+  .displayGifs {
+    position: relative;
+  }
+  .displayGifs__error {
+    color: white;
+    font-size: 30px;
+    text-align: center;
+  }
+  .displayGifs__gifGallery {
+    margin-top: 5%;
+    display: flex;
+    position: relative;
+    left: -35%;
+  }
+  .displayGifs__gifGalley__image {
+    margin-left: 3px;
+    margin-right: 3px;
+    cursor: pointer;
+  }
+  .displayGifs__gifGalley__image__link:hover {
+    border-style: solid;
+    border-color: #00B4CC;
+    border-width: 3px;
+    margin: -3px;
+  }
+}
