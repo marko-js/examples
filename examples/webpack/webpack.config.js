@@ -14,9 +14,9 @@ const spawnedServer =
   isDev &&
   new SpawnServerPlugin({
     args: [
-      // "--inspect", // Allows for debugging the dev process
       "--enable-source-maps"
-    ]
+      // Allow debugging spawned server with the INSPECT_SERVER=1 env var.
+    ].concat(process.env.INSPECT_SERVER ? "--inspect-brk" : [])
   });
 
 module.exports = [
@@ -35,22 +35,8 @@ module.exports = [
             test: /\.(less|css)$/,
             use: [
               CSSExtractPlugin.loader,
-              {
-                loader: "css-loader",
-                options: {
-                  sourceMap: true
-                }
-              },
-              {
-                loader: "postcss-loader",
-                options: {
-                  config: {
-                    ctx: {
-                      env: browserEnv
-                    }
-                  }
-                }
-              },
+              "css-loader",
+              "postcss-loader",
               "less-loader"
             ]
           }
@@ -91,12 +77,12 @@ module.exports = [
   compiler({
     name: "node",
     target: "async-node",
-    devtool: "inline-source-map",
+    devtool: 'inline-nosources-source-map',
     externals: [
       // Exclude node_modules, but ensure non js files are bundled.
       // Eg: `.marko`, `.css`, etc.
       nodeExternals({
-        whitelist: [/\.(?!(?:js|json)$)[^.]+$/]
+        allowlist: [/\.(?!(?:js|json)$)[^.]+$/]
       })
     ],
     module: {
@@ -113,7 +99,7 @@ module.exports = [
     output: {
       libraryTarget: "commonjs2",
       path: path.join(__dirname, "dist/server"),
-      devtoolModuleFilenameTemplate: "[resource-path]"
+      devtoolModuleFilenameTemplate: "[absolute-resource-path]"
     },
     plugins: [
       new webpack.DefinePlugin({
