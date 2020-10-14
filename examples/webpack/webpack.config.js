@@ -46,7 +46,9 @@ module.exports = [
         splitChunks: {
           chunks: "all",
           maxInitialRequests: 3
-        }
+        },
+        minimize: false,
+        namedModules: true
       },
       output: {
         filename: `${filenameTemplate}.js`,
