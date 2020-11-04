@@ -351,7 +351,7 @@ module.exports = class {
       hexInput = this.input.colors[0];
     }
 
-    this.emit('colorSelected', hexInput);
+    this.emit('color-selected', hexInput);
   }
 };
 
