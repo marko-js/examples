@@ -323,11 +323,11 @@ $ const colors = input.colors;
           color=color
           on-color-selected('handleColorSelected', color)/>
       </div>
-      <input
-        key="hexInput"
-        placeholder="Hex value"
-        on-input('handleHexInput')/>
     </for>
+    <input
+       key="hexInput"
+       placeholder="Hex value"
+       on-input('handleHexInput')/>
   </div>
 </div>
 ```
