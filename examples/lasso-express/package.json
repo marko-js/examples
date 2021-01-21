@@ -1,29 +1,23 @@
 {
-  "name": "lass-express",
-  "version": "0.0.1",
-  "description": "Sample Express-based server app that integrates the marko module for rendering a view",
-  "main": "./server.js",
-  "scripts": {
-    "dev": "browser-refresh server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "Patrick Steele-idem <pnidem@gmail.com>",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/marko-js/examples.git"
-  },
-  "bugs": {
-    "url": "https://github.com/marko-js/examples/issues"
-  },
-  "homepage": "https://github.com/marko-js/examples",
+  "name": "lasso-express-example",
+  "description": "Sample Express-based server app that integrates with Marko.",
+  "version": "1.0.0",
   "dependencies": {
-    "@lasso/marko-taglib": "^1.0.15",
-    "browser-refresh": "^1.7.2",
-    "browser-refresh-taglib": "^1.0.3",
-    "express": "^4.9.4",
-    "lasso": "^3.3.1",
-    "lasso-marko": "^2.4.8",
-    "marko": "^4.22.5"
+    "@babel/core": "^7.12.10",
+    "@babel/preset-env": "^7.12.11",
+    "@babel/register": "^7.12.10",
+    "@lasso/marko-taglib": "^2.0.0",
+    "@marko/express": "^1.0.0",
+    "browser-refresh": "^1.7.3",
+    "browser-refresh-taglib": "^1.1.0",
+    "express": "^4.17.1",
+    "lasso": "^3.4.0",
+    "lasso-marko": "^3.0.1",
+    "marko": "^5.0.0"
+  },
+  "private": true,
+  "scripts": {
+    "dev": "browser-refresh --enable-source-maps -r @babel/register -r marko/node-require src/server.js",
+    "start": "NODE_ENV=production node -r @babel/register -r marko/node-require src/server.js"
   }
 }
