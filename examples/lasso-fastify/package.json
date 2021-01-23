@@ -1,0 +1,23 @@
+{
+  "name": "lasso-fastify-example",
+  "description": "Sample Fastify-based server that integrates with Marko.",
+  "version": "1.0.0",
+  "dependencies": {
+    "@babel/core": "^7.12.10",
+    "@babel/preset-env": "^7.12.11",
+    "@babel/register": "^7.12.10",
+    "@lasso/marko-taglib": "^2.0.0",
+    "browser-refresh": "^1.7.3",
+    "browser-refresh-taglib": "^1.1.0",
+    "fastify": "^3.10.1",
+    "fastify-static": "3.4.0",
+    "lasso": "^3.4.0",
+    "lasso-marko": "^3.0.1",
+    "marko": "^5.0.0"
+  },
+  "private": true,
+  "scripts": {
+    "dev": "browser-refresh --enable-source-maps -r @babel/register -r marko/node-require src/server.js",
+    "start": "NODE_ENV=production node -r @babel/register -r marko/node-require src/server.js"
+  }
+}

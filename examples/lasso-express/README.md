@@ -6,8 +6,8 @@ This sample app illustrates how to integrate Marko with a very basic Express app
 # Installation
 
 ```
-npx @marko/create marko-express --template lasso-express 
-cd marko-express
+npx @marko/create marko-app --template lasso-express 
+cd marko-app
 npm install
 npm run dev
 ```

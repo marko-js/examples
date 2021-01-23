@@ -32,12 +32,11 @@ module.exports = [
       module: {
         rules: [
           {
-            test: /\.(less|css)$/,
+            test: /\.css$/,
             use: [
               CSSExtractPlugin.loader,
               "css-loader",
-              "postcss-loader",
-              "less-loader"
+              "postcss-loader"
             ]
           }
         ]
@@ -56,8 +55,8 @@ module.exports = [
       },
       devServer: isDev
         ? {
+            port: 3000,
             overlay: true,
-            host: "0.0.0.0",
             contentBase: false,
             disableHostCheck: true,
             headers: { "Access-Control-Allow-Origin": "*" },
@@ -90,7 +89,7 @@ module.exports = [
     module: {
       rules: [
         {
-          test: /\.(less|css)$/,
+          test: /\.css$/,
           loader: "ignore-loader"
         }
       ]
@@ -115,7 +114,7 @@ module.exports = [
 
 // Shared config for both server and client compilers.
 function compiler(config) {
-  const publicPath = "/assets/";
+  const publicPath = "/static/";
   const babelConfig = {
     caller: {
       target: config.target,
