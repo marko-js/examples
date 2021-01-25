@@ -1,11 +1,15 @@
+import imgCO from "./assets/CO.png";
+import imgCA from "./assets/CA.png";
 static const states = [
   {
     name: "Colorado",
-    value: "CO"
+    value: "CO",
+    img: imgCO
   },
   {
     name: "California",
-    value: "CA"
+    value: "CA",
+    img: imgCA
   }
 ];
 
@@ -34,7 +38,6 @@ style {
 
 <div>
   <h3>Choose a state</h3>
-
   <select onChange("handleSelectChange")>
     <option value="" selected=(state.stateIndex == null)>(choose a state)</option>
     <for|stateInfo, i| of=states>
@@ -43,8 +46,8 @@ style {
       </option>
     </for>
   </select>
-
   <if(state.stateIndex != null)>
     <div>You selected: ${states[state.stateIndex].value}</div>
+    <img src=states[state.stateIndex].img/>
   </if>
 </div>

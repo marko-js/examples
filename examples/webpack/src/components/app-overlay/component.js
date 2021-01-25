@@ -1,36 +1,32 @@
-module.exports = {
-  onInput: function(input) {
-    this.state = {
-      width: input.width || "80%",
-      visible: input.visible === true ? true : false,
-      body: input.renderBody
-    };
-  },
+export default class {
+  onInput(input) {
+    this.state = { visible: Boolean(input.visible) };
+  }
 
-  onMount: function() {
+  onMount() {
     this.fixPageScrolling();
-  },
+  }
 
-  onUpdate: function() {
+  onUpdate() {
     this.fixPageScrolling();
-  },
+  }
 
-  fixPageScrolling: function() {
+  fixPageScrolling() {
     if (this.state.visible === true) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
     }
-  },
+  }
 
-  hide: function() {
+  hide() {
     this.setVisibility(false);
-  },
-  show: function() {
+  }
+  show() {
     this.setVisibility(true);
-  },
+  }
 
-  setVisibility: function(visible) {
+  setVisibility(visible) {
     if (this.state.visible === visible) {
       // Visibility did not change... nothing to do
       return;
@@ -42,26 +38,26 @@ module.exports = {
       this.emit("hide");
     }
 
-    this.setState("visible", visible);
-  },
+    this.state.visible = visible;
+  }
 
-  handleMaskClick: function() {
+  handleMaskClick() {
     this.hide();
-  },
-  handleCancelButtonClick: function() {
+  }
+  handleCancelButtonClick() {
     this.emit("cancel", {});
     this.hide();
-  },
-  handleDoneButtonClick: function() {
-    var preventDefault = false;
+  }
+  handleDoneButtonClick() {
+    let defaultPrevented = false;
 
     this.emit("ok", {
-      preventDefault: function() {
-        preventDefault = true;
+      preventDefault() {
+        defaultPrevented = true;
       }
     });
 
-    if (!preventDefault) {
+    if (!defaultPrevented) {
       this.hide();
     }
   }

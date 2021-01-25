@@ -40,9 +40,9 @@
 }
 
 .number-spinner.positive input {
-  background: #56efa5;
+  background: rgb(86, 239, 165);
 }
 
 .number-spinner.negative input {
-  background: #ebb6b0;
+  background: rgb(235, 182, 176);
 }

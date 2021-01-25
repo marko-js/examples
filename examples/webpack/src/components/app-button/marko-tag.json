@@ -1,6 +1,5 @@
 {
   "@label": "string",
-  "@href": "string",
   "@variant": {
     "type": "string",
     "enum": ["primary", "secondary"]

@@ -1,29 +1,30 @@
-module.exports = {
-  onInput: function(input) {
-    var steps = input.steps || [];
-    var activeIndex = 0;
+export default class {
+  onInput(input) {
+    let activeIndex = 0;
 
-    steps.forEach(function(step) {
-      if (step.active) {
-        activeIndex = steps.length;
-      }
-    });
+    if (input.steps) {
+      input.steps.forEach((step, i) => {
+        if (step.active) {
+          activeIndex = i;
+        }
+      });
+    }
 
     this.state = {
-      steps: steps,
-      activeIndex: activeIndex
+      activeIndex
     };
-  },
+  }
 
   setCurrentStepIndex(index) {
-    if (this.state.activeIndex === index) {
+    const { state, input } = this;
+    if (state.activeIndex === index) {
       return;
     }
 
-    var defaultPrevented = false;
+    let defaultPrevented = false;
 
     this.emit("beforeChange", {
-      step: this.state.steps[this.state.activeIndex],
+      step: input.steps[state.activeIndex],
       preventDefault() {
         defaultPrevented = true;
       }
@@ -33,15 +34,15 @@ module.exports = {
       return;
     }
 
-    var newStep = this.state.steps[index];
+    const newStep = input.steps[index];
 
-    this.state.activeIndex = index;
+    state.activeIndex = index;
 
     this.emit("change", {
       name: newStep.name,
       index: index
     });
-  },
+  }
 
   handleStepClick(stepIndex, event) {
     event.preventDefault();

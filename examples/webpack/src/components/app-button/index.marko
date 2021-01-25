@@ -9,18 +9,29 @@ class {
   }
 }
 
-$ const size = input.size || "normal";
-$ const variant = input.variant || "primary";
-$ const variantClassName = variant !== "primary" && "app-button-" + variant;
-$ const sizeClassName = size !== "normal" && "app-button-" + size;
+$ const {
+  label,
+  class: className,
+  size = "normal",
+  variant = "primary",
+  ...attrs
+} = input;
+
 <button
-  ...input["*"]
-  class=["app-button", variantClassName, sizeClassName, input["class"]]
+  ...attrs
+  class=[
+    className,
+    "app-button",
+    variant !== "primary" && `app-button-${variant}`,
+    size !== "normal" && `app-button-${size}`
+  ]
   onClick("handleClick")>
   <span>
-    <if(input.label)>${input.label}</if>
+    <if(label)>
+      ${label}
+    </if>
     <else>
-      <${input}/>
+      <${input.renderBody}/>
     </else>
   </span>
 </button>

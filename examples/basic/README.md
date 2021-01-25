@@ -1,8 +1,17 @@
 # Thanks for checking out Marko
 
+# Installation
+
+```
+npx @marko/create marko-app --template basic
+cd marko-app
+npm install
+npm run dev
+```
+
 ## Overview
 
-This project is powered by `@marko/serve` and `@marko/build`.  
+This project is powered by `@marko/serve` and `@marko/build`.
 
 - Run `npm run dev` to start the development server
 - Run `npm run build` to build a production-ready node.js server

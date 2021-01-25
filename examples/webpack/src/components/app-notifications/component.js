@@ -1,47 +1,44 @@
-var raptorPubsub = require("raptor-pubsub");
+import raptorPubsub from "raptor-pubsub";
 
-var nextId = 0;
+let nextId = 0;
 
-module.exports = {
+export default class {
   onInput(input) {
     this.state = {
       notifications: input.notifications || []
     };
-  },
+  }
 
   onMount() {
-    var self = this;
-
-    this.subscribeTo(raptorPubsub).on("notification", function(eventArgs) {
-      var message = eventArgs.message;
-      self.addNotification(message);
+    this.subscribeTo(raptorPubsub).on("notification", ({ message }) => {
+      this.addNotification(message);
     });
-  },
+  }
 
   addNotification(message) {
-    var notifications = this.state.notifications;
-    var notificationId = "notification" + nextId++;
-    notifications = [
+    const { state } = this;
+    const notificationId = "notification" + nextId++;
+
+    state.notifications = [
       {
         message: message,
         id: notificationId
       }
-    ].concat(notifications);
-
-    this.setState("notifications", notifications);
+    ].concat(state.notifications);
 
     setTimeout(() => {
       this.removeNotification(notificationId);
     }, 3000);
-  },
+  }
 
   removeNotification(notificationId) {
-    var notificationWidget = this.getComponent(notificationId);
-    notificationWidget.fadeOut(() => {
-      var notifications = this.state.notifications.filter(notification => {
-        return notification.id !== notificationId;
-      });
-      this.setState("notifications", notifications);
+    const { state } = this;
+    const notificationComponent = this.getComponent(notificationId);
+
+    notificationComponent.fadeOut(() => {
+      state.notifications = state.notifications.filter(
+        notification => notification.id !== notificationId
+      );
     });
   }
 };

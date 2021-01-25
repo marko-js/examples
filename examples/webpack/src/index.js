@@ -1,32 +1,21 @@
 import express from "express";
-
-const app = express();
-const port = process.env.PORT || 8080;
-
-// Enable gzip compression for all HTTP responses
 import compression from "compression";
-app.use(compression());
-app.use(express.static('public'));
+import indexPage from "./pages/index";
+import usersService from "./services/users";
 
-// Allow all of the generated files to be served up by Express
-import serveStatic from "serve-static";
-app.use("/static", serveStatic("dist/client"));
+const port = process.env.PORT || 3000;
 
-// Initialize mock service routes
-import initServices from "./services/routes";
-initServices(app);
+express()
+  .use(compression()) // Enable gzip compression for all HTTP responses
+  .use("/static", express.static("dist/client")) // Serve assets generated from webpack.
+  .get("/", indexPage)
+  .get("/services/users", usersService)
+  .listen(port, err => {
+    if (err) {
+      throw err;
+    }
 
-// Map the "/" route to the home page
-import HomePage from "./pages/home";
-app.get("/", HomePage);
-
-// Start the server
-app.listen(port, err => {
-  if (err) {
-    throw err;
-  }
-
-  if (port !== "0") {
-    console.log(`Listening on port ${port}`);
-  }
-});
+    if (port !== "0") {
+      console.log(`Listening on port ${port}`);
+    }
+  });

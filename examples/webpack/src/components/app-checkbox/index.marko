@@ -17,18 +17,14 @@ class {
     this.state.checked = !this.state.checked;
   }
 
-  getData() {
-    return this.input.data;
-  }
-
   handleClick() {
     const newChecked = !this.state.checked;
     let defaultPrevented = false;
 
     this.emit("toggle", {
       checked: newChecked,
-      data: this.getData(),
-      preventDefault: function() {
+      data: this.input.data,
+      preventDefault() {
         defaultPrevented = true;
       }
     });
@@ -39,21 +35,28 @@ class {
   }
 }
 
+$ const {
+  label,
+  class: className,
+  ...attrs
+} = input;
+
 <app-button
   key="button"
+  ...attrs
   class=[
     "app-checkbox",
-    input["class"],
-    {
-      checked: state.checked
-    }
+    className,
+    { checked: state.checked }
   ]
   onClick("handleClick")>
   <span class="app-checkbox-icon"/>
   <span key="checkboxLabel">
-    <if(input.label)>${input.label}</if>
+    <if(label)>
+      ${label}
+    </if>
     <else>
-      <${input}/>
+      <${input.renderBody}/>
     </else>
   </span>
 </app-button>

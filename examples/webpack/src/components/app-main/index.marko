@@ -103,7 +103,7 @@
         label="Show Notification"
         variant="primary"
         onClick("handleShowNotificationButtonClick")/>
-      <app-notifications key="notifications" no-update/>
+      <app-notifications key="notifications"/>
       <app-overlay
         onOk("handleOverlayOk")
         onCancel("handleOverlayCancel")
@@ -152,34 +152,34 @@
       <div key="renderTarget" class="render-target" no-update-body/>
     </@section>
     <@section title="Fetch data">
-      <app-fetch-data no-update/>
+      <app-fetch-data/>
     </@section>
     <@section title="Markdown">
       <app-markdown>
-                ---
+        ---
 
-                > This section demonstrates Markdown in Marko
+        > This section demonstrates Markdown in Marko
 
-                ## Marko Features
+        ## Marko Features
 
-                - High performance
-                - Small
-                - Intuitive
+        - High performance
+        - Small
+        - Intuitive
 
-                # H1
-                ## H2
-                ### H3
-                #### H4
-                ##### H5
-                ###### H6
+        # H1
+        ## H2
+        ### H3
+        #### H4
+        ##### H5
+        ###### H6
 
-                [markojs.com](http://markojs.com/)
+        [markojs.com](http://markojs.com/)
 
-                _emphasis_
-                __strong__
+        _emphasis_
+        __strong__
 
-                ---
-            </app-markdown>
+        ---
+      </app-markdown>
     </@section>
   </app-sections>
 </div>
