@@ -4,7 +4,7 @@ const nodeExternals = require("webpack-node-externals");
 const MarkoPlugin = require("@marko/webpack/plugin").default;
 const CSSExtractPlugin = require("mini-css-extract-plugin");
 const SpawnServerPlugin = require("spawn-server-webpack-plugin");
-const OptimizeCssAssetsPlugin = require("optimize-css-assets-webpack-plugin");
+const MinifyCSSPlugin = require("css-minimizer-webpack-plugin");
 
 const { NODE_ENV } = process.env;
 const isProd = NODE_ENV === "production";
@@ -46,8 +46,7 @@ module.exports = [
           chunks: "all",
           maxInitialRequests: 3
         },
-        minimize: false,
-        namedModules: true
+        minimize: false
       },
       output: {
         filename: `${filenameTemplate}.js`,
@@ -57,6 +56,7 @@ module.exports = [
         ? {
             port: 3000,
             overlay: true,
+            host: "0.0.0.0",
             contentBase: false,
             disableHostCheck: true,
             headers: { "Access-Control-Allow-Origin": "*" },
@@ -70,7 +70,7 @@ module.exports = [
         new CSSExtractPlugin({
           filename: `${filenameTemplate}.css`
         }),
-        isProd && new OptimizeCssAssetsPlugin(),
+        isProd && new MinifyCSSPlugin(),
         markoPlugin.browser
       ]
     });
@@ -126,6 +126,9 @@ function compiler(config) {
     ...config,
     bail: true,
     mode: isProd ? "production" : "development",
+    cache: {
+      type: "filesystem"
+    },
     output: {
       publicPath,
       ...config.output
