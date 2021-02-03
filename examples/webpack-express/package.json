@@ -34,6 +34,7 @@
   "scripts": {
     "build": "rm -rf ./dist && NODE_ENV=production webpack --progress",
     "dev": "webpack serve",
+    "dev:inspect": "INSPECT=1 npm run dev",
     "start": "NODE_ENV=production node dist/server/main.js"
   }
 }

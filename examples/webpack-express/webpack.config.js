@@ -15,8 +15,8 @@ const spawnedServer =
   new SpawnServerPlugin({
     args: [
       "--enable-source-maps"
-      // Allow debugging spawned server with the INSPECT_SERVER=1 env var.
-    ].concat(process.env.INSPECT_SERVER ? "--inspect-brk" : [])
+      // Allow debugging spawned server with the INSPECT=1 env var.
+    ].concat(process.env.INSPECT ? "--inspect" : [])
   });
 
 module.exports = [
