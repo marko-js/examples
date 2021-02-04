@@ -9,8 +9,8 @@
     "raptor-util": "^1.1.2"
   },
   "devDependencies": {
-    "@marko/build": "^3",
-    "@marko/serve": "^3"
+    "@marko/build": "^4",
+    "@marko/serve": "^4"
   },
   "private": true,
   "scripts": {

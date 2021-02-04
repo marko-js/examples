@@ -27,7 +27,7 @@ module.exports = [
     return compiler({
       name: browserEnv,
       target: "web",
-      devtool: "source-map",
+      devtool: isProd ? "cheap-module-source-map" : 'eval-cheap-module-source-map',
       stats: isDev && "minimal",
       module: {
         rules: [
@@ -45,8 +45,7 @@ module.exports = [
         splitChunks: {
           chunks: "all",
           maxInitialRequests: 3
-        },
-        minimize: false
+        }
       },
       output: {
         filename: `${filenameTemplate}.js`,
@@ -78,7 +77,7 @@ module.exports = [
   compiler({
     name: "node",
     target: "async-node",
-    devtool: 'inline-nosources-source-map',
+    devtool: 'inline-nosources-cheap-module-source-map',
     externals: [
       // Exclude node_modules, but ensure non js files are bundled.
       // Eg: `.marko`, `.css`, etc.
@@ -116,6 +115,9 @@ module.exports = [
 function compiler(config) {
   const publicPath = "/static/";
   const babelConfig = {
+    comments: false,
+    compact: false,
+    babelrc: false,
     caller: {
       target: config.target,
       compiler: config.name
@@ -124,7 +126,6 @@ function compiler(config) {
 
   return {
     ...config,
-    bail: true,
     mode: isProd ? "production" : "development",
     cache: {
       type: "filesystem"
