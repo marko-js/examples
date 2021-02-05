@@ -20,14 +20,17 @@ const spawnedServer =
   });
 
 module.exports = [
-  ...["modern", isProd && "legacy"].filter(Boolean).map(browserEnv => {
+  ...["modern", isProd && "legacy"].filter(Boolean).map((env, i) => {
     const filenameTemplate = `${
-      isProd ? "[id]" : `[name].${browserEnv}`
+      isProd ? "[id]" : `[name].${env}`
     }.[contenthash:8]`;
     return compiler({
-      name: browserEnv,
-      target: "web",
-      devtool: isProd ? "cheap-module-source-map" : 'eval-cheap-module-source-map',
+      env,
+      name: `browser:${env}`,
+      target: `browserslist:${env}`,
+      devtool: isProd
+        ? "cheap-module-source-map"
+        : "eval-cheap-module-source-map",
       stats: isDev && "minimal",
       module: {
         rules: [
@@ -36,7 +39,14 @@ module.exports = [
             use: [
               CSSExtractPlugin.loader,
               "css-loader",
-              "postcss-loader"
+              {
+                loader: "postcss-loader",
+                options: {
+                  postcssOptions: {
+                    env
+                  }
+                }
+              }
             ]
           }
         ]
@@ -51,7 +61,7 @@ module.exports = [
         filename: `${filenameTemplate}.js`,
         path: path.join(__dirname, "dist/client")
       },
-      devServer: isDev
+      devServer: isDev && i === 0
         ? {
             port: 3000,
             overlay: true,
@@ -75,9 +85,9 @@ module.exports = [
     });
   }),
   compiler({
-    name: "node",
+    name: "server",
     target: "async-node",
-    devtool: 'inline-nosources-cheap-module-source-map',
+    devtool: "inline-nosources-cheap-module-source-map",
     externals: [
       // Exclude node_modules, but ensure non js files are bundled.
       // Eg: `.marko`, `.css`, etc.
@@ -112,16 +122,13 @@ module.exports = [
 ];
 
 // Shared config for both server and client compilers.
-function compiler(config) {
+function compiler({ env, ...config }) {
   const publicPath = "/static/";
   const babelConfig = {
     comments: false,
     compact: false,
     babelrc: false,
-    caller: {
-      target: config.target,
-      compiler: config.name
-    }
+    caller: { env }
   };
 
   return {
