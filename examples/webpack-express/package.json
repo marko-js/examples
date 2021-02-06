@@ -13,6 +13,7 @@
     "@babel/core": "^7.12.10",
     "@babel/preset-env": "^7.12.11",
     "@marko/compiler": "^5.1.8",
+    "@marko/express": "^1.0.0",
     "@marko/webpack": "^7.0.0",
     "babel-loader": "^8.2.2",
     "css-loader": "^5.0.1",

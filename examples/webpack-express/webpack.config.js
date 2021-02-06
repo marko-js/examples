@@ -21,9 +21,7 @@ const spawnedServer =
 
 module.exports = [
   ...["modern", isProd && "legacy"].filter(Boolean).map((env, i) => {
-    const filenameTemplate = `${
-      isProd ? "[id]" : `[name].${env}`
-    }.[contenthash:8]`;
+    const filenameTemplate = `${isProd ? "" : `[name].${env}.`}[contenthash:8]`;
     return compiler({
       env,
       name: `browser:${env}`,
@@ -31,7 +29,6 @@ module.exports = [
       devtool: isProd
         ? "cheap-module-source-map"
         : "eval-cheap-module-source-map",
-      stats: isDev && "minimal",
       module: {
         rules: [
           {
@@ -61,17 +58,18 @@ module.exports = [
         filename: `${filenameTemplate}.js`,
         path: path.join(__dirname, "dist/client")
       },
-      devServer: isDev && i === 0
-        ? {
-            port: 3000,
-            overlay: true,
-            host: "0.0.0.0",
-            contentBase: false,
-            disableHostCheck: true,
-            headers: { "Access-Control-Allow-Origin": "*" },
-            ...spawnedServer.devServerConfig
-          }
-        : undefined,
+      devServer:
+        isDev && i === 0
+          ? {
+              port: 3000,
+              overlay: true,
+              host: "0.0.0.0",
+              contentBase: false,
+              disableHostCheck: true,
+              headers: { "Access-Control-Allow-Origin": "*" },
+              ...spawnedServer.devServerConfig
+            }
+          : undefined,
       plugins: [
         new webpack.DefinePlugin({
           "typeof window": "'object'"
@@ -134,6 +132,7 @@ function compiler({ env, ...config }) {
   return {
     ...config,
     mode: isProd ? "production" : "development",
+    stats: isDev && "minimal",
     cache: {
       type: "filesystem"
     },
