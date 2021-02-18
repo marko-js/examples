@@ -67,6 +67,7 @@ module.exports = [
               contentBase: false,
               disableHostCheck: true,
               headers: { "Access-Control-Allow-Origin": "*" },
+              injectClient: ({ name }) => name.startsWith("browser"),
               ...spawnedServer.devServerConfig
             }
           : undefined,
