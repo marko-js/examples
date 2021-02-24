@@ -1,0 +1,11 @@
+[legacy]
+>0.2%
+not dead
+not op_mini all
+
+[modern]
+Safari >= 10.1
+Chrome >= 61
+Firefox >= 60
+Edge >= 16
+unreleased versions

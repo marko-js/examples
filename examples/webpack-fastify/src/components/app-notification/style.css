@@ -1,0 +1,18 @@
+.app-notification {
+  opacity: 0;
+  transition-property: max-height, opacity;
+  transition-duration: 0.3s;
+  transition-timing-function: ease-out;
+  max-height: 0px;
+  margin-top: 8px;
+  background-color: #2ecc71;
+  color: white;
+  width: 100%;
+  border: 2px solid #1b7943;
+  padding-left: 1em;
+  padding-right: 1em;
+  line-height: 40px;
+  vertical-align: middle;
+  border-radius: 4px;
+  box-shadow: 3px 3px 3px rgba(51, 65, 80, 0.35);
+}
