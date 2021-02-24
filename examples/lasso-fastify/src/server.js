@@ -1,6 +1,7 @@
 import path from "path";
 import fastify from "fastify";
-import serveStatic from "fastify-static";
+import fastifyStatic from "fastify-static";
+import fastifyMarko from "@marko/fastify";
 import { configure } from "lasso";
 import homePage from "./pages/home";
 
@@ -18,10 +19,11 @@ configure({
 });
 
 fastify()
-  .register(serveStatic, {
+  .register(fastifyStatic, {
     root: outputDir,
     prefix: "/static"
   })
+  .register(fastifyMarko)
   .get("/", homePage)
   .listen(3000, (err, address) => {
     if (err) {

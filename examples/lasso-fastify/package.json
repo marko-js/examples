@@ -6,6 +6,7 @@
     "@babel/core": "^7.12.10",
     "@babel/preset-env": "^7.12.11",
     "@babel/register": "^7.12.10",
+    "@marko/fastify": "^1.0.0",
     "@lasso/marko-taglib": "^2.0.0",
     "browser-refresh": "^1.7.3",
     "browser-refresh-taglib": "^1.1.0",
