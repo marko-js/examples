@@ -1,0 +1,7 @@
+{
+    "@label": "string",
+    "@data": "expression",
+    "@checked": "boolean",
+    "@class": "string",
+    "@*": "string"
+}
