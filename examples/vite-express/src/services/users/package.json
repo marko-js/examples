@@ -1,0 +1,5 @@
+{
+    "browser": {
+        "./load.js": "./load-browser.js"
+    }
+}

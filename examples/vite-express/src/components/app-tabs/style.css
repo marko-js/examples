@@ -1,0 +1,49 @@
+.app-tabs ul.tab-nav {
+    padding-left: 0;
+    list-style: none;
+}
+
+.app-tabs ul.tab-nav > li {
+    float: left;
+}
+
+.app-tabs ul.tab-nav > li > a {
+    margin-right: 2px;
+    line-height: 1.42857143;
+    border: 1px solid var(--button-secondary-bg);
+    margin-left: 10px;
+    border-radius: 4px 4px 0 0;
+    padding-left: 1em;
+    padding-right: 1em;
+    padding-bottom: 0.5em;
+    padding-top: 0.5em;
+    display: inline-block;
+    margin-bottom: -1px;
+    background-color: var(--button-secondary-bg);
+    color: var(--button-secondary-fg);
+}
+
+.app-tabs ul.tab-nav > li:first-child > a {
+    margin-left: 0px;
+}
+
+.app-tabs .tab.active > a {
+    background-color: transparent;
+    border-bottom: 1px solid white;
+    color: inherit;
+}
+
+.app-tabs .tab-panes {
+    clear: both;
+
+}
+
+.app-tabs .tab-pane {
+    display: none;
+    border: 1px solid  var(--button-secondary-bg);
+    padding: 1em;
+}
+
+.app-tabs .tab-pane.active {
+    display: block;
+}
