@@ -1,0 +1,7 @@
+{
+  "parse-options": {
+    "state": "static-text",
+    "preserveWhitespace": true
+  },
+  "code-generator": "./code-generator"
+}

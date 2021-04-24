@@ -1,0 +1,48 @@
+.number-spinner button {
+  background: #4285f4;
+  color: #ffffff;
+  border: 1px solid #1266f1;
+  display: inline-block;
+  padding: 12px 32px;
+  height: 26px;
+  line-height: 26px;
+  vertical-align: middle;
+  text-align: center;
+  font-family: Helvetica, sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  outline: 0;
+  transition: none;
+  margin: 0;
+  padding: 0;
+  padding-left: 13px;
+  padding-right: 13px;
+  cursor: pointer;
+}
+
+.number-spinner input {
+  background: #fff;
+  border: 1px solid #1266f1;
+  display: inline-block;
+  height: 26px;
+  line-height: 26px;
+  vertical-align: middle;
+  text-align: center;
+  font-family: Helvetica, sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  outline: 0;
+  transition: none;
+  margin: 0;
+  padding: 0;
+  padding-left: 13px;
+  padding-right: 13px;
+}
+
+.number-spinner.positive input {
+  background: rgb(86, 239, 165);
+}
+
+.number-spinner.negative input {
+  background: rgb(235, 182, 176);
+}

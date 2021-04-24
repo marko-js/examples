@@ -1,0 +1,69 @@
+.app-overlay > .app-overlay-mask {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  right: 0px;
+  bottom: 0px;
+  visibility: hidden;
+  background-color: #000;
+  opacity: 0;
+  transition-property: opacity, visibility;
+  transition-duration: 0.3s;
+  transition-timing-function: ease-out;
+}
+
+.app-overlay.visible > .app-overlay-mask {
+  visibility: visible;
+  opacity: 0.8;
+  z-index: 999;
+}
+
+.app-overlay > .app-overlay-container {
+  position: fixed;
+  top: -50%;
+  transform: translateX(-50%) translateY(-50%);
+  left: 50%;
+  background-color: white;
+  opacity: 0;
+  transition-property: opacity, top;
+  transition-duration: 0.2s;
+  transition-timing-function: ease-out;
+  border-radius: 5px;
+  overflow: auto;
+  z-index: 1000;
+}
+
+.app-overlay.visible > .app-overlay-container {
+  top: 50%;
+  opacity: 1;
+}
+
+.app-overlay-body {
+  padding: 1em;
+}
+
+.app-overlay-footer {
+  width: 100%;
+  bottom: 0px;
+  left: 0px;
+  text-align: right;
+  padding: 1em;
+  padding-top: 2em;
+}
+
+.app-overlay > .app-overlay-container .app-overlay > .app-overlay-container {
+  height: 100%;
+}
+
+.app-overlay
+  > .app-overlay-container
+  .app-overlay
+  > .app-overlay-container
+  .app-overlay-footer {
+  position: absolute;
+  height: 48px;
+  left: 0px;
+  bottom: 0px;
+  width: 100%;
+  padding-top: 0px;
+}
