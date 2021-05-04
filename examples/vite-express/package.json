@@ -12,6 +12,7 @@
   "devDependencies": {
     "@marko/compiler": "^5.10.0",
     "@marko/vite": "^1.3.1",
+    "cross-env": "^7.0.3",
     "marked": "^2.0.3",
     "rimraf": "^3.0.2",
     "vite": "^2.2.4"
@@ -19,10 +20,10 @@
   "private": true,
   "scripts": {
     "build": "rimraf dist && npm run build:server && npm run build:client",
-    "build:client": "npm run env NODE_ENV=production -- vite build",
-    "build:server": "npm run env NODE_ENV=production -- vite build --ssr src/index.js",
+    "build:client": "cross-env NODE_ENV=production vite build",
+    "build:server": "cross-env NODE_ENV=production vite build --ssr src/index.js",
     "dev": "node --enable-source-maps index.js",
     "dev:inspect": "node --inspect --enable-source-maps index.js",
-    "start": "npm run env NODE_ENV=production -- node --enable-source-maps index.js"
+    "start": "cross-env NODE_ENV=production node --enable-source-maps index.js"
   }
 }
