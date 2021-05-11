@@ -351,7 +351,7 @@ module.exports = class {
       hexInput = this.input.colors[0];
     }
 
-    this.emit('colorSelected', hexInput);
+    this.emit('color-selected', hexInput);
   }
 };
 
@@ -469,7 +469,7 @@ colors as the default when none are passed as part of the `input`:
 
 **components/color-picker/index.marko**
 ```marko
-import getDefaultColors from './util/getDefaultColors';
+import getDefaultColors from '../../util/getDefaultColors';
 
 class {
   onInput(input) {
