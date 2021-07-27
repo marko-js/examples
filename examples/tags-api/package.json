@@ -1,0 +1,19 @@
+{
+  "name": "tags-api",
+  "description": "The Marko starter app with the tags api preview enabled",
+  "version": "1.0.0",
+  "dependencies": {
+    "@marko/tags-api-preview": "^0",
+    "marko": "^5"
+  },
+  "devDependencies": {
+    "@marko/build": "^4",
+    "@marko/serve": "^4"
+  },
+  "private": true,
+  "scripts": {
+    "build": "marko-build ./src/pages",
+    "dev": "marko-serve ./src/pages",
+    "start": "NODE_ENV=production node ./build/index.js"
+  }
+}
