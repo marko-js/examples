@@ -1,0 +1,7 @@
+<const/isComplete = false />
+<const/value = -100 />
+<const/style = {
+    textDecoration: isComplete ? "line-through" : "none",
+    color: value < 0 ? "red" : "black"
+}/>
+<div style=style>${value}</div>

@@ -1,0 +1,11 @@
+<tag/greeting|{ name, color }|>
+    <div
+        class="greeting"
+        style={
+            backgroundColor: color
+        }>
+        Hello ${name}!
+    </div>
+</tag>
+<!-- Macros can be used like any other tag -->
+<${greeting} name="World" color="green"/>
