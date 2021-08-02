@@ -1,32 +1,18 @@
 {
   "name": "language-guide",
-  "version": "1.0.1",
-  "description": "Language Guide",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/marko-js/examples.git"
-  },
-  "bugs": {
-    "url": "https://github.com/marko-js/examples/issues"
-  },
-  "homepage": "https://github.com/marko-js/examples",
-  "scripts": {
-    "dev": "marko-serve src/pages/index.marko",
-    "build": "marko-build ./src/pages/index.marko",
-    "start": "node ./build/index.js",
-    "format": "marko prettyprint ./src/pages/index.marko ./src/components",
-    "build-prod": "LASSO_TIMEOUT=200000 NODE_ENV=production npm run build"
-  },
-  "private": true,
-  "tryOnline": {
-    "defaultOutputMode": "html"
-  },
+  "description": "Marko language guide and examples",
+  "version": "1.0.0",
   "dependencies": {
-    "marko": "^4.22.5"
+    "marko": "^5"
   },
   "devDependencies": {
-    "@marko/build": "^2.2.2",
-    "@marko/serve": "^2.2.2"
+    "@marko/build": "^4",
+    "@marko/serve": "^4"
+  },
+  "private": true,
+  "scripts": {
+    "build": "marko-build ./src/pages",
+    "dev": "marko-serve ./src/pages",
+    "start": "node ./build/index.js"
   }
 }

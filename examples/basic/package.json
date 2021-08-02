@@ -1,18 +1,18 @@
 {
   "name": "basic",
+  "description": "The default Marko starter app",
   "version": "1.0.0",
-  "description": "the default starter app",
-  "scripts": {
-    "dev": "marko-serve ./src/pages",
-    "build": "marko-build ./src/pages",
-    "start": "NODE_ENV=production node ./build/index.js"
-  },
-  "private": true,
   "dependencies": {
-    "marko": "^4.22.5"
+    "marko": "^5"
   },
   "devDependencies": {
-    "@marko/build": "^2.2.2",
-    "@marko/serve": "^2.2.2"
+    "@marko/build": "^4",
+    "@marko/serve": "^4"
+  },
+  "private": true,
+  "scripts": {
+    "build": "marko-build ./src/pages",
+    "dev": "marko-serve ./src/pages",
+    "start": "NODE_ENV=production node ./build/index.js"
   }
 }

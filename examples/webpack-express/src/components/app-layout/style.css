@@ -1,0 +1,138 @@
+:root {
+  --medium-color: #2980b9;
+  --light-color: #a9d1ec;
+  --dark-color: #123851;
+
+  --link-color: --medium-color;
+
+  --font-color: #333;
+  --font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue",
+    Helvetica, Arial, sans-serif;
+
+  --button-bg: var(--medium-color);
+  --button-fg: #fff;
+
+  --button-secondary-bg: #999999;
+  --button-secondary-fg: #fff;
+}
+
+body {
+  font-family: var(--font-family);
+  color: var(--font-color);
+  padding: 0;
+  margin: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.container {
+  margin-left: auto;
+  margin-right: auto;
+  width: 800px;
+}
+
+button::-moz-focus-inner,
+input::-moz-focus-inner {
+  border: 0;
+  padding: 0;
+}
+
+ul,
+ol {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+form,
+img {
+  margin: 0;
+  padding: 0;
+}
+
+img {
+  border-width: 0;
+}
+
+textarea,
+input {
+  font-size: 14px;
+  font-family: var(--font-family);
+}
+
+select {
+  margin: 0;
+}
+
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+td {
+  padding: 0;
+  margin: 0;
+  border-width: 0;
+}
+
+pre {
+  margin: 0;
+  padding: 0;
+}
+
+h1,
+h2,
+h3 {
+  margin-top: 0;
+  padding-top: 0.5em;
+  margin-bottom: 0.2em;
+}
+
+h1 {
+  font-size: 1.5em;
+  color: var(--dark-color);
+}
+
+h2 {
+  font-size: 1.25em;
+}
+
+h3 {
+  font-size: 1em;
+}
+
+label {
+  display: block;
+  font-size: 0.9em;
+}
+
+button,
+input,
+select,
+textarea {
+  font-size: 100%;
+  margin: 0;
+}
+
+button {
+  padding: 0;
+  cursor: pointer;
+  line-height: normal;
+  border: 0;
+}
+
+a {
+  color: var(--link-color);
+  text-decoration: none;
+}
+
+h1 a {
+  color: var(--dark-color);
+}
+
+input[type="text"] {
+  border: 1px solid #c0c0c0;
+}

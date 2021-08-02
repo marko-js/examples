@@ -1,27 +1,18 @@
 {
   "name": "color-picker",
-  "version": "0.0.4",
   "description": "Color Picker",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/marko-js/examples.git"
-  },
-  "bugs": {
-    "url": "https://github.com/marko-js/examples/issues"
-  },
-  "homepage": "https://github.com/marko-js/examples",
-  "license": "MIT",
-  "scripts": {
-    "dev": "marko-serve ./src/pages/index.marko",
-    "build": "marko-build ./src/pages/index.marko",
-    "start": "node ./build/index.js"
-  },
-  "private": true,
+  "version": "1.0.0",
   "dependencies": {
-    "marko": "^4.22.5"
+    "marko": "^5"
   },
   "devDependencies": {
-    "@marko/build": "^2.2.2",
-    "@marko/serve": "^2.2.2"
+    "@marko/build": "^4",
+    "@marko/serve": "^4"
+  },
+  "private": true,
+  "scripts": {
+    "build": "marko-build ./src/pages",
+    "dev": "marko-serve ./src/pages",
+    "start": "NODE_ENV=production node ./build/index.js"
   }
 }

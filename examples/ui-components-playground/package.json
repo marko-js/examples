@@ -1,30 +1,21 @@
 {
   "name": "ui-components-playground",
-  "version": "1.0.1",
   "description": "Components Playground",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/marko-js/examples.git"
-  },
-  "bugs": {
-    "url": "https://github.com/marko-js/examples/issues"
-  },
-  "homepage": "https://github.com/marko-js/examples",
-  "scripts": {
-    "dev": "marko-serve ./src/pages/index.marko",
-    "build": "marko-build ./src/pages/index.marko",
-    "start": "node ./build/index.js"
-  },
+  "version": "1.0.0",
   "dependencies": {
     "marked": "^0.6.0",
+    "marko": "^5",
     "raptor-pubsub": "^1.0.5",
-    "raptor-util": "^1.1.2",
-    "whatwg-fetch": "^3.0.0",
-    "marko": "^4.22.5"
+    "raptor-util": "^1.1.2"
   },
   "devDependencies": {
-    "@marko/build": "^2.2.2",
-    "@marko/serve": "^2.2.2"
+    "@marko/build": "^4",
+    "@marko/serve": "^4"
+  },
+  "private": true,
+  "scripts": {
+    "build": "marko-build ./src/pages",
+    "dev": "marko-serve ./src/pages",
+    "start": "node ./build/index.js"
   }
 }
