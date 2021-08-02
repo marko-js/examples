@@ -1,0 +1,9 @@
+<attrs/{ language }/>
+<let/selected:=language />
+<div>
+    <select onChange(e) { selected = e.target.value }>
+        <for|value| of=["English", "French", "Spanish"]>
+          <option selected=value === selected>${value}</option>
+        </for>
+    </select>
+</div>
