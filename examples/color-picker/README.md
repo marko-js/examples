@@ -244,7 +244,7 @@ class {
 
 Marko will automatically watch the `state` object for changes using getters and setters, and if the state changes then the UI component will be re-rendered and the DOM will automatically be updated.
 
-We should now see see the rendered `<color-picker-header>` with a gray background like so:
+We should now see the rendered `<color-picker-header>` with a gray background like so:
 
 <!-- <color-picker-header color='#333745'/>() -->
 <p align="center">
@@ -325,9 +325,9 @@ $ const colors = input.colors;
       </div>
     </for>
     <input
-       key="hexInput"
-       placeholder="Hex value"
-       on-input('handleHexInput')/>
+      key="hexInput"
+      placeholder="Hex value"
+      on-input('handleHexInput')/>
   </div>
 </div>
 ```
@@ -469,7 +469,7 @@ colors as the default when none are passed as part of the `input`:
 
 **components/color-picker/index.marko**
 ```marko
-import getDefaultColors from './util/getDefaultColors';
+import getDefaultColors from '../../util/getDefaultColors';
 
 class {
   onInput(input) {
