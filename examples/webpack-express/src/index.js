@@ -5,11 +5,11 @@ import buildNameMiddleware from "./middleware/build-name";
 import indexPage from "./pages/index";
 import usersService from "./services/users";
 
-const port = process.env.PORT || 3000;
+const port = parseInt(process.env.PORT || 3000, 10);
 
 express()
   .use(compressionMiddleware()) // Enable gzip compression for all HTTP responses.
-  .use("/static", express.static("dist/client")) // Serve assets generated from webpack.
+  .use("/assets", express.static("dist/assets")) // Serve assets generated from webpack.
   .use(markoMiddleware()) // Enables res.marko.
   .use(buildNameMiddleware) // Tells Marko which client assets (modern or legacy) to use.
   .get("/", indexPage)
@@ -19,7 +19,7 @@ express()
       throw err;
     }
 
-    if (port !== "0") {
+    if (port) {
       console.log(`Listening on port ${port}`);
     }
   });

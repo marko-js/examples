@@ -1,7 +1,7 @@
 import raptorPubsub from "raptor-pubsub";
-import button from "../app-button";
-import checkbox from "../app-checkbox";
-import progressBar from "../app-progress-bar";
+import button from "../app-button/index.marko";
+import checkbox from "../app-checkbox/index.marko";
+import progressBar from "../app-progress-bar/index.marko";
 
 const buttonSizes = ["small", "normal", "large"];
 const buttonVariants = ["primary", "secondary"];

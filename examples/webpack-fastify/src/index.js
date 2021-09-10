@@ -12,8 +12,8 @@ const port = process.env.PORT || 3000;
 fastify()
   .register(fastifyCompress)
   .register(fastifyStatic, {
-    root: path.resolve("dist/client"),
-    prefix: "/static"
+    root: path.resolve("dist/assets"),
+    prefix: "/assets"
   })
   .register(fastifyMarko)
   .addHook("onRequest", buildNameMiddleware)
