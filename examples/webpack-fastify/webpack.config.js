@@ -121,7 +121,6 @@ module.exports = [
 function compiler(config) {
   return {
     ...config,
-    bail: true,
     mode: isProd ? "production" : "development",
     stats: isDev && "minimal",
     cache: {
