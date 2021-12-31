@@ -1,0 +1,32 @@
+{
+  "name": "marko-vite-fastify-example",
+  "description": "Sample app that demonstrates the power of building UI components using Marko, Vite and Fastify",
+  "version": "1.0.0",
+  "dependencies": {
+    "@marko/express": "^1.0.0",
+    "@marko/fastify": "^1.0.2",
+    "compression": "^1.7.4",
+    "fastify": "^3.25.3",
+    "fastify-compress": "4.0.1",
+    "fastify-static": "4.5.0",
+    "marko": "^5.17.5",
+    "middie": "^5.4.0",
+    "raptor-pubsub": "^1.0.5"
+  },
+  "devDependencies": {
+    "@marko/compiler": "^5.17.4",
+    "@marko/vite": "^2.2.0",
+    "cross-env": "^7.0.3",
+    "rimraf": "^3.0.2",
+    "vite": "^2.7.10"
+  },
+  "private": true,
+  "scripts": {
+    "build": "rimraf dist && npm run build:server && npm run build:client",
+    "build:client": "cross-env NODE_ENV=production vite build",
+    "build:server": "cross-env NODE_ENV=production vite build --ssr src/index.js",
+    "dev": "node --enable-source-maps index.mjs",
+    "dev:inspect": "node --inspect --enable-source-maps index.mjs",
+    "start": "cross-env NODE_ENV=production node --enable-source-maps index.mjs"
+  }
+}
