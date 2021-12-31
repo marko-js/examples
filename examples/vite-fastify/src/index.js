@@ -1,10 +1,10 @@
 import path from "path";
 import fastify from "fastify";
+import { constants } from "zlib";
 
 export const app = fastify();
 
 if (process.env.NODE_ENV === "production") {
-  const { constants } = await import("zlib");
   app.register(import("fastify-compress"), {
     zlibOptions: {
       flush: constants.Z_SYNC_FLUSH,
