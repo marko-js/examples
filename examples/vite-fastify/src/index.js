@@ -1,16 +1,16 @@
+import zlib from "zlib";
 import path from "path";
 import fastify from "fastify";
-import { constants } from "zlib";
 
 export const app = fastify();
 
 if (process.env.NODE_ENV === "production") {
   app.register(import("fastify-compress"), {
     zlibOptions: {
-      flush: constants.Z_SYNC_FLUSH,
+      flush: zlib.constants.Z_SYNC_FLUSH,
     },
     brotliOptions: {
-      flush: constants.BROTLI_OPERATION_FLUSH,
+      flush: zlib.constants.BROTLI_OPERATION_FLUSH,
     },
   });
 

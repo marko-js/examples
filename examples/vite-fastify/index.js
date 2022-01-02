@@ -12,14 +12,19 @@ console.time("Start");
     // and forward requests to our fastify server.
     const { once } = await import("events");
     const { createServer } = await import("vite");
-    const { middlewares, ssrLoadModule } = await createServer({
+    const devServer = await createServer({
       server: { middlewareMode: "ssr" },
     });
-    const server = middlewares
-      .use(async (req, res) => {
-        const { app } = await ssrLoadModule("./src/index.js");
-        await app.ready();
-        app.routing(req, res);
+    const server = devServer.middlewares
+      .use(async (req, res, next) => {
+        try {
+          const { app } = await devServer.ssrLoadModule("./src/index.js");
+          await app.ready();
+          app.routing(req, res);
+          next();
+        } catch (err) {
+          return next(err);
+        }
       })
       .listen(PORT);
 
