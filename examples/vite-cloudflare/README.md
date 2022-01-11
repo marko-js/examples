@@ -1,4 +1,4 @@
-Marko Hacker News w/ Vite + Cloudflare Workers
+Marko w/ Vite + Cloudflare Workers
 ==================================
 
 ## Getting Started
