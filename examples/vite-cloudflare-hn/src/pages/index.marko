@@ -1,0 +1,51 @@
+import { getStories } from "../api";
+$ const { searchParams } = input.url;
+$ const stories = searchParams.get("stories") || "top";
+$ const page = parseInt(searchParams.get("page"), 10) || 1;
+
+<layout>
+  <div.news-view>
+    <await(getStories(stories || "top", page)) client-reorder>
+      <@then|storyList|>
+        <div.news-list-nav>
+          <if(page > 1)>
+            <a.page-link
+              aria-label="Previous Page"
+              href=`?${new URLSearchParams({
+                stories,
+                page: page - 1,
+              })}`
+            >
+              < prev
+            </a>
+          </if>
+          <else><span.page-link.disabled aria-hidden="true">< prev</span></else>
+
+          <span>page ${page}</span>
+          <!-- sometimes the length isn't 30? -->
+
+          <if(storyList.length >= 28)>
+            <a.page-link
+              aria-label="Next Page"
+              href=`?${new URLSearchParams({
+                stories,
+                page: page + 1,
+              })}`
+            >
+              more >
+            </a>
+          </if>
+          <else><span.page-link aria-hidden="true">more ></span></else>
+        </div>
+        <main.news-list>
+          <ul>
+            <for|story| of=storyList>
+              <story story=story/>
+            </for>
+          </ul>
+        </main>
+      </@then>
+      <@placeholder><div.news-list-nav>Loading...</div></@placeholder>
+    </await>
+  </div>
+</layout>

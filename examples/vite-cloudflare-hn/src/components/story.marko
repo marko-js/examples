@@ -1,0 +1,26 @@
+$ const { story } = input;
+<li.news-item>
+  <span.score>${story.points}</span>
+  <span.title>
+    <if(story.url)>
+      <a href=story.url target="_blank" rel="noreferrer">${story.title}</a>
+      <span.host> (${story.domain})</span>
+    </if>
+    <else>${story.title}</else>
+  </span>
+  <br>
+  <span.meta>
+    <if(story.type !== "job")>
+      by
+      <a href=`/user/${story.user}`>${story.user}</a>
+      ${` ${story.time_ago} | `}
+      <a href=`/story/${story.id}`>
+        ${story.comments_count ? `${story.comments_count} comments` : "discuss"}
+      </a>
+    </if>
+    <else><a href=`/story/${story.id}`>${story.time_ago}</a></else>
+  </span>
+  <if(story.type !== "link")>
+    <span.label> ${story.type}</span>
+  </if>
+</li>
