@@ -1,6 +1,6 @@
 {
-  "name": "marko-hackernews",
-  "description": "Simple Hackernews demo",
+  "name": "marko-vite-cloudflare-hackernews-example",
+  "description": "Hacker News demo with Marko, Vite, and Cloudflare",
   "version": "1.0.0",
   "devDependencies": {
     "@cloudflare/kv-asset-handler": "^0.2.0",

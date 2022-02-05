@@ -1,6 +1,6 @@
 {
-  "name": "marko-vite-example",
-  "description": "Sample app that demonstrates the power of building UI components using Marko and Vite",
+  "name": "marko-vite-express-example",
+  "description": "Sample app that demonstrates the power of building UI components using Marko, Vite, and Express",
   "version": "1.0.0",
   "dependencies": {
     "@marko/express": "^1.0.0",

@@ -1,6 +1,6 @@
 {
-  "name": "marko-vite-fastify-example",
-  "description": "Sample app that demonstrates the power of building UI components using Marko, Vite and Fastify",
+  "name": "marko-vite-http-example",
+  "description": "Sample app that demonstrates the power of building UI components using Marko, Vite and an HTTP Server",
   "version": "1.0.0",
   "dependencies": {
     "accepts": "^1.3.7",
