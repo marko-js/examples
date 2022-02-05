@@ -1,6 +1,6 @@
 {
-  "name": "marko-hackernews",
-  "description": "Simple Hackernews demo",
+  "name": "marko-vite-cloudflare-example",
+  "description": "Sample app that demonstrates the power of building UI components using Marko, Vite, and Cloudflare",
   "version": "1.0.0",
   "devDependencies": {
     "@cloudflare/kv-asset-handler": "^0.2.0",
