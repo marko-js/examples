@@ -1,0 +1,4 @@
+*.log
+dist
+.netlify
+node_modules
