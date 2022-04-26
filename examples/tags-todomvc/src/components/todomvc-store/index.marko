@@ -1,0 +1,47 @@
+<let/nextId=3/>
+<let/todos=[{
+    title: 'Learn marko',
+    completed: true,
+    id: 0
+  },
+  {
+    title: 'Build an awesome web app',
+    completed: false,
+    id: 1
+  },
+  {
+    title: 'Profit',
+    completed: false,
+    id: 2
+  }]/>
+<let/filter="all"/>
+<return={
+  todos,
+  filter,
+  setFilter(f) { filter = f },
+  updateTodo(todoId, newProps) {
+    todos = todos.map(todo => {
+      if (todo.id !== todoId) return todo;
+      return { ...todo, ...newProps }
+    })
+  },
+  clearCompleted() {
+    todos = todos.filter(todo => !todo.completed);
+  },
+  removeTodo(todoId) {
+    todos = todos.filter(todo => todo.id !== todoId);
+  },
+  toggleAllTodosCompleted(completed) {
+    todos = todos.map((todo) => {
+      if (todo.completed === completed) return todo;
+      return { ...todo, completed };
+    });
+  },
+  addNewTodo(todoData) {
+    todos = [...todos, {
+      title: todoData.title,
+      id: 'c' + (nextId++),
+      completed: false
+    }];
+  }
+} />

@@ -1,0 +1,18 @@
+<attrs/{ addNewTodo } />
+<header.header>
+  <h1>todos</h1>
+  <form onSubmit(e) {
+    const titleInput = title();
+    addNewTodo({ title: titleInput.value });
+    titleInput.value = "";
+    e.preventDefault();
+  }>
+    <input/title class="new-todo" placeholder="What needs to be done?"/>
+  </form>
+</header>
+
+<style>
+  .header form {
+    margin: 0;
+  }
+</style>
