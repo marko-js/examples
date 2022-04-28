@@ -1,13 +1,13 @@
 import staticFiles from '@static-manifest';
 import { router } from "./router";
 
-export const handler = async (request) => {
+export default async (request) => {
   // Handle static files
 
-  const { pathname } = new URL(request.url)
+  const url = new URL(request.url)
 
   // If your framework generates client assets in a subdirectory, you can add these too
-  if (staticFiles.includes(pathname) || pathname.startsWith('assets/')) {
+  if (staticFiles.has(url.pathname) || url.pathname.startsWith('/assets/')) {
     return
   }
 

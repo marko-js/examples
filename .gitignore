@@ -11,3 +11,5 @@
 **/.DS_STORE
 lerna-debug.log
 npm-debug.log
+# Local Netlify folder
+.netlify
