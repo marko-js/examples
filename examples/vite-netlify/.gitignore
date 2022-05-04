@@ -1,0 +1,4 @@
+*.log
+netlify
+.netlify
+node_modules

@@ -1,0 +1,24 @@
+{
+  "name": "marko-vite-cloudflare-example",
+  "description": "Sample app that demonstrates the power of building UI components using Marko, Vite, and Cloudflare",
+  "version": "1.0.0",
+  "devDependencies": {
+    "@marko/compiler": "5.17.6",
+    "@marko/vite": "^2.3.1",
+    "cross-env": "^7.0.3",
+    "marko": "^5.21.1",
+    "postcss-preset-env": "^7.2.0",
+    "rimraf": "^3.0.2",
+    "url-router": "^13.0.0",
+    "vite": "^2.9.8"
+  },
+  "private": true,
+  "scripts": {
+    "build": "rimraf dist && npm run build:handler && npm run build:client",
+    "build:client": "cross-env NODE_ENV=production vite build",
+    "build:handler": "cross-env NODE_ENV=production vite build --ssr src/handler.js",
+    "dev": "node --no-warnings --enable-source-maps src/dev-server.js",
+    "dev:inspect": "node --inspect --no-warnings --enable-source-maps src/dev-server.js"
+  },
+  "type": "module"
+}
