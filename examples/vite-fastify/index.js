@@ -6,7 +6,7 @@ console.time("Start");
   if (NODE_ENV === "production") {
     // In production, simply start up the fastify server.
     const { app } = await import("./dist/index.js");
-    address = await app.listen(PORT);
+    address = await app.listen({ port: PORT });
   } else {
     // In dev we'll start a Vite dev server in middleware mode,
     // and forward requests to our fastify server.
@@ -21,7 +21,6 @@ console.time("Start");
           const { app } = await devServer.ssrLoadModule("./src/index.js");
           await app.ready();
           app.routing(req, res);
-          next();
         } catch (err) {
           return next(err);
         }
