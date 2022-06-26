@@ -1,6 +1,8 @@
 import Router from "url-router";
 
-const entries = import.meta.globEager("./pages/*(!(components/*)*/)*.marko");
+const entries = import.meta.globEager(
+  "./pages/*(!(components/*)*/)*.(marko|js)"
+);
 const routes = {};
 
 for (const entry in entries) {
