@@ -1,6 +1,6 @@
 {
   "parse-options": {
-    "state": "static-text",
+    "text": true,
     "preserveWhitespace": true
   },
   "code-generator": "./code-generator"
