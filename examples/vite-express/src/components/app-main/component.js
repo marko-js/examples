@@ -1,7 +1,4 @@
 import raptorPubsub from "raptor-pubsub";
-import button from "../app-button/index.marko";
-import checkbox from "../app-checkbox/index.marko";
-import progressBar from "../app-progress-bar/index.marko";
 
 const buttonSizes = ["small", "normal", "large"];
 const buttonVariants = ["primary", "secondary"];
@@ -86,45 +83,6 @@ export default class {
     raptorPubsub.emit("notification", {
       message: 'You clicked the "Cancel" button!'
     });
-  }
-
-  handleRenderButtonClick() {
-    button
-      .renderSync({
-        label: "Hello World"
-      })
-      .appendTo(this.getEl("renderTarget"));
-  }
-
-  handleRenderCheckboxButtonClick() {
-    checkbox
-      .renderSync({
-        label: "Hello World",
-        checked: true
-      })
-      .appendTo(this.getEl("renderTarget"));
-  }
-
-  handleRenderProgressBarButtonClick() {
-    progressBar
-      .renderSync({
-        steps: [
-          {
-            label: "Step 1"
-          },
-          {
-            label: "Step 2"
-          },
-          {
-            label: "Step 3",
-            active: true
-          },
-          {
-            label: "Step 4"
-          }
-        ]
-      })
-      .appendTo(this.getEl("renderTarget"));
   }
 
   handleChangeButtonSizeClick() {
