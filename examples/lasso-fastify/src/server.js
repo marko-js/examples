@@ -1,6 +1,7 @@
 import path from "path";
 import fastify from "fastify";
-import fastifyStatic from "fastify-static";
+import fastifyStatic from "@fastify/static";
+import fastifyCompress from "@fastify/compress";
 import fastifyMarko from "@marko/fastify";
 import { configure } from "lasso";
 import homePage from "./pages/home";
@@ -19,16 +20,21 @@ configure({
 });
 
 fastify()
+  .register(fastifyCompress)
   .register(fastifyStatic, {
     root: outputDir,
     prefix: "/static"
   })
   .register(fastifyMarko)
   .get("/", homePage)
-  .listen({ port: 3000 }, (err, address) => {
+  .listen({ port: 3000 }, (err, url) => {
     if (err) {
       throw err;
     }
 
-    console.log(`Server listening on ${address}`);
+    if (process.send) {
+      process.send({ event: "online", url });
+    }
+
+    console.log(`Server listening on ${url}`);
   });
