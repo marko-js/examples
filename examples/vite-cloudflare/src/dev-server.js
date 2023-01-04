@@ -1,9 +1,11 @@
-import "./dev-env.js";
 import { once } from "events";
 import { Readable } from "stream";
 import { createServer } from "vite";
 
-const devServer = await createServer({ server: { middlewareMode: "ssr" } });
+const devServer = await createServer({
+  appType: "custom",
+  server: { middlewareMode: true },
+});
 const server = devServer.middlewares
   .use(async (req, res, next) => {
     try {

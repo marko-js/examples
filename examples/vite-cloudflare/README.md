@@ -1,6 +1,8 @@
 Marko w/ Vite + Cloudflare Workers
 ==================================
 
+** Requires Node >= 18 for the development server! **
+
 ## Getting Started
 ```bash
 npm install
