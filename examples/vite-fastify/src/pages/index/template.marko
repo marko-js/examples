@@ -1,12 +1,31 @@
-<app-layout>
-  <@head>
-    <title>UI Components Playground</title>
-    <link
-      href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,700"
-      media="all"
-      rel="stylesheet"/>
-  </@head>
-  <@body>
-    <app-main/>
-  </@body>
+import logo from "./logo.svg";
+<app-layout title="Welcome to Marko">
+  <mouse-mask.container>
+    <header>
+      <img.logo src=logo alt="Marko"/>
+    </header>
+    <main>
+      <p>Edit <code>./pages/index.marko</code> and save to reload.</p>
+      <a href="https://markojs.com/docs/getting-started">
+        Learn Marko
+      </a>
+    </main>
+  </mouse-mask>
 </app-layout>
+
+style {
+  .container {
+    display:flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size:2em; 
+    color: #fff;
+    background: #111;
+    height:100%;
+    width:100%;
+  }
+  img.logo {
+    width:400px;
+  }
+}
