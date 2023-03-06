@@ -28,8 +28,11 @@ style {
   .mouse-mask {
     --mouse-x: 0px;
     --mouse-y: 0px;
+    -webkit-mask-image: radial-gradient(circle, black 20%, transparent 70%);
     mask-image: radial-gradient(circle, black 20%, transparent 70%);
+    -webkit-mask-repeat: no-repeat;
     mask-repeat: no-repeat;
+    -webkit-mask-size: 100vmin 100vmin;
     mask-size: 100vmin 100vmin;
     -webkit-mask-position-x: calc(var(--mouse-x) - 50vmin);
     -webkit-mask-position-y: calc(var(--mouse-y) - 50vmin);
