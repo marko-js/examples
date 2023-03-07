@@ -6,13 +6,12 @@
     "marko": "^5"
   },
   "devDependencies": {
-    "@marko/build": "^4",
-    "@marko/serve": "^4"
+    "@marko/run": "0.1.1"
   },
   "private": true,
   "scripts": {
-    "build": "marko-build ./src/pages",
-    "dev": "marko-serve ./src/pages",
-    "start": "NODE_ENV=production node ./build/index.js"
+    "build": "marko-run build",
+    "dev": "marko-run",
+    "start": "marko-run preview"
   }
 }
