@@ -1,7 +1,8 @@
 {
-  "name": "basic",
+  "name": "basic-ts",
   "description": "The default Marko starter app with TypeScript",
   "version": "1.0.0",
+  "type": "module",
   "dependencies": {
     "marko": "^5"
   },

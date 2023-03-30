@@ -1,3 +1,8 @@
+export interface Input {
+  class?: string;
+  renderBody: Marko.Body;
+}
+
 <for|i| from=1 to=2>
   <div 
     class=[input.class, i === 1 ? "mouse-mask-base" : "mouse-mask"] 
@@ -8,10 +13,11 @@
 </for>
 
 class {
+  declare state: { x: number, y: number }
   onCreate() {
     this.state = { x: 0, y: 0 };
   }
-  move(e) {
+  move(e: MouseEvent) {
     this.state.x = e.clientX;
     this.state.y = e.clientY;
   }
