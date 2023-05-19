@@ -14,7 +14,7 @@
     "@ironkinoko/rollup-plugin-styles": "^4.0.3",
     "@marko/compiler": "^5.27.10",
     "@marko/express": "^2.1.0",
-    "@marko/rollup": "^4.0.2",
+    "@marko/rollup": "^4.0.3",
     "@rollup/plugin-babel": "^6.0.3",
     "@rollup/plugin-commonjs": "^25.0.0",
     "@rollup/plugin-json": "^6.0.0",
