@@ -1,13 +1,15 @@
+import fs from "fs";
 import { builtinModules } from "module";
 import nodeResolvePlugin from "@rollup/plugin-node-resolve";
 import commonjsPlugin from "@rollup/plugin-commonjs";
-import stylesPlugin from "rollup-plugin-styles";
+import stylesPlugin from "@ironkinoko/rollup-plugin-styles";
 import babelPlugin from "@rollup/plugin-babel";
 import jsonPlugin from "@rollup/plugin-json";
 import urlPlugin from "@rollup/plugin-url";
 import runPlugin from "@rollup/plugin-run";
 import markoPlugin from "@marko/rollup";
-import pkg from "./package.json";
+
+const pkg = JSON.parse(fs.readFileSync("./package.json", "utf8"));
 
 const publicPath = "/static/";
 const serverDist = "dist";
@@ -58,7 +60,7 @@ export default (async () => [
       }),
       isWatch &&
         (await import("rollup-plugin-livereload")).default({ verbose: false }),
-      isProd && (await import("rollup-plugin-terser")).terser()
+      isProd && (await import("@rollup/plugin-terser")).terser()
     ]
   })
 ])();
