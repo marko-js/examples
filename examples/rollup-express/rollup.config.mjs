@@ -60,7 +60,7 @@ export default (async () => [
       }),
       isWatch &&
         (await import("rollup-plugin-livereload")).default({ verbose: false }),
-      isProd && (await import("@rollup/plugin-terser")).terser()
+      isProd && (await import("@rollup/plugin-terser")).default()
     ]
   })
 ])();
