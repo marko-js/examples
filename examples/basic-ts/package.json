@@ -4,10 +4,10 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "marko": "^5"
+    "marko": "^5.25.16"
   },
   "devDependencies": {
-    "@marko/run": "^0.1.6"
+    "@marko/run": "^0.1.14"
   },
   "private": true,
   "scripts": {

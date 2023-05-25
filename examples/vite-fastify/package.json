@@ -3,19 +3,19 @@
   "description": "Sample app that demonstrates the power of building UI components using Marko, Vite and Fastify",
   "version": "1.0.0",
   "dependencies": {
-    "@fastify/compress": "^6.2.0",
-    "@fastify/static": "^6.6.0",
+    "@fastify/compress": "^6.4.0",
+    "@fastify/static": "^6.10.2",
     "@marko/fastify": "^1.1.1",
-    "fastify": "^4.11.0",
-    "marko": "^5.22.1"
+    "fastify": "^4.17.0",
+    "marko": "^5.25.16"
   },
   "devDependencies": {
-    "@marko/compiler": "^5.23.1",
-    "@marko/vite": "^2.3.11",
+    "@marko/compiler": "^5.27.10",
+    "@marko/vite": "^2.4.6",
     "cross-env": "^7.0.3",
-    "postcss-preset-env": "^7.8.3",
-    "rimraf": "^3.0.2",
-    "vite": "^4.0.4"
+    "postcss-preset-env": "^8.4.1",
+    "rimraf": "^5.0.1",
+    "vite": "^4.3.8"
   },
   "private": true,
   "scripts": {
