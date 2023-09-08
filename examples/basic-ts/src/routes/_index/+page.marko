@@ -1,4 +1,4 @@
-<mouse-mask.container>
+<div.container>
   <header>
     <img.logo src="./logo.svg" alt="Marko"/>
   </header>
@@ -8,28 +8,22 @@
       Learn Marko
     </a>
   </main>
-</mouse-mask>
+</div>
+<mouse-mask/>
 
 style {
-  .async-thing {
-    position: absolute;
-    top: 0;
-    left: 0;
-    color: red;
-  }
-
   .container {
     display:flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    font-size:2em; 
-    color: #fff;
-    background: #111;
+    font-size: clamp(1em, 2vw, 2em); 
+    padding: 1em;
+    box-sizing: border-box;
     height:100%;
     width:100%;
   }
   img.logo {
-    width:400px;
+    width:12em;
   }
 }
