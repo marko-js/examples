@@ -1,5 +1,5 @@
 {
-  "name": "marko-webpack-example",
+  "name": "marko-webpack-fastify",
   "description": "Sample app that demonstrates the power of building UI components using Marko and Webpack",
   "version": "1.0.0",
   "dependencies": {

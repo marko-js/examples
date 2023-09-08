@@ -1,9 +1,6 @@
 {
   "license": "MIT",
-  "scripts": {
-    "postinstall": "lerna bootstrap"
-  },
-  "devDependencies": {
-    "lerna": "^3.18.2"
-  }
+  "workspaces": [
+    "./examples/*"
+  ]
 }
