@@ -12,7 +12,7 @@ class {
   onMount() {
     window.addEventListener("mousemove", this.boundMove);
   }
-  onDestory() {
+  onDestroy() {
     window.removeEventListener("mousemove", this.boundMove);
   }
   move(e: MouseEvent) {
