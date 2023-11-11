@@ -4,15 +4,16 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "marko": "^5.31.0"
+    "marko": "^5.31.17"
   },
   "devDependencies": {
-    "@marko/run": "^0.2.0"
+    "@marko/run": "^0.3.0"
   },
   "private": true,
   "scripts": {
-    "build": "marko-run build",
     "dev": "marko-run",
-    "preview": "marko-run preview"
+    "build": "marko-run build",
+    "preview": "marko-run preview",
+    "start": "node --enable-source-maps ./dist/index.mjs"
   }
 }
