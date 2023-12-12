@@ -1,0 +1,5 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Default 1`] = `"<button>0</button>"`;
+
+exports[`Double 1`] = `"<button>0</button>"`;

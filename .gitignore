@@ -9,6 +9,6 @@
 **/package-lock.json
 **/yarn.lock
 **/.DS_STORE
-**/.vscode
+**/.vscode/settings.json
 lerna-debug.log
 npm-debug.log

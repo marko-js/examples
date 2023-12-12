@@ -1,0 +1,7 @@
+.vscode/settings.json
+*.DS_Store
+*.log
+*.tsbuildinfo
+coverage
+dist
+node_modules
