@@ -2,17 +2,19 @@
   "include": ["src/**/*"],
   "compilerOptions": {
     "allowSyntheticDefaultImports": true,
+    "incremental": true,
     "lib": ["dom", "ESNext"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "noImplicitOverride": true,
     "noUnusedLocals": true,
-    "rootDir": "src",
     "outDir": "dist",
     "resolveJsonModule": true,
+    "rootDir": "src",
     "skipLibCheck": true,
     "strict": true,
     "target": "ESNext",
+    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
     "types": ["vitest/globals", "@testing-library/jest-dom/vitest"],
     "verbatimModuleSyntax": true
   }
