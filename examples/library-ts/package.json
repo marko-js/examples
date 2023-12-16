@@ -20,11 +20,11 @@
     "marko": "^5"
   },
   "files": [
-    "!**/*.tsbuildinfo",
-    "!**/{,*.}stories.*",
-    "!**/*.test.*",
     "dist",
-    "marko.json"
+    "marko.json",
+    "!**/*.test.*",
+    "!*.tsbuildinfo",
+    "!**/{,*.}stories.*"
   ],
   "devDependencies": {
     "@marko/compiler": "^5.34.2",
