@@ -20,6 +20,7 @@
     "marko": "^5"
   },
   "files": [
+    "!**/*.tsbuildinfo",
     "!**/{,*.}stories.*",
     "!**/*.test.*",
     "dist",
