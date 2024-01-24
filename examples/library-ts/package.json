@@ -17,8 +17,8 @@
     "@ci:test": "npm run test -- run --coverage",
     "build": "mtc",
     "clean": "rm -rf coverage dist node_modules/.{cache,vite,vitest}",
-    "format": "eslint -f unix --fix .; stylelint --aei -f unix --fix '**/*.css'; prettier . --write --log-level=warn; sort-package-json --quiet",
-    "lint": "mtc && eslint -f unix . && stylelint --aei -f unix '**/*.css' && prettier . --check --log-level=warn && sort-package-json --quiet --check",
+    "format": "eslint -f unix --fix .; stylelint -f unix --fix '**/*.css'; prettier . --write --log-level=warn; sort-package-json --quiet",
+    "lint": "mtc && eslint -f unix . && stylelint -f unix '**/*.css' && prettier . --check --log-level=warn && sort-package-json --quiet --check",
     "prepare": "husky install",
     "storybook": "storybook dev",
     "test": "vitest"
