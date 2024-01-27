@@ -19,7 +19,7 @@
     "clean": "rm -rf coverage dist node_modules/.{cache,vite,vitest}",
     "format": "eslint -f unix --fix .; stylelint -f unix --fix '**/*.css'; prettier . --write --log-level=warn; sort-package-json --quiet",
     "lint": "mtc && eslint -f unix . && stylelint -f unix '**/*.css' && prettier . --check --log-level=warn && sort-package-json --quiet --check",
-    "prepare": "husky install",
+    "prepare": "husky",
     "storybook": "storybook dev",
     "test": "vitest"
   },
@@ -35,13 +35,13 @@
     "@testing-library/jest-dom": "^6.3.0",
     "@typescript-eslint/eslint-plugin": "^6.19.1",
     "@typescript-eslint/parser": "^6.19.1",
-    "@vitest/coverage-v8": "^1.2.1",
+    "@vitest/coverage-v8": "^1.2.2",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-typescript": "^3.6.1",
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-testing-library": "^6.2.0",
-    "husky": "^8.0.3",
+    "husky": "^9.0.6",
     "lint-staged": "^15.2.0",
     "prettier": "^3.2.4",
     "prettier-plugin-marko": "^3.1.2",
@@ -51,7 +51,7 @@
     "stylelint-config-standard": "^36.0.0",
     "typescript": "^5.3.3",
     "vite": "^5.0.12",
-    "vitest": "^1.2.1"
+    "vitest": "^1.2.2"
   },
   "peerDependencies": {
     "marko": "4 - 5"
