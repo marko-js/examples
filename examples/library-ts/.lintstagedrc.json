@@ -2,6 +2,5 @@
   "$schema": "https://json.schemastore.org/lintstagedrc.schema.json",
   "*.{ts,js}": ["eslint --fix", "prettier --write"],
   "*.css": ["stylelint --fix", "prettier --write"],
-  "*.{marko,html,json,md}": ["prettier --write"],
-  "./package.json": ["prettier --write", "sort-package-json --quiet"]
+  "*.{marko,html,json,md}": ["prettier --write"]
 }
