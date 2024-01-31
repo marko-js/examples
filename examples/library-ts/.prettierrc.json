@@ -1,10 +1,4 @@
 {
   "$schema": "https://json.schemastore.org/prettierrc",
-  "plugins": ["prettier-plugin-packagejson", "prettier-plugin-marko"],
-  "overrides": [
-    {
-      "files": ["tsconfig*.json"],
-      "options": { "parser": "json" }
-    }
-  ]
+  "plugins": ["prettier-plugin-packagejson", "prettier-plugin-marko"]
 }

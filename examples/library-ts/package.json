@@ -14,11 +14,11 @@
   "scripts": {
     "@ci:build": "npm run build",
     "@ci:lint": "npm run lint",
-    "@ci:test": "npm run test -- run --coverage",
+    "@ci:test": "vitest run --coverage",
     "build": "mtc",
     "clean": "rm -rf coverage dist node_modules/.{cache,vite,vitest}",
-    "format": "eslint -f unix --fix .; stylelint -f unix --fix '**/*.css'; prettier . -w --log-level=warn",
-    "lint": "mtc && eslint -f unix . && stylelint -f unix '**/*.css' && prettier . -c --log-level=warn",
+    "format": "eslint --format unix --fix .; stylelint --formatter unix --fix '**/*.css'; prettier . --write --log-level=warn",
+    "lint": "mtc && eslint --format unix . && stylelint --formatter unix '**/*.css' && prettier . --check --log-level=warn",
     "prepare": "husky",
     "storybook": "storybook dev",
     "test": "vitest"

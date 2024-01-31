@@ -16,6 +16,6 @@
     "target": "ESNext",
     "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
     "types": ["vitest/globals", "@testing-library/jest-dom/vitest"],
-    "verbatimModuleSyntax": true
-  }
+    "verbatimModuleSyntax": true,
+  },
 }
