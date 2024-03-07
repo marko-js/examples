@@ -1,11 +1,18 @@
 {
+  "include": ["src/**/*"],
   "compilerOptions": {
-    "strict": true,
-    "target": "es6",
-    "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
+    "lib": ["dom", "ESNext"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "outDir": "dist",
     "resolveJsonModule": true,
-    "lib": ["es2018", "dom"]
-  },
-  "include": ["src/**/*", ".marko-run/**/*"]
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "ESNext",
+    "verbatimModuleSyntax": true
+  }
 }
