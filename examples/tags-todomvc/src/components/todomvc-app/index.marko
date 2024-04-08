@@ -1,0 +1,85 @@
+<todomvc-store/{
+  todos,
+  filter,
+  setFilter,
+  addNewTodo,
+  clearCompleted,
+  toggleAllTodosCompleted,
+  updateTodo,
+  removeTodo
+ }/>
+<section.todoapp>
+  <todomvc-header addNewTodo=addNewTodo />
+  <if=todos.length>
+    <const/filteredTodos = todos.filter(todo => {
+      if (todo.pending) return true;
+      if (filter === "active") return !todo.completed;
+      if (filter === "completed") return todo.completed;
+      return true;
+    })/>
+    <const/remainingCount=todos.length - todos.filter((todo) => todo.completed).length />
+    <const/handleFilter=((filter) => (e) => {
+      setFilter(filter);
+      e.preventDefault();
+    })/>
+    <section.main>
+      <id/toggleId />
+      <input.toggle-all
+        id=toggleId
+        type="checkbox"
+        checked=(!remainingCount)
+        onChange(e) {
+          toggleAllTodosCompleted(e.target.checked);
+        }>
+      <label for=toggleId />
+      <ul.todo-list>
+        <for|todo| of=filteredTodos by=(todo => todo.id)>
+          <todomvc-todo-item
+            todo=todo
+            updateTodo=updateTodo
+            removeTodo=removeTodo />
+        </for>
+      </ul>
+    </section>
+    <footer.footer>
+      <span.todo-count>
+        <strong>${remainingCount}</strong> ${remainingCount > 1 ? "items" : "item"} left
+      </span>
+      <ul.filters>
+        <li>
+          <a
+            href="#/"
+            class={ selected: filter === "all" }
+            onClick=handleFilter("all")>
+            All
+          </a>
+        </li>
+        <li>
+          <a
+            href="#/active"
+            class={ selected: filter === "active" }
+            onClick=handleFilter("active")>
+            Active
+          </a>
+        </li>
+        <li>
+          <a
+            href="#/completed"
+            class={ selected: filter === "completed" }
+            onClick=handleFilter("completed")>
+            Completed
+          </a>
+        </li>
+      </ul>
+      <if=(remainingCount !== todos.length)>
+        <button.clear-completed onClick=clearCompleted >
+          Clear completed
+        </button>
+      </if>
+    </footer>
+  </if>
+</section>
+
+<style>
+  @import url("https://unpkg.com/todomvc-app-css@2.2.0/index.css");
+</style>
