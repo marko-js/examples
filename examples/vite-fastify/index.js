@@ -18,9 +18,9 @@ if (NODE_ENV === "production") {
   const server = devServer.middlewares
     .use(async (req, res, next) => {
       try {
-        const { ready, routing } = (await devServer.ssrLoadModule("./src/index.js")).app;
-        await ready();
-        routing(req, res);
+        const { app } = await devServer.ssrLoadModule("./src/index.js");
+        await app.ready();
+        app.routing(req, res);
       } catch (err) {
         return next(err);
       }
