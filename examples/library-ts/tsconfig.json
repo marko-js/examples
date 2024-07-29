@@ -15,7 +15,7 @@
     "strict": true,
     "target": "ESNext",
     "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
-    "types": ["vitest/globals", "@testing-library/jest-dom/vitest"],
+    "types": ["vitest/globals", "@testing-library/jest-dom"],
     "verbatimModuleSyntax": true
   }
 }

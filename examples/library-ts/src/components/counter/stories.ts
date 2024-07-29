@@ -1,4 +1,5 @@
 import type { Meta, Story } from "@storybook/marko";
+
 import Template, { type Input } from "./index.marko";
 
 export default {
