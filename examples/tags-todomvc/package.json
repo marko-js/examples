@@ -1,0 +1,19 @@
+{
+  "name": "tags-todomvc",
+  "description": "Marko TodoMVC example",
+  "version": "1.0.0",
+  "dependencies": {
+    "@marko/tags-api-preview": "^0",
+    "marko": "^5"
+  },
+  "devDependencies": {
+    "@marko/build": "^4",
+    "@marko/serve": "^4"
+  },
+  "private": true,
+  "scripts": {
+    "build": "marko-build ./src/pages",
+    "dev": "marko-serve ./src/pages",
+    "start": "node ./build/index.js"
+  }
+}
