@@ -1,4 +1,5 @@
 import { defineWorkspace } from "vitest/config";
+const isCI = !!process.env.CI;
 
 export default defineWorkspace([
   {
@@ -7,16 +8,18 @@ export default defineWorkspace([
       name: "server",
       environment: "node",
       include: ["src/**/{,*.}server.test.ts"],
-      setupFiles: ["@testing-library/jest-dom/vitest"],
     },
   },
   {
     extends: "vitest.config.ts",
     test: {
       name: "browser",
-      environment: "jsdom",
+      browser: {
+        enabled: true,
+        name: "chromium",
+        provider: isCI ? "playwright" : "preview",
+      },
       include: ["src/**/{,*.}browser.test.ts"],
-      setupFiles: ["@testing-library/jest-dom/vitest"],
     },
   },
 ]);
