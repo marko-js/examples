@@ -1,0 +1,20 @@
+{
+  "name": "basic-tags",
+  "description": "The default Marko starter app with TypeScript",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "marko": "^5.36.2"
+  },
+  "devDependencies": {
+    "@marko/run": "^0.4",
+    "@marko/translator-interop-class-tags": "^0.1.33"
+  },
+  "private": true,
+  "scripts": {
+    "dev": "marko-run",
+    "build": "marko-run build",
+    "preview": "marko-run preview",
+    "start": "node --enable-source-maps ./dist/index.mjs"
+  }
+}
