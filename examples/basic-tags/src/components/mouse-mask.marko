@@ -2,7 +2,7 @@ export interface Input {}
 
 <let/x="center"/>
 <let/y="center"/>
-<effect() {
+<script>
   window.addEventListener(
     "mousemove",
     (e) => {
@@ -11,7 +11,7 @@ export interface Input {}
     },
     { signal: $signal },
   );
-}/>
+</script>
 
 <div style=`--mouse-x:${x};--mouse-y:${y};` class="mouse-mask"/>
 
