@@ -4,11 +4,10 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "marko": "^5.36.2"
+    "marko": "^6.0.0-3.7"
   },
   "devDependencies": {
-    "@marko/run": "^0.4",
-    "@marko/translator-interop-class-tags": "^0.1.33"
+    "@marko/run": "^0.5"
   },
   "private": true,
   "scripts": {
