@@ -1,7 +1,0 @@
-{
-  "parse-options": {
-    "text": true,
-    "preserveWhitespace": true
-  },
-  "code-generator": "./code-generator"
-}
