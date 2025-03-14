@@ -7,7 +7,7 @@
     "marko": "^5.37.20"
   },
   "devDependencies": {
-    "@marko/run": "^0.6.0"
+    "@marko/run": "^0.6.1"
   },
   "private": true,
   "scripts": {

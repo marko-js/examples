@@ -7,7 +7,7 @@
     "marko": "^6.0.0-next"
   },
   "devDependencies": {
-    "@marko/run": "^0.6.0"
+    "@marko/run": "^0.6.1"
   },
   "overrides": {
     "@marko/run": {

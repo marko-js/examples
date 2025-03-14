@@ -49,11 +49,11 @@
     "prettier-plugin-marko": "^3.1.12",
     "prettier-plugin-packagejson": "^2.5.10",
     "storybook": "^8.6.4",
-    "stylelint": "^16.15.0",
+    "stylelint": "^16.16.0",
     "stylelint-config-standard": "^37.0.0",
     "typescript": "^5.8.2",
     "typescript-eslint": "^8.26.1",
-    "vite": "^6.2.1",
+    "vite": "^6.2.2",
     "vitest": "^3.0.8"
   },
   "peerDependencies": {
