@@ -3,3 +3,4 @@ static
 .cache
 *.marko.js
 *.log
+.env
