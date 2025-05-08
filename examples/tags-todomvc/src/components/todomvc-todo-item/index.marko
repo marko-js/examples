@@ -1,0 +1,55 @@
+import { animateIn, animateOut } from "./animations";
+
+<attrs/{ todo, updateTodo, removeTodo } />
+<let/isEditing=false />
+<let/editingTitle="" />
+<const/saveEdit() {
+  if (isEditing) {
+    const el = title();
+    updateTodo(todo.id, { title: el.value });
+    isEditing = false;
+  }
+}/>
+<const/handleInputKeyDown(e) {
+  if (e.keyCode === 13 /* ENTER */) {
+    saveEdit();
+  } else if (e.keyCode === 27 /* ESC */) {
+    isEditing = false;
+  }
+}/>
+
+<li
+  class={ completed: todo.completed, editing: isEditing }
+  onDetach=animateOut
+  onAttach=animateIn>
+  <div.view>
+    <input.toggle
+      type="checkbox"
+      checked=todo.completed
+      aria-label="Toggle todo completed"
+      onChange(e) {
+        var completed = e.target.checked === true;
+        updateTodo(todo.id, {completed});
+      }/>
+    <label onDblClick() {
+      isEditing = true;
+      editingTitle = todo.title;
+    }>
+      ${todo.title}
+    </label>
+
+    <button.destroy
+      onClick() { removeTodo(todo.id) }
+      aria-label="Delete todo"
+    />
+  </div>
+
+  <input/title
+    class="edit"
+    title="Enter the new todo title"
+    type="text"
+    value=editingTitle
+    onBlur=saveEdit
+    onChange=saveEdit
+    onKeydown=handleInputKeyDown/>
+</li>
