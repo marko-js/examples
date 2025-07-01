@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json.schemastore.org/postcssrc.json",
+  "plugins": {
+    "postcss-auto-modules": {}
+  }
+}

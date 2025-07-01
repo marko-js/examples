@@ -1,0 +1,17 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Default 1`] = `
+<button
+  class="_test_df99c5"
+>
+  0
+</button>
+`;
+
+exports[`Double 1`] = `
+<button
+  class="_test_df99c5"
+>
+  0
+</button>
+`;
