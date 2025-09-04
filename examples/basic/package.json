@@ -1,10 +1,10 @@
 {
-  "name": "basic",
-  "description": "The default Marko starter app",
+  "name": "basic-tags",
+  "description": "The default Marko starter app with TypeScript",
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "marko": "^5.37.41"
+    "marko": "^6.0.0"
   },
   "devDependencies": {
     "@marko/run": "^0.8.0"

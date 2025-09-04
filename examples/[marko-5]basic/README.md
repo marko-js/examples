@@ -3,7 +3,7 @@
 # Installation
 
 ```
-npm init marko -- --template basic-tags
+npx @marko/create marko-app --template basic
 cd marko-app
 npm install
 npm run dev
