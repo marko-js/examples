@@ -3,7 +3,7 @@
 # Installation
 
 ```
-npm init marko -- --template basic-tags
+npm init marko -- --template basic
 cd marko-app
 npm install
 npm run dev
@@ -19,5 +19,4 @@ This project is powered by [@marko/run](https://github.com/marko-js/run).
 
 ## Adding Pages
 
-Pages map to the directory structure. You can add additional pages by creating files/directories under `src/routes` with `+page.marko` files.  Learn more in the [`@marko/run` docs](https://github.com/marko-js/run/#file-based-routing).
-
+Pages map to the directory structure. You can add additional pages by creating files/directories under `src/routes` with `+page.marko` files. Learn more in the [`@marko/run` docs](https://github.com/marko-js/run/#file-based-routing).
