@@ -26,8 +26,10 @@ export default defineConfig({
           name: "browser",
           browser: {
             enabled: true,
-            provider: isCI ? "playwright" : "preview",
             instances: [{ browser: "chromium" }],
+            provider: isCI
+              ? (await import("@vitest/browser-playwright")).playwright()
+              : (await import("@vitest/browser-preview")).preview(),
           },
           include: ["src/**/{,*.}browser.test.ts"],
         },
