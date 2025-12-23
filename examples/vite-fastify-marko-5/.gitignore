@@ -1,5 +1,6 @@
-node_modules
-dist
-*.log
-.vscode
 .env
+.vscode
+*.DS_Store
+*.log
+dist
+node_modules

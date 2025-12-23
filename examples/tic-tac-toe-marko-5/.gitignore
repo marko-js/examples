@@ -1,4 +1,5 @@
-node_modules
-build
-*.log
 .env
+*.DS_Store
+*.log
+build
+node_modules
