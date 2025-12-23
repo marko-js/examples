@@ -3,3 +3,4 @@
 *.log
 build
 node_modules
+Thumbs.db

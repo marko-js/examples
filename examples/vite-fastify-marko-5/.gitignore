@@ -4,3 +4,4 @@
 *.log
 dist
 node_modules
+Thumbs.db
