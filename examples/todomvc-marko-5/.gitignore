@@ -1,5 +1,6 @@
-.env
 .DS_Store
+.env
+.vscode/settings.json
 *.log
 build
 node_modules

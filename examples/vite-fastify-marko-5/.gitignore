@@ -1,6 +1,6 @@
-.env
-.vscode
 .DS_Store
+.env
+.vscode/settings.json
 *.log
 dist
 node_modules
