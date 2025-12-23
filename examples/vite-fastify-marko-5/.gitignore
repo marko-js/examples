@@ -1,5 +1,7 @@
-node_modules
-dist
-*.log
-.vscode
+.DS_Store
 .env
+.vscode/settings.json
+*.log
+dist
+node_modules
+Thumbs.db

@@ -1,8 +1,9 @@
+.DS_Store
+.env
 .vscode/settings.json
-*.DS_Store
 *.log
 *.tgz
 coverage
 dist
 node_modules
-.env
+Thumbs.db

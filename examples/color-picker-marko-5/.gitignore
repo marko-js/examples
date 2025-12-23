@@ -1,4 +1,7 @@
-node_modules
-build
-*.log
+.DS_Store
 .env
+.vscode/settings.json
+*.log
+build
+node_modules
+Thumbs.db
