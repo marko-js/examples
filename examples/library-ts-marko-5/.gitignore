@@ -1,6 +1,6 @@
 .env
 .vscode/settings.json
-*.DS_Store
+.DS_Store
 *.log
 *.tgz
 coverage
