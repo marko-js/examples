@@ -5,7 +5,7 @@ A template for component libraries and other reusable Marko packages.
 ## Installation
 
 ```sh
-npm init marko -- --template library-ts
+npm init marko -- --template library-ts-marko-5
 ```
 
 ## Overview

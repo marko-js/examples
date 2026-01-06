@@ -27,8 +27,9 @@ Our final goal for today is create this component:
 The quickest way to get up and running with Marko is to use the [`@marko/create` cli](https://github.com/marko-js/cli/blob/master/packages/create/README.md).
 
 For this tutorial lets tell `@marko/create` to give us a basic boilerplate by running the following command:
+
 ```bash
-npx @marko/create --template basic --name color-picker-tutorial
+npm init marko -- --template color-picker-marko-5
 ```
 
 Once the create command has finished, we can move into our new directory and get a development server up and running like so:
@@ -62,7 +63,7 @@ following is a valid directory structure:
 
 ```
 color-picker-tutorial/
-  src/  
+  src/
     components/
       color-picker.marko
 ```
@@ -75,6 +76,7 @@ living in a single directory will become very untidy and difficult to manage.
 Let's begin by adding some initial component code to the `color-picker`.
 
 **components/color-picker/index.marko**
+
 ```marko
 <ul>
   <for|color| of=input.colors>
@@ -90,6 +92,7 @@ it is being rendered. Let's modify our `index` route to demonstrate how a
 parent component can use our `color-picker`:
 
 **src/pages/index.marko**
+
 ```marko
 <html>
   <head>
@@ -132,7 +135,7 @@ multiple components. Each component can then be independently developed and test
 Let's split our component into the following components:
 
 - `<color-picker-header>`: The header will have the selected background color
-from the color picker and show the selected color's hex value
+  from the color picker and show the selected color's hex value
 
 <!-- <color-picker-header color='#333745'/>() -->
 <p align="center">
@@ -141,7 +144,7 @@ from the color picker and show the selected color's hex value
 <!-- </> -->
 
 - `<color-picker-footer>`: The footer will contain a palette of colors and an
-input field for changing the hex value of the header
+  input field for changing the hex value of the header
 
 <!-- <color-picker-footer colors=['#333745','#E63462','#FE5F55','#C7EFCF','#EEF5DB','#00B4A6','#007DB6','#FFE972','#9C7671','#0C192B']/>() -->
 <p align="center">
@@ -178,6 +181,7 @@ determined that the header should have a specific background color and display
 the value of that background color in text. The color to display should be passed in as part of the input.
 
 **src/components/color-picker-header/index.marko**
+
 ```marko
 // Inline styles!
 style {
@@ -225,6 +229,7 @@ Now we need to revisit our parent component and add the `<color-picker-header>`
 tag to it, so it will be rendered.
 
 **src/components/color-picker/index.marko**
+
 ```marko
 class {
   onInput(input) {
@@ -256,6 +261,7 @@ Now let's create the `<color-picker-selection>` component, which will be used
 inside of the `<color-picker-footer>`:
 
 **src/components/color-picker-selection/index.marko**
+
 ```marko
 class {
   handleColorSelected() {
@@ -306,6 +312,7 @@ components/
 ```
 
 **src/components/color-picker-footer/index.marko**
+
 ```marko
 $ const colors = input.colors;
 
@@ -335,27 +342,28 @@ $ const colors = input.colors;
 In the `<color-picker-footer>` component we need to iterate over each color that was passed as input in `colors`. For each color, we create a `<color-picker-selection>` component and pass the color using the `color` attribute. Additionally, we are listening for the `color-selected` event emitted from the `<color-picker-selection>` component and handling it in our own `handleColorSelected` method. We provide the `color` as the second argument so that it will be available to the event handler method. We also have added an `input` field and a `on-input` listener, which will trigger a change to the selected color when the user manually enters a hex color value.
 
 **src/components/color-picker-footer/component.js**
+
 ```javascript
 module.exports = class {
-  handleColorSelected (color) {
-    this.emit('color-selected', color);
+  handleColorSelected(color) {
+    this.emit("color-selected", color);
   }
-  handleHexInput () {
-    let hexInput = this.getEl('hexInput').value;
+  handleHexInput() {
+    let hexInput = this.getEl("hexInput").value;
 
-    if (!hexInput.startsWith('#')) {
-      hexInput = '#' + hexInput;
+    if (!hexInput.startsWith("#")) {
+      hexInput = "#" + hexInput;
     }
 
     if (!isValidHexValue(hexInput)) {
       hexInput = this.input.colors[0];
     }
 
-    this.emit('color-selected', hexInput);
+    this.emit("color-selected", hexInput);
   }
 };
 
-function isValidHexValue (hexValue) {
+function isValidHexValue(hexValue) {
   return /^#[0-9A-F]{6}$/i.test(hexValue);
 }
 ```
@@ -368,6 +376,7 @@ will be handled the same way as the `color-selected` event when it reaches
 `<color-picker-header>`.
 
 **src/components/color-picker-footer/style.css**
+
 ```css
 .color-picker-footer {
   width: 200px;
@@ -389,7 +398,7 @@ will be handled the same way as the `color-selected` event when it reaches
   border-radius: 0px 0px 0px 0px;
   border-width: 0px 0px 1px 0px;
   outline: none;
-  color: #A9A9A9;
+  color: #a9a9a9;
 }
 ```
 
@@ -397,6 +406,7 @@ We can now finalize our component! Let's revisit the parent `<color-picker>`
 component and add the `<color-picker-footer>`:
 
 **src/components/color-picker/index.marko**
+
 ```marko
 class {
   onInput(input) {
@@ -435,7 +445,7 @@ Our finished product:
 </p>
 <!-- </> -->
 
---------------
+---
 
 Now let's talk about some additional topics that will turn you into a Marko pro!
 
@@ -447,8 +457,9 @@ the familiar ES2015 `import` syntax for single file components.
 Let's create a new helper module for generating the default colors:
 
 **src/util/getDefaultColors.js**
+
 ```js
-module.exports = function getDefaultColors () {
+module.exports = function getDefaultColors() {
   return [
     "#1ABC9C",
     "#2ECC71",
@@ -459,7 +470,7 @@ module.exports = function getDefaultColors () {
     "#27AE60",
     "#2980B9",
     "#8E44AD",
-    "#2C3E50"
+    "#2C3E50",
   ];
 };
 ```
@@ -468,6 +479,7 @@ We can import our helper module into the `color-picker` and use the generated
 colors as the default when none are passed as part of the `input`:
 
 **components/color-picker/index.marko**
+
 ```marko
 import getDefaultColors from '../../util/getDefaultColors';
 
@@ -518,6 +530,6 @@ today!
 - [marko-cli](https://github.com/marko-js/cli)
 - [Marko Testing Library](https://github.com/marko-js/testing-library)
 
---------------
+---
 
 > Special thanks to [Anthony Ng](https://github.com/newyork-anthonyng) for helping with this tutorial!
