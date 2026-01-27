@@ -1,18 +1,19 @@
-import eslint from "@eslint/js";
-import sortImportPlugin from "eslint-plugin-simple-import-sort";
-import globals from "globals";
-import tslint from "typescript-eslint";
+import { defineConfig, globalIgnores } from "eslint/config";
 
-export default tslint.config(
+import js from "@eslint/js";
+import css from "@eslint/css";
+import ts from "typescript-eslint";
+import globals from "globals";
+import sortImportPlugin from "eslint-plugin-simple-import-sort";
+
+export default defineConfig([
+  globalIgnores(["__snapshots__", "coverage", "dist", "node_modules"]),
   {
-    ignores: ["__snapshots__", "coverage", "dist", "node_modules"],
-  },
-  eslint.configs.recommended,
-  ...tslint.configs.recommended,
-  {
+    files: ["**/*.ts"],
     languageOptions: {
       globals: {
         ...globals.browser,
+        ...globals.vitest,
         ...globals.node,
       },
     },
@@ -27,5 +28,12 @@ export default tslint.config(
       "@typescript-eslint/no-empty-function": "off",
       "@typescript-eslint/no-explicit-any": "off",
     },
+    extends: [js.configs.recommended, ts.configs.recommended],
   },
-);
+  {
+    files: ["**/*.css"],
+    language: "css/css",
+    plugins: { css },
+    extends: [css.configs.recommended],
+  },
+]);

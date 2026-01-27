@@ -2,7 +2,6 @@
   "recommendations": [
     "dbaeumer.vscode-eslint",
     "esbenp.prettier-vscode",
-    "Marko-JS.marko-vscode",
-    "stylelint.vscode-stylelint"
+    "Marko-JS.marko-vscode"
   ]
 }
