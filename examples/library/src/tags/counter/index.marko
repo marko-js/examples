@@ -11,6 +11,7 @@ export interface Input {
   onClick() {
     count++;
     input.onIncrement?.();
-  }>
+  }
+>
   ${count * (input.multiplier ?? 1)}
 </button>
