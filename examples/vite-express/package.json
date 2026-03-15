@@ -17,7 +17,7 @@
   "scripts": {
     "build": "rimraf dist && cross-env NODE_ENV=production vite build --app",
     "dev": "vite",
-    "preview": "vite build --app && vite preview",
+    "preview": "npm run build && npm start",
     "start": "cross-env NODE_ENV=production node --enable-source-maps index.ts"
   },
   "type": "module"
