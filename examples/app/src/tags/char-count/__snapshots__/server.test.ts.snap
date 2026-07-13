@@ -1,0 +1,19 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Default 1`] = `
+<textarea
+  class="_input_39ddf7"
+  maxlength="50"
+  name="message"
+  placeholder="Say hello…"
+/>
+`;
+
+exports[`ShortLimit 1`] = `
+<textarea
+  class="_input_39ddf7"
+  maxlength="10"
+  name="message"
+  placeholder="Say hello…"
+/>
+`;
