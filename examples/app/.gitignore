@@ -1,0 +1,9 @@
+.DS_Store
+.env
+.vscode/settings.json
+*.log
+*.tsbuildinfo
+coverage
+dist
+node_modules
+Thumbs.db

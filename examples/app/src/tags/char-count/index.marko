@@ -1,0 +1,24 @@
+import styles from "./styles.module.css";
+
+export interface Input {
+  name: string;
+  max?: number;
+  placeholder?: string;
+}
+
+<const/max=input.max ?? 280>
+<let/value="">
+<const/remaining=max - value.length>
+
+<div class=styles.field>
+  <textarea
+    class=styles.input
+    name=input.name
+    maxlength=max
+    placeholder=input.placeholder
+    value:=value
+  />
+  <small class=styles.count aria-live="polite">
+    ${remaining} characters left
+  </small>
+</div>

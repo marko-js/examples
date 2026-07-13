@@ -1,0 +1,15 @@
+.field {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.input {
+  font: inherit;
+  padding: 0.5rem;
+  min-height: 5rem;
+}
+
+.count {
+  justify-self: end;
+  opacity: 0.6;
+}
