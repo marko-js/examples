@@ -9,7 +9,7 @@ export default defineConfig({
     coverage: {
       enabled: isCI,
       provider: "istanbul",
-      include: ["src/**/*"],
+      include: ["src/**/*.{ts,marko}"],
     },
     projects: [
       {
