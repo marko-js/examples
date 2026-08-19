@@ -3,7 +3,7 @@
   "description": "Sample app that demonstrates the power of building UI components using Marko, Vite, and Remix",
   "version": "1.0.0",
   "dependencies": {
-    "marko": "^6.3.41"
+    "marko": "^6.3.42"
   },
   "devDependencies": {
     "@marko/vite": "^6.1.11",

@@ -43,7 +43,7 @@
     "globals": "^17.11.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.3.0",
-    "marko": "^6.3.41",
+    "marko": "^6.3.42",
     "playwright": "^1.62.1",
     "postcss-auto-modules": "^1.0.1",
     "postcss-cli": "^11.0.1",
