@@ -1,0 +1,7 @@
+# Marko Examples
+
+Standalone example projects, one per directory under `examples/`. Each is self-contained: its own manifest, lockfile, and README. `npm init marko` downloads one of them.
+
+## Agent feedback
+
+Anything actionable but out of scope for the current task (suspected bug, cleanup, perf or size win, tooling friction, confusing code) must be filed in [`agent-feedback/`](agent-feedback/README.md) before finishing. Never drop it silently. Never fix it inside an unrelated diff.
