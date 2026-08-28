@@ -1,0 +1,12 @@
+---
+type: dx
+impact: med
+effort: low
+site: examples/library/package.json › scripts.build (same shape in examples/library-ts-marko-5/package.json)
+---
+
+# Stop the library starters from packing a stale or type-failed `dist/`
+
+`build` is `mtc && postcss ...` with no clean, and nothing rebuilds or re-checks at pack time (`prepare` is `husky`, there is no `prepack` or `prepublishOnly`), so `npm pack` ships whatever the last build left in `dist/`. Two ways that bites: `mtc` runs under TypeScript's default `noEmitOnError: false`, so a build that reports type errors still writes `dist/tags/<tag>/index.marko` while its non-zero exit skips the `postcss` half, and packing right then yields a tarball whose `index.marko` imports `./styles.module.css` with no stylesheet and no `styles.module.css.js` beside it; and because `dist/` is never cleaned while `marko.json` exports `./dist/tags`, a renamed or deleted tag keeps shipping, so `mv src/tags/counter src/tags/tally && npm run build` produces a tarball that still registers `counter`. Restoring an `rm -rf dist &&` prefix on `build` is the wrong fix, since `tsconfig.json` sets `incremental` with `tsBuildInfoFile: dist/tsconfig.tsbuildinfo` and cleaning every build throws that cache away. Set `noEmitOnError: true` in `tsconfig.json` (a failing build then writes only the tsbuildinfo, and the next passing build re-emits everything without a clean) and clear `dist/tags` at pack time from a `prepack`, or move `tsBuildInfoFile` out of `dist` so the existing `clean` script can run first. `examples/library-ts-marko-5` ships the same `build`, the same `tsconfig.json` and the same `files` array, so it needs the same fix.
+
+Check: `cp -a examples/library /tmp/lib && cd /tmp/lib && npm install`, then `sed -i 's|<let/count=0>|<let/count: string = 0>|' src/tags/counter/index.marko && rm -rf dist && npm run build; npm pack --dry-run` today exits 1 on `error TS2322` yet still packs 6 files including `dist/tags/counter/index.marko` (first line `import style from "./styles.module.css";`) with no `styles.module.css.js` and no `.css` in the tarball. Restore the file, `rm -rf dist && npm run build`, then `mv src/tags/counter src/tags/tally && npm run build && npm pack --dry-run`: 13 files, listing both `dist/tags/counter/*` and `dist/tags/tally/*`. With `"noEmitOnError": true` added, the failing build writes only `dist/tsconfig.tsbuildinfo` and the next passing build re-emits all 11 outputs.
