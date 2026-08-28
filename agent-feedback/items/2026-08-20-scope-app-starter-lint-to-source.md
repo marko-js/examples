@@ -2,11 +2,15 @@
 type: dx
 impact: med
 effort: low
-site: examples/app/package.json › scripts.lint
+site: examples/app/package.json › scripts.lint (and examples/library/eslint.config.js › globalIgnores)
 ---
 
-# Scope the app starter's lint and format to source
+# Scope the app and library starters' lint and format to source
 
 `lint` runs `eslint --format unix .` and `prettier . --check` across the whole project directory, and between `eslint.config.js` globalIgnores and `.prettierignore` the only build output either one names is `dist`. Build anywhere else — `marko-run build -o dist-static`, the flag `marko-run build --help` documents — and both tools walk the emitted bundle: prettier reports the generated `.mjs`, `.js` and `.css` as unformatted, so `npm run format` would rewrite compiled output, and eslint's `css/no-invalid-properties` fails with `Can't validate with unknown variable '--brand'` whenever a layout `<style>` declares a token a page `<style>` uses, because those land in separate emitted chunks. Neither list covers dot-directories, and there the failure is worse: prettier's HTML parser rejects Marko's own SSR markup, so one saved page turns lint into `exit 2` with `SyntaxError: Opening tag "link" not terminated`, echoing the page into the terminal and burying every real lint error. Point both commands at `src` plus the config files, or extend the two ignore lists to cover any build output and dot-directories.
 
+`examples/library` has the same whole-project `lint` and `format` and the same three ignore lists, and Storybook's output directory is named in none of them: `eslint.config.js` globalIgnores is `["__snapshots__", "coverage", "dist", "node_modules"]`, neither `.prettierignore` nor `.gitignore` mentions it, and `clean` does not remove it. So the first `npx storybook build`, which writes 6.1 MB of `storybook-static/`, turns `npm run lint` into exit 1 with 31 problems under `storybook-static/sb-manager/` and 13 unformatted `storybook-static/assets/*.js`, leaves the directory untracked-but-visible in git, and makes `npm run format` rewrite that minified bundle in place while exiting 0. Add `storybook-static` to all three lists and to `clean` there, or scope its lint and format to `src` the same way; `examples/app` ships Storybook with the same three lists, so it is exposed to this too.
+
 Check: in `examples/app`, `npx marko-run build -o dist-static && npm run lint` prints `[warn] dist-static/index.mjs` plus its two assets and exits 1 today; `mkdir .scratch && printf '<link rel=icon type=image/png sizes=32x32 href=/favicon.png>' > .scratch/page.html && npm run lint` exits 2 with the parse error. After the fix both leave `npm run lint` at exit 0 with only `src` linted.
+
+Check: `cp -r examples/library /tmp/library-sb && cd /tmp/library-sb && npm install && npm run lint` exits 0 today; `npx storybook build && npm run lint` then exits 1 with `31 problems`, every path under `storybook-static/sb-manager/`, for example `storybook-static/sb-manager/globals-runtime.js:10300:13: Definition for rule 'regexp/strict' was not found. [Error/regexp/strict]`. `npx prettier . --check --log-level=warn` exits 1 with `Code style issues found in 13 files`, all under `storybook-static/assets`, `git init . && git check-ignore storybook-static` exits 1, and `md5sum storybook-static/assets/*.js > /tmp/a && npm run format && md5sum storybook-static/assets/*.js | diff /tmp/a -` shows the built bundle rewritten.
