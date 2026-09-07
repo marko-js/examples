@@ -11,6 +11,11 @@
   cursor: pointer;
 }
 
+.slot svg {
+  width: 66%;
+  height: 66%;
+}
+
 .slot:disabled {
   cursor: default;
 }

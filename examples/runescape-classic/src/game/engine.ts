@@ -110,7 +110,7 @@ export class Engine {
     this.message("game", "Welcome to RuneScape Classic.");
     this.message(
       "game",
-      "Left click to interact, right click for more options.",
+      "Tap to interact. Hold, or right click, for more options.",
     );
   }
 

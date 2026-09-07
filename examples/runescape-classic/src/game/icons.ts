@@ -258,6 +258,15 @@ export function statsIcon(): Icon {
   ];
 }
 
+export function chatIcon(): Icon {
+  return [
+    { kind: "rect", x: 3, y: 5, w: 26, h: 17, fill: "#d8d2c2", rx: 4 },
+    { kind: "poly", points: "9,20 9,29 17,21", fill: "#d8d2c2" },
+    { kind: "rect", x: 8, y: 10, w: 16, h: 2.4, fill: "#4a4438", rx: 1 },
+    { kind: "rect", x: 8, y: 15, w: 11, h: 2.4, fill: "#4a4438", rx: 1 },
+  ];
+}
+
 export function cogIcon(): Icon {
   return [
     {

@@ -1,50 +1,205 @@
 .frame {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 200px;
-  gap: 6px;
-  width: 100%;
-  max-width: 744px;
-  margin: 0 auto;
-  border: 4px solid var(--rs-border);
-  border-radius: 4px;
-  background: var(--rs-wood);
-  padding: 6px;
-}
-
-.main {
-  display: grid;
-  grid-template-rows: auto 150px;
-  gap: 6px;
-  min-width: 0;
-}
-
-.viewport {
-  position: relative;
+  position: fixed;
+  inset: 0;
   overflow: hidden;
-  border: 2px solid var(--rs-border);
-  border-radius: 3px;
   background: #06121e;
+  /* Keep the HUD clear of notches and the home indicator. */
+  --edge-top: max(8px, env(safe-area-inset-top));
+  --edge-bottom: max(8px, env(safe-area-inset-bottom));
+  --edge-left: max(8px, env(safe-area-inset-left));
+  --edge-right: max(8px, env(safe-area-inset-right));
 }
 
 .view {
   display: block;
   width: 100%;
-  height: auto;
-  aspect-ratio: 512 / 336;
+  height: 100%;
   cursor: crosshair;
+  /* Pointer events drive the game, so the browser must not pan or zoom. */
+  touch-action: none;
+  /* eslint-disable-next-line css/use-baseline -- needed for touch play; supported everywhere this game runs */
+  user-select: none;
 }
 
 .hover {
   position: absolute;
-  top: 4px;
-  left: 6px;
-  right: 6px;
+  top: var(--edge-top);
+  left: var(--edge-left);
+  max-width: 55%;
+  margin: 0;
+  color: var(--rs-gold);
+  font-size: 13px;
+  text-shadow: 1px 1px 0 #000;
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------- minimap */
+
+.corner {
+  position: absolute;
+  top: var(--edge-top);
+  right: var(--edge-right);
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+}
+
+.minimapWrap {
+  position: relative;
+}
+
+.minimap {
+  display: block;
+  border: 2px solid #000;
+  border-radius: 50%;
+  background: #16324f;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.expand {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #000;
+  border-radius: 50%;
+  background: rgba(20, 18, 12, 0.9);
+  color: var(--rs-gold);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.region {
   margin: 0;
   color: var(--rs-gold);
   font-size: 12px;
   text-shadow: 1px 1px 0 #000;
   pointer-events: none;
+}
+
+.orb {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 2px solid #000;
+  border-radius: 50%;
+  background: linear-gradient(to top, #2f8f2f var(--fill), #4a1414 var(--fill));
+  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+  text-shadow: 1px 1px 0 #000;
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------- chat */
+
+.chat {
+  position: absolute;
+  bottom: calc(var(--edge-bottom) + 56px);
+  left: var(--edge-left);
+  width: min(420px, calc(100% - var(--edge-left) - var(--edge-right)));
+  height: 96px;
+  pointer-events: none;
+}
+
+.chatOpen {
+  height: min(45vh, 260px);
+  pointer-events: auto;
+}
+
+/* ---------------------------------------------------------------- tabs */
+
+.tabs {
+  position: absolute;
+  right: var(--edge-right);
+  bottom: var(--edge-bottom);
+  display: flex;
+  gap: 6px;
+  z-index: 3;
+}
+
+.tab {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border: 1px solid #000;
+  border-radius: 8px;
+  background: rgba(59, 50, 38, 0.92);
+  cursor: pointer;
+}
+
+.tabActive {
+  border-color: var(--rs-gold);
+  background: rgba(91, 78, 58, 0.96);
+}
+
+/* --------------------------------------------------------------- panel */
+
+.panel {
+  position: absolute;
+  right: var(--edge-right);
+  bottom: calc(var(--edge-bottom) + 52px);
+  left: var(--edge-left);
+  z-index: 2;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  max-height: min(58vh, 520px);
+  border: 1px solid #000;
+  border-radius: 8px;
+  background: rgba(30, 25, 18, 0.95);
+  transform: translateY(8px);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease,
+    visibility 0.12s;
+  backdrop-filter: blur(3px);
+}
+
+.panelOpen {
+  transform: none;
+  opacity: 1;
+  visibility: visible;
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--rs-slot-border);
+  padding: 6px 8px;
+}
+
+.panelTitle {
+  margin: 0;
+  color: var(--rs-gold);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.close {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--rs-slot-border);
+  border-radius: 4px;
+  background: var(--rs-slot);
+  color: var(--rs-text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.panelBody {
+  overflow-y: auto;
+  /* eslint-disable-next-line css/use-baseline -- needed for touch play; supported everywhere this game runs */
+  overscroll-behavior: contain;
+  padding: 8px;
 }
 
 .dead {
@@ -55,103 +210,35 @@
   margin: 0;
   background: rgba(110, 12, 12, 0.4);
   color: #fff;
-  font-size: 22px;
+  font-size: 26px;
   text-shadow: 2px 2px 0 #000;
   pointer-events: none;
 }
 
-.chat {
-  min-height: 0;
-}
+/* Wide screens dock the panel beside the game instead of over it. */
+@media (min-width: 900px) {
+  .chat {
+    bottom: var(--edge-bottom);
+    left: var(--edge-left);
+  }
 
-.panel {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 4px;
-  /* Contribute no height of its own, so a long tab scrolls rather than
-     stretching the frame past the game view. */
-  height: 0;
-  min-height: 100%;
-  border: 2px solid var(--rs-border);
-  border-radius: 3px;
-  background: var(--rs-panel);
-  padding: 4px;
-}
-
-.tabs {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 2px;
-}
-
-.tab {
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--rs-slot-border);
-  border-radius: 2px;
-  background: var(--rs-slot);
-  padding: 4px 0;
-  cursor: pointer;
-}
-
-.tab:hover {
-  background: var(--rs-slot-hover);
-}
-
-.activeTab {
-  border-color: var(--rs-gold);
-  background: var(--rs-slot-hover);
-}
-
-.body {
-  overflow-y: auto;
-  padding: 2px;
-}
-
-.minimap {
-  display: block;
-  cursor: crosshair;
-  margin: 2px auto 0;
-  border-radius: 50%;
-  background: #16324f;
-}
-
-.region {
-  margin: 8px 0 6px;
-  color: var(--rs-gold);
-  font-size: 12px;
-  text-align: center;
-}
-
-.vitals {
-  margin: 0;
-  font-size: 11px;
-  color: var(--rs-text-dim);
-}
-
-.vitals > div {
-  display: flex;
-  justify-content: space-between;
-  padding: 1px 2px;
-}
-
-.vitals dt,
-.vitals dd {
-  margin: 0;
-}
-
-.vitals dd {
-  color: var(--rs-text);
-}
-
-@media (max-width: 700px) {
-  .frame {
-    grid-template-columns: minmax(0, 1fr);
+  .tabs {
+    right: calc(var(--edge-right) + 336px);
+    bottom: auto;
+    top: var(--edge-top);
+    flex-direction: column;
   }
 
   .panel {
-    grid-template-rows: auto auto;
-    height: auto;
-    min-height: 0;
+    top: var(--edge-top);
+    bottom: var(--edge-bottom);
+    left: auto;
+    width: 328px;
+    max-height: none;
+    transform: translateX(8px);
+  }
+
+  .panelOpen {
+    transform: none;
   }
 }

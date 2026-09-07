@@ -1,5 +1,5 @@
 /** Draws the round minimap: terrain colours, scenery, items, and NPC dots. */
-import { MINIMAP_SCALE, MINIMAP_SIZE } from "../config";
+import { MINIMAP_TILES } from "../config";
 import { getNpcDef } from "../npcs";
 import type { GameState } from "../state";
 import {
@@ -9,110 +9,103 @@ import {
   tileIndex,
 } from "../world";
 
-const RADIUS = MINIMAP_SIZE / 2;
-const TILES = MINIMAP_SIZE / MINIMAP_SCALE;
-
-/** World tile under a point on the minimap surface. */
+/** World tile under a point on a minimap of the given size, in CSS pixels. */
 export function minimapTileAt(
   state: GameState,
+  size: number,
   x: number,
   y: number,
 ): { x: number; y: number } {
-  const originX = state.player.fx - TILES / 2;
-  const originY = state.player.fy - TILES / 2;
+  const scale = size / MINIMAP_TILES;
   return {
-    x: Math.floor(originX + x / MINIMAP_SCALE),
-    y: Math.floor(originY + y / MINIMAP_SCALE),
+    x: Math.floor(state.player.fx - MINIMAP_TILES / 2 + x / scale),
+    y: Math.floor(state.player.fy - MINIMAP_TILES / 2 + y / scale),
   };
 }
 
 export function renderMinimap(
   ctx: CanvasRenderingContext2D,
   state: GameState,
+  size: number,
 ): void {
   const { map, player } = state;
-  ctx.clearRect(0, 0, MINIMAP_SIZE, MINIMAP_SIZE);
+  const scale = size / MINIMAP_TILES;
+  const radius = size / 2;
+  const originX = player.fx - MINIMAP_TILES / 2;
+  const originY = player.fy - MINIMAP_TILES / 2;
+
+  ctx.clearRect(0, 0, size, size);
   ctx.save();
   ctx.beginPath();
-  ctx.arc(RADIUS, RADIUS, RADIUS - 2, 0, Math.PI * 2);
+  ctx.arc(radius, radius, radius - 1, 0, Math.PI * 2);
   ctx.clip();
 
-  const originX = player.fx - TILES / 2;
-  const originY = player.fy - TILES / 2;
-
-  for (let y = 0; y <= TILES; y++) {
-    for (let x = 0; x <= TILES; x++) {
+  for (let y = 0; y <= MINIMAP_TILES; y++) {
+    for (let x = 0; x <= MINIMAP_TILES; x++) {
       const tx = Math.floor(originX) + x;
       const ty = Math.floor(originY) + y;
-      const sx = (tx - originX) * MINIMAP_SCALE;
-      const sy = (ty - originY) * MINIMAP_SCALE;
+      const sx = (tx - originX) * scale;
+      const sy = (ty - originY) * scale;
       if (tx < 0 || ty < 0 || tx >= map.size || ty >= map.size) {
         ctx.fillStyle = "#16324f";
-        ctx.fillRect(sx, sy, MINIMAP_SCALE, MINIMAP_SCALE);
+        ctx.fillRect(sx, sy, scale + 1, scale + 1);
         continue;
       }
       const index = tileIndex(map, tx, ty);
       ctx.fillStyle = TERRAIN_DEFS[map.terrain[index] as TerrainId].minimap;
-      ctx.fillRect(sx, sy, MINIMAP_SCALE, MINIMAP_SCALE);
+      ctx.fillRect(sx, sy, scale + 1, scale + 1);
 
       const object = map.objects[index];
-      if (object) {
-        const colour = objectColour(object.defId);
-        if (colour) {
-          ctx.fillStyle = colour;
-          ctx.fillRect(sx, sy, MINIMAP_SCALE, MINIMAP_SCALE);
-        }
+      const colour = object && objectColour(object.defId);
+      if (colour) {
+        ctx.fillStyle = colour;
+        ctx.fillRect(sx, sy, scale + 1, scale + 1);
       }
     }
   }
 
-  for (const item of state.groundItems)
-    dot(ctx, originX, originY, item.x, item.y, "#e03c3c");
+  const dotSize = Math.max(2, scale * 0.9);
+  for (const item of state.groundItems) {
+    dot(ctx, originX, originY, scale, item.x, item.y, dotSize, "#e03c3c");
+  }
   for (const npc of state.npcs) {
     if (npc.respawnTick !== null) continue;
     const def = getNpcDef(npc.defId);
-    dot(
-      ctx,
-      originX,
-      originY,
-      npc.fx,
-      npc.fy,
-      def.attackable ? "#e8d24a" : "#4ad2e8",
-    );
+    const colour = def.attackable ? "#e8d24a" : "#4ad2e8";
+    dot(ctx, originX, originY, scale, npc.fx, npc.fy, dotSize, colour);
   }
-  dot(ctx, originX, originY, player.fx, player.fy, "#ffffff");
+  dot(
+    ctx,
+    originX,
+    originY,
+    scale,
+    player.fx,
+    player.fy,
+    dotSize * 1.2,
+    "#ffffff",
+  );
 
   ctx.restore();
 
-  ctx.strokeStyle = "#2b2b2b";
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.arc(RADIUS, RADIUS, RADIUS - 2, 0, Math.PI * 2);
-  ctx.stroke();
-
   ctx.fillStyle = "#e8d24a";
-  ctx.font = "bold 10px 'Helvetica Neue', Arial, sans-serif";
+  ctx.font = `bold ${Math.round(size / 13)}px 'Helvetica Neue', Arial, sans-serif`;
   ctx.textAlign = "center";
-  ctx.fillText("N", RADIUS, 12);
+  ctx.fillText("N", radius, size / 9);
 }
 
 function dot(
   ctx: CanvasRenderingContext2D,
   originX: number,
   originY: number,
+  scale: number,
   x: number,
   y: number,
+  size: number,
   colour: string,
 ): void {
   ctx.fillStyle = colour;
   ctx.beginPath();
-  ctx.arc(
-    (x - originX) * MINIMAP_SCALE,
-    (y - originY) * MINIMAP_SCALE,
-    2.4,
-    0,
-    Math.PI * 2,
-  );
+  ctx.arc((x - originX) * scale, (y - originY) * scale, size, 0, Math.PI * 2);
   ctx.fill();
 }
 
@@ -122,8 +115,9 @@ function objectColour(defId: string): string | null {
   const art = getObjectDef(defId).art;
   switch (art.kind) {
     case "tree":
+      return art.canopy;
     case "bush":
-      return art.kind === "tree" ? art.canopy : art.colour;
+      return art.colour;
     case "wall":
       return "#c8c8c0";
     case "fence":

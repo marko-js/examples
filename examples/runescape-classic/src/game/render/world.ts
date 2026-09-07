@@ -1,5 +1,5 @@
 /** Draws the game view: terrain, scenery, actors, and the overlays above them. */
-import { TILE_SIZE, VIEW_HEIGHT, VIEW_WIDTH } from "../config";
+import { tileSizeFor } from "../config";
 import { getItem } from "../items";
 import { getNpcDef } from "../npcs";
 import type { Point } from "../pathfinding";
@@ -27,6 +27,22 @@ export interface Camera {
   y: number;
 }
 
+/** The surface being drawn to, in CSS pixels, and the tile size it implies. */
+export interface Viewport {
+  width: number;
+  height: number;
+  tile: number;
+  /** Surface point the player is kept at, so panels can shift them clear. */
+  focus: Point;
+}
+
+interface Bounds {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
 const EDGES = [
   [0, -1],
   [1, 0],
@@ -34,49 +50,80 @@ const EDGES = [
   [-1, 0],
 ] as const;
 
-const TILES_X = VIEW_WIDTH / TILE_SIZE;
-const TILES_Y = VIEW_HEIGHT / TILE_SIZE;
-
-export function cameraFor(state: GameState): Camera {
-  const { player, map } = state;
+/**
+ * `visible` is the part of the surface no panel is covering. Tiles stay sized
+ * from the whole surface so opening a panel never changes the zoom.
+ */
+export function viewportFor(
+  width: number,
+  height: number,
+  visible?: { width: number; height: number },
+): Viewport {
   return {
-    x: clamp(player.fx + 0.5 - TILES_X / 2, 0, map.size - TILES_X),
-    y: clamp(player.fy + 0.5 - TILES_Y / 2, 0, map.size - TILES_Y),
+    width,
+    height,
+    tile: tileSizeFor(width, height),
+    focus: {
+      x: (visible?.width ?? width) / 2,
+      y: (visible?.height ?? height) / 2,
+    },
+  };
+}
+
+export function cameraFor(state: GameState, view: Viewport): Camera {
+  const { player, map } = state;
+  const acrossX = view.width / view.tile;
+  const acrossY = view.height / view.tile;
+  return {
+    x: clamp(
+      player.fx + 0.5 - view.focus.x / view.tile,
+      0,
+      Math.max(0, map.size - acrossX),
+    ),
+    y: clamp(
+      player.fy + 0.5 - view.focus.y / view.tile,
+      0,
+      Math.max(0, map.size - acrossY),
+    ),
   };
 }
 
 export function tileAtScreen(
   camera: Camera,
+  view: Viewport,
   screenX: number,
   screenY: number,
 ): Point {
   return {
-    x: Math.floor(camera.x + screenX / TILE_SIZE),
-    y: Math.floor(camera.y + screenY / TILE_SIZE),
+    x: Math.floor(camera.x + screenX / view.tile),
+    y: Math.floor(camera.y + screenY / view.tile),
   };
 }
 
 export function renderWorld(
   ctx: CanvasRenderingContext2D,
   state: GameState,
+  view: Viewport,
   time: number,
   hover: Point | null,
 ): void {
-  const camera = cameraFor(state);
+  const camera = cameraFor(state, view);
   ctx.imageSmoothingEnabled = false;
-  ctx.clearRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
+  ctx.clearRect(0, 0, view.width, view.height);
 
-  const minX = Math.floor(camera.x) - 1;
-  const minY = Math.floor(camera.y) - 1;
-  const maxX = Math.ceil(camera.x + TILES_X) + 1;
-  const maxY = Math.ceil(camera.y + TILES_Y) + 2;
+  const bounds: Bounds = {
+    minX: Math.floor(camera.x) - 1,
+    minY: Math.floor(camera.y) - 1,
+    maxX: Math.ceil(camera.x + view.width / view.tile) + 1,
+    maxY: Math.ceil(camera.y + view.height / view.tile) + 2,
+  };
 
-  drawTerrain(ctx, state, camera, time, minX, minY, maxX, maxY);
-  drawFlatObjects(ctx, state, camera, time, minX, minY, maxX, maxY);
-  drawDestination(ctx, state, camera, time);
-  if (hover) drawHover(ctx, camera, hover);
-  drawSortedLayer(ctx, state, camera, time, minX, minY, maxX, maxY);
-  drawSplats(ctx, state, camera, time);
+  drawTerrain(ctx, state, camera, view, time, bounds);
+  drawFlatObjects(ctx, state, camera, view, time, bounds);
+  drawDestination(ctx, state, camera, view, time);
+  if (hover) drawHover(ctx, camera, view, hover);
+  drawSortedLayer(ctx, state, camera, view, time, bounds);
+  drawSplats(ctx, state, camera, view, time);
 }
 
 /* -------------------------------------------------------------- terrain */
@@ -85,30 +132,29 @@ function drawTerrain(
   ctx: CanvasRenderingContext2D,
   state: GameState,
   camera: Camera,
+  view: Viewport,
   time: number,
-  minX: number,
-  minY: number,
-  maxX: number,
-  maxY: number,
+  bounds: Bounds,
 ): void {
-  for (let y = minY; y < maxY; y++) {
-    for (let x = minX; x < maxX; x++) {
+  const tile = view.tile;
+  for (let y = bounds.minY; y < bounds.maxY; y++) {
+    for (let x = bounds.minX; x < bounds.maxX; x++) {
       const id = terrainId(state, x, y);
       const def = TERRAIN_DEFS[id];
-      const sx = Math.round((x - camera.x) * TILE_SIZE);
-      const sy = Math.round((y - camera.y) * TILE_SIZE);
+      const sx = Math.round((x - camera.x) * tile);
+      const sy = Math.round((y - camera.y) * tile);
 
       ctx.fillStyle = def.colour;
-      ctx.fillRect(sx, sy, TILE_SIZE, TILE_SIZE);
+      ctx.fillRect(sx, sy, tile, tile);
 
       if (id === TERRAIN.water) {
-        drawWater(ctx, sx, sy, x, y, time);
+        drawWater(ctx, sx, sy, x, y, tile, time);
       } else {
-        drawTexture(ctx, sx, sy, x, y, def.speckle);
+        drawTexture(ctx, sx, sy, x, y, tile, def.speckle);
       }
 
-      if (id === TERRAIN.bridge) drawPlanks(ctx, sx, sy);
-      blendEdges(ctx, state, x, y, sx, sy, id);
+      if (id === TERRAIN.bridge) drawPlanks(ctx, sx, sy, tile);
+      blendEdges(ctx, state, x, y, sx, sy, tile, id);
     }
   }
 }
@@ -120,22 +166,31 @@ function drawTexture(
   sy: number,
   x: number,
   y: number,
+  tile: number,
   speckle: string,
 ): void {
+  const unit = tile / 32;
   ctx.fillStyle = "rgba(0,0,0,0.07)";
   for (let i = 0; i < 2; i++) {
-    const w = 6 + ((hash2d(x, y, i + 32) * 9) | 0);
-    const h = 4 + ((hash2d(x, y, i + 34) * 7) | 0);
-    const ox = (hash2d(x, y, i + 36) * (TILE_SIZE - w)) | 0;
-    const oy = (hash2d(x, y, i + 38) * (TILE_SIZE - h)) | 0;
-    ctx.fillRect(sx + ox, sy + oy, w, h);
+    const w = (6 + ((hash2d(x, y, i + 32) * 9) | 0)) * unit;
+    const h = (4 + ((hash2d(x, y, i + 34) * 7) | 0)) * unit;
+    ctx.fillRect(
+      sx + hash2d(x, y, i + 36) * (tile - w),
+      sy + hash2d(x, y, i + 38) * (tile - h),
+      w,
+      h,
+    );
   }
 
+  const speck = Math.max(2, Math.round(3 * unit));
   ctx.fillStyle = speckle;
   for (let i = 0; i < 5; i++) {
-    const ox = (hash2d(x, y, i) * (TILE_SIZE - 4)) | 0;
-    const oy = (hash2d(x, y, i + 16) * (TILE_SIZE - 4)) | 0;
-    ctx.fillRect(sx + ox, sy + oy, 3, 3);
+    ctx.fillRect(
+      sx + ((hash2d(x, y, i) * (tile - speck)) | 0),
+      sy + ((hash2d(x, y, i + 16) * (tile - speck)) | 0),
+      speck,
+      speck,
+    );
   }
 }
 
@@ -145,15 +200,20 @@ function drawWater(
   sy: number,
   x: number,
   y: number,
+  tile: number,
   time: number,
 ): void {
+  const unit = tile / 32;
   for (let i = 0; i < 2; i++) {
     const drift = (time / 2600 + hash2d(x, y, i)) % 1;
-    const ry = sy + Math.round(drift * TILE_SIZE);
-    const width = 8 + Math.round(hash2d(x, y, i + 8) * 14);
-    const offset = Math.round(hash2d(x, y, i + 24) * (TILE_SIZE - width));
+    const width = (8 + Math.round(hash2d(x, y, i + 8) * 14)) * unit;
     ctx.fillStyle = i ? "rgba(0,0,0,0.10)" : "rgba(200,228,255,0.13)";
-    ctx.fillRect(sx + offset, ry, width, 2);
+    ctx.fillRect(
+      sx + hash2d(x, y, i + 24) * (tile - width),
+      sy + Math.round(drift * tile),
+      width,
+      Math.max(1, 2 * unit),
+    );
   }
 }
 
@@ -161,9 +221,13 @@ function drawPlanks(
   ctx: CanvasRenderingContext2D,
   sx: number,
   sy: number,
+  tile: number,
 ): void {
   ctx.fillStyle = "rgba(0,0,0,0.2)";
-  for (let i = 4; i < TILE_SIZE; i += 8) ctx.fillRect(sx, sy + i, TILE_SIZE, 1);
+  const gap = tile / 4;
+  for (let i = gap / 2; i < tile; i += gap) {
+    ctx.fillRect(sx, sy + Math.round(i), tile, 1);
+  }
 }
 
 /**
@@ -177,30 +241,32 @@ function blendEdges(
   y: number,
   sx: number,
   sy: number,
+  tile: number,
   id: TerrainId,
 ): void {
+  const unit = tile / 32;
   for (const [edge, [dx, dy]] of EDGES.entries()) {
     const neighbour = terrainId(state, x + dx, y + dy);
     if (neighbour === id) continue;
 
     if (id === TERRAIN.water) {
       ctx.fillStyle = "rgba(206,230,255,0.32)";
-      fillEdge(ctx, sx, sy, dx, dy, 3);
+      fillEdge(ctx, sx, sy, tile, dx, dy, Math.max(2, 3 * unit));
       continue;
     }
     if (neighbour === TERRAIN.water) continue;
 
     ctx.fillStyle = TERRAIN_DEFS[neighbour].colour;
     const steps = 4;
-    const span = TILE_SIZE / steps;
+    const span = tile / steps;
     for (let step = 0; step < steps; step++) {
-      const depth = 2 + Math.round(hash2d(x, y, edge * 8 + step) * 6);
+      const depth = (2 + Math.round(hash2d(x, y, edge * 8 + step) * 6)) * unit;
       const offset = step * span;
       if (dy === -1) ctx.fillRect(sx + offset, sy, span, depth);
       else if (dy === 1)
-        ctx.fillRect(sx + offset, sy + TILE_SIZE - depth, span, depth);
+        ctx.fillRect(sx + offset, sy + tile - depth, span, depth);
       else if (dx === -1) ctx.fillRect(sx, sy + offset, depth, span);
-      else ctx.fillRect(sx + TILE_SIZE - depth, sy + offset, depth, span);
+      else ctx.fillRect(sx + tile - depth, sy + offset, depth, span);
     }
   }
 }
@@ -209,14 +275,15 @@ function fillEdge(
   ctx: CanvasRenderingContext2D,
   sx: number,
   sy: number,
+  tile: number,
   dx: number,
   dy: number,
   depth: number,
 ): void {
-  if (dy === -1) ctx.fillRect(sx, sy, TILE_SIZE, depth);
-  else if (dy === 1) ctx.fillRect(sx, sy + TILE_SIZE - depth, TILE_SIZE, depth);
-  else if (dx === -1) ctx.fillRect(sx, sy, depth, TILE_SIZE);
-  else ctx.fillRect(sx + TILE_SIZE - depth, sy, depth, TILE_SIZE);
+  if (dy === -1) ctx.fillRect(sx, sy, tile, depth);
+  else if (dy === 1) ctx.fillRect(sx, sy + tile - depth, tile, depth);
+  else if (dx === -1) ctx.fillRect(sx, sy, depth, tile);
+  else ctx.fillRect(sx + tile - depth, sy, depth, tile);
 }
 
 function terrainId(state: GameState, x: number, y: number): TerrainId {
@@ -231,17 +298,15 @@ function drawFlatObjects(
   ctx: CanvasRenderingContext2D,
   state: GameState,
   camera: Camera,
+  view: Viewport,
   time: number,
-  minX: number,
-  minY: number,
-  maxX: number,
-  maxY: number,
+  bounds: Bounds,
 ): void {
-  forEachObject(state, minX, minY, maxX, maxY, (object) => {
+  forEachObject(state, bounds, (object) => {
     const def = getObjectDef(object.defId);
     if (!def.flat) return;
-    const { sx, sy } = project(camera, object.x, object.y);
-    drawObjectArt(ctx, def.art, sx, sy, TILE_SIZE, time);
+    const { sx, sy } = project(camera, view, object.x, object.y);
+    drawObjectArt(ctx, def.art, sx, sy, view.tile, time);
   });
 }
 
@@ -254,46 +319,42 @@ function drawSortedLayer(
   ctx: CanvasRenderingContext2D,
   state: GameState,
   camera: Camera,
+  view: Viewport,
   time: number,
-  minX: number,
-  minY: number,
-  maxX: number,
-  maxY: number,
+  bounds: Bounds,
 ): void {
   const drawables: Drawable[] = [];
 
-  forEachObject(state, minX, minY, maxX, maxY, (object) => {
+  forEachObject(state, bounds, (object) => {
     const def = getObjectDef(object.defId);
     if (def.flat) return;
-    const { sx, sy } = project(camera, object.x, object.y);
+    const { sx, sy } = project(camera, view, object.x, object.y);
     drawables.push({
       sort: object.y,
-      draw: () => drawObjectArt(ctx, def.art, sx, sy, TILE_SIZE, time),
+      draw: () => drawObjectArt(ctx, def.art, sx, sy, view.tile, time),
     });
   });
 
   for (const item of state.groundItems) {
-    if (item.x < minX || item.x > maxX || item.y < minY || item.y > maxY)
-      continue;
+    if (!inBounds(bounds, item.x, item.y)) continue;
     drawables.push({
       sort: item.y - 0.4,
-      draw: () => drawGroundItem(ctx, camera, item),
+      draw: () => drawGroundItem(ctx, camera, view, item),
     });
   }
 
   for (const npc of state.npcs) {
-    if (npc.respawnTick !== null) continue;
-    if (npc.x < minX || npc.x > maxX || npc.y < minY || npc.y > maxY) continue;
+    if (npc.respawnTick !== null || !inBounds(bounds, npc.x, npc.y)) continue;
     drawables.push({
       sort: npc.fy,
-      draw: () => drawNpcActor(ctx, camera, npc, time),
+      draw: () => drawNpcActor(ctx, camera, view, npc, time),
     });
   }
 
   if (state.player.respawnTick === null) {
     drawables.push({
       sort: state.player.fy,
-      draw: () => drawPlayer(ctx, camera, state.player, time),
+      draw: () => drawPlayer(ctx, camera, view, state.player, time),
     });
   }
 
@@ -304,54 +365,73 @@ function drawSortedLayer(
 function drawGroundItem(
   ctx: CanvasRenderingContext2D,
   camera: Camera,
+  view: Viewport,
   item: GroundItem,
 ): void {
-  const { sx, sy } = project(camera, item.x, item.y);
-  drawItemIcon(ctx, item.id, sx - 9, sy - 20, 18);
+  const { sx, sy } = project(camera, view, item.x, item.y);
+  const size = view.tile * 0.56;
+  drawItemIcon(ctx, item.id, sx - size / 2, sy - size * 1.1, size);
 }
 
 function drawNpcActor(
   ctx: CanvasRenderingContext2D,
   camera: Camera,
+  view: Viewport,
   npc: Npc,
   time: number,
 ): void {
   const def = getNpcDef(npc.defId);
-  const { sx, sy } = projectFloat(camera, npc.fx, npc.fy);
+  const { sx, sy } = projectFloat(camera, view, npc.fx, npc.fy);
   drawNpc(
     ctx,
     sx,
     sy,
-    TILE_SIZE,
+    view.tile,
     def.sprite,
     npc.facing,
     walkPhase(npc.path.length > 0, time),
   );
-  if (npc.hits < npc.maxHits)
-    drawHealthBar(ctx, sx, sy - TILE_SIZE * 1.3, npc.hits / npc.maxHits);
-  if (npc.targetPlayer)
-    drawLabel(ctx, sx, sy - TILE_SIZE * 1.55, def.name, "#ff9a3c");
+  if (npc.hits < npc.maxHits) {
+    drawHealthBar(
+      ctx,
+      sx,
+      sy - view.tile * 1.3,
+      view.tile,
+      npc.hits / npc.maxHits,
+    );
+  }
+  if (npc.targetPlayer) {
+    drawLabel(ctx, sx, sy - view.tile * 1.55, view.tile, def.name, "#ff9a3c");
+  }
 }
 
 function drawPlayer(
   ctx: CanvasRenderingContext2D,
   camera: Camera,
+  view: Viewport,
   player: Player,
   time: number,
 ): void {
-  const { sx, sy } = projectFloat(camera, player.fx, player.fy);
+  const { sx, sy } = projectFloat(camera, view, player.fx, player.fy);
   drawCharacter(
     ctx,
     sx,
     sy,
-    TILE_SIZE,
+    view.tile,
     playerLook(player),
     player.facing,
     walkPhase(player.path.length > 0, time),
   );
-  drawLabel(ctx, sx, sy - TILE_SIZE * 1.5, player.name, "#ffffff");
-  if (player.hits < player.maxHits)
-    drawHealthBar(ctx, sx, sy - TILE_SIZE * 1.32, player.hits / player.maxHits);
+  drawLabel(ctx, sx, sy - view.tile * 1.5, view.tile, player.name, "#ffffff");
+  if (player.hits < player.maxHits) {
+    drawHealthBar(
+      ctx,
+      sx,
+      sy - view.tile * 1.32,
+      view.tile,
+      player.hits / player.maxHits,
+    );
+  }
 }
 
 export function playerLook(player: Player): CharacterLook {
@@ -376,62 +456,66 @@ function drawDestination(
   ctx: CanvasRenderingContext2D,
   state: GameState,
   camera: Camera,
+  view: Viewport,
   time: number,
 ): void {
   const path = state.player.path;
   if (!path.length) return;
   const goal = path[path.length - 1];
-  const { sx, sy } = project(camera, goal.x, goal.y);
-  const pulse = 5 + Math.sin(time / 120) * 1.5;
+  const { sx, sy } = project(camera, view, goal.x, goal.y);
+  const pulse = view.tile * (0.16 + Math.sin(time / 120) * 0.04);
   ctx.strokeStyle = "#ffe14a";
-  ctx.lineWidth = 2;
+  ctx.lineWidth = Math.max(2, view.tile / 16);
   ctx.beginPath();
-  ctx.moveTo(sx - pulse, sy - TILE_SIZE / 2 - pulse);
-  ctx.lineTo(sx + pulse, sy - TILE_SIZE / 2 + pulse);
-  ctx.moveTo(sx + pulse, sy - TILE_SIZE / 2 - pulse);
-  ctx.lineTo(sx - pulse, sy - TILE_SIZE / 2 + pulse);
+  ctx.moveTo(sx - pulse, sy - view.tile / 2 - pulse);
+  ctx.lineTo(sx + pulse, sy - view.tile / 2 + pulse);
+  ctx.moveTo(sx + pulse, sy - view.tile / 2 - pulse);
+  ctx.lineTo(sx - pulse, sy - view.tile / 2 + pulse);
   ctx.stroke();
 }
 
 function drawHover(
   ctx: CanvasRenderingContext2D,
   camera: Camera,
+  view: Viewport,
   hover: Point,
 ): void {
-  const sx = Math.round((hover.x - camera.x) * TILE_SIZE);
-  const sy = Math.round((hover.y - camera.y) * TILE_SIZE);
+  const sx = Math.round((hover.x - camera.x) * view.tile);
+  const sy = Math.round((hover.y - camera.y) * view.tile);
   ctx.strokeStyle = "rgba(255,255,255,0.5)";
   ctx.lineWidth = 1;
-  ctx.strokeRect(sx + 0.5, sy + 0.5, TILE_SIZE - 1, TILE_SIZE - 1);
+  ctx.strokeRect(sx + 0.5, sy + 0.5, view.tile - 1, view.tile - 1);
 }
 
 function drawSplats(
   ctx: CanvasRenderingContext2D,
   state: GameState,
   camera: Camera,
+  view: Viewport,
   time: number,
 ): void {
+  const scale = Math.max(1, view.tile / 32);
   ctx.textAlign = "center";
   for (const splat of state.splats) {
     const age = (time - splat.bornAt) / 1200;
     if (age < 0 || age > 1) continue;
-    const { sx, sy } = projectFloat(camera, splat.x, splat.y);
-    const y = sy - TILE_SIZE * 0.9 - age * 18;
+    const { sx, sy } = projectFloat(camera, view, splat.x, splat.y);
+    const y = sy - view.tile * 0.9 - age * 18 * scale;
     ctx.globalAlpha = 1 - age * age;
 
     if (splat.tone === "damage" || splat.tone === "block") {
       ctx.fillStyle = splat.tone === "damage" ? "#c02020" : "#2f4f8f";
       ctx.beginPath();
-      ctx.arc(sx, y, 9, 0, Math.PI * 2);
+      ctx.arc(sx, y, 9 * scale, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 11px 'Helvetica Neue', Arial, sans-serif";
-      ctx.fillText(splat.text, sx, y + 4);
+      ctx.font = `bold ${Math.round(11 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
+      ctx.fillText(splat.text, sx, y + 4 * scale);
     } else {
       ctx.fillStyle = splat.tone === "level" ? "#ffe14a" : "#8ce87a";
-      ctx.font = "bold 12px 'Helvetica Neue', Arial, sans-serif";
+      ctx.font = `bold ${Math.round(12 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
       ctx.strokeStyle = "rgba(0,0,0,0.7)";
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 3 * scale;
       ctx.strokeText(splat.text, sx, y);
       ctx.fillText(splat.text, sx, y);
     }
@@ -443,26 +527,30 @@ function drawHealthBar(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
+  tile: number,
   fraction: number,
 ): void {
-  const width = 28;
+  const width = tile * 0.88;
+  const height = Math.max(3, tile / 8);
   ctx.fillStyle = "#7a1414";
-  ctx.fillRect(x - width / 2, y, width, 4);
+  ctx.fillRect(x - width / 2, y, width, height);
   ctx.fillStyle = "#3fbf3f";
-  ctx.fillRect(x - width / 2, y, Math.max(0, width * fraction), 4);
+  ctx.fillRect(x - width / 2, y, Math.max(0, width * fraction), height);
 }
 
 function drawLabel(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
+  tile: number,
   text: string,
   colour: string,
 ): void {
-  ctx.font = "10px 'Helvetica Neue', Arial, sans-serif";
+  const size = Math.max(10, Math.round(tile / 3));
+  ctx.font = `${size}px 'Helvetica Neue', Arial, sans-serif`;
   ctx.textAlign = "center";
   ctx.strokeStyle = "rgba(0,0,0,0.75)";
-  ctx.lineWidth = 3;
+  ctx.lineWidth = Math.max(3, size / 3);
   ctx.strokeText(text, x, y);
   ctx.fillStyle = colour;
   ctx.fillText(text, x, y);
@@ -470,17 +558,28 @@ function drawLabel(
 
 /* --------------------------------------------------------------- helpers */
 
+function inBounds(bounds: Bounds, x: number, y: number): boolean {
+  return (
+    x >= bounds.minX && x <= bounds.maxX && y >= bounds.minY && y <= bounds.maxY
+  );
+}
+
 function forEachObject(
   state: GameState,
-  minX: number,
-  minY: number,
-  maxX: number,
-  maxY: number,
+  bounds: Bounds,
   visit: (object: WorldObject) => void,
 ): void {
   const { map } = state;
-  for (let y = Math.max(0, minY); y < Math.min(map.size, maxY); y++) {
-    for (let x = Math.max(0, minX); x < Math.min(map.size, maxX); x++) {
+  for (
+    let y = Math.max(0, bounds.minY);
+    y < Math.min(map.size, bounds.maxY);
+    y++
+  ) {
+    for (
+      let x = Math.max(0, bounds.minX);
+      x < Math.min(map.size, bounds.maxX);
+      x++
+    ) {
       const object = map.objects[tileIndex(map, x, y)];
       if (object) visit(object);
     }
@@ -490,23 +589,25 @@ function forEachObject(
 /** Screen position of the bottom centre of a tile. */
 function project(
   camera: Camera,
+  view: Viewport,
   x: number,
   y: number,
 ): { sx: number; sy: number } {
   return {
-    sx: Math.round((x - camera.x) * TILE_SIZE + TILE_SIZE / 2),
-    sy: Math.round((y - camera.y) * TILE_SIZE + TILE_SIZE),
+    sx: Math.round((x - camera.x) * view.tile + view.tile / 2),
+    sy: Math.round((y - camera.y) * view.tile + view.tile),
   };
 }
 
 function projectFloat(
   camera: Camera,
+  view: Viewport,
   x: number,
   y: number,
 ): { sx: number; sy: number } {
   return {
-    sx: (x - camera.x) * TILE_SIZE + TILE_SIZE / 2,
-    sy: (y - camera.y) * TILE_SIZE + TILE_SIZE,
+    sx: (x - camera.x) * view.tile + view.tile / 2,
+    sy: (y - camera.y) * view.tile + view.tile,
   };
 }
 

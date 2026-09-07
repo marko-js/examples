@@ -13,10 +13,13 @@ export default {
       { id: 4, tone: "quest", text: "You have reached Woodcut level 15!" },
       { id: 5, tone: "chat", text: "Guest: hello world" },
     ],
+    open: true,
     onSay() {},
   },
 } as Meta<Input>;
 
-export const Default: Story<Input> = { args: {} };
+export const Open: Story<Input> = { args: {} };
+
+export const Collapsed: Story<Input> = { args: { open: false } };
 
 export const Quiet: Story<Input> = { args: { messages: [] } };

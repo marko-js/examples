@@ -3,7 +3,12 @@
   <head>
     <meta charset="UTF-8">
     <link rel="icon" type="image/png" sizes="32x32" href="./favicon.png">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
+    >
+    <meta name="theme-color" content="#06121e">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta
       name="description"
       content="A RuneScape Classic style browser MMO built with Marko 6 and @marko/run."
@@ -30,16 +35,25 @@
     color-scheme: dark;
   }
 
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+    /* The game owns the viewport; nothing on the page scrolls or bounces. */
+    overscroll-behavior: none;
+  }
+
   body {
     margin: 0;
-    background: #14100a
-      radial-gradient(circle at 50% 0%, #241d12 0%, #0d0a06 70%) fixed;
+    background: #06121e;
     color: var(--rs-text);
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     line-height: 1.4;
+    -webkit-text-size-adjust: 100%;
   }
 
   button {
     font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
   }
 </style>

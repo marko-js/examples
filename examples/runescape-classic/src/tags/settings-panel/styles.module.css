@@ -81,3 +81,16 @@
 .danger:hover {
   background: #552626;
 }
+
+.credit {
+  margin: 0;
+  border-top: 1px solid var(--rs-slot-border);
+  padding-top: 8px;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--rs-text-dim);
+}
+
+.credit a {
+  color: var(--rs-gold);
+}

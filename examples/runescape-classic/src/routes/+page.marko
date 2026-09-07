@@ -1,59 +1,13 @@
-<main class="page">
-  <header class="masthead">
-    <h1 class="title">RuneScape Classic</h1>
-    <p class="tagline">
-      A tribute build with <a href="https://markojs.com">Marko 6</a> and
-      <a href="https://github.com/marko-js/run">@marko/run</a>. Everything runs in
-      your browser: the world, the tick loop, and your save file.
-    </p>
-  </header>
-
-  <game-client/>
-
-  <footer class="footnote">
-    Chop, mine, fish, cook, fight and bank your way around Lumbridge. Progress
-    saves to this browser automatically. Not affiliated with Jagex.
-  </footer>
-</main>
+<h1 class="visually-hidden">RuneScape Classic, built with Marko</h1>
+<game-client/>
 
 <style>
-  .page {
-    display: grid;
-    gap: 14px;
-    padding: 16px 12px 28px;
-  }
-
-  .masthead {
-    max-width: 744px;
-    margin: 0 auto;
-    text-align: center;
-  }
-
-  .title {
-    margin: 0;
-    color: #ffd42a;
-    font-size: 26px;
-    letter-spacing: 0.04em;
-    text-shadow: 2px 2px 0 #000;
-  }
-
-  .tagline {
-    margin: 6px 0 0;
-    color: #b8ad92;
-    font-size: 13px;
-    line-height: 1.5;
-  }
-
-  .tagline a {
-    color: #ffd42a;
-  }
-
-  .footnote {
-    max-width: 744px;
-    margin: 0 auto;
-    color: #7d7462;
-    font-size: 12px;
-    line-height: 1.5;
-    text-align: center;
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 </style>

@@ -3,39 +3,51 @@ import styles from "./styles.module.css";
 
 export interface Input {
   messages: ChatMessage[];
+  /** Collapsed shows the last few lines and lets taps reach the game. */
+  open: boolean;
   onSay: (text: string) => void;
 }
 
 <let/draft="">
 
-<div class=styles.chat>
+<const/visible=input.open ? input.messages : input.messages.slice(-4)>
+
+<div class=[styles.chat, input.open && styles.open]>
   <ol/log class=styles.log>
-    <for|message| of=input.messages by="id">
-      <li class=[styles.line, styles[message.tone]]>${message.text}</li>
+    <for|message| of=visible by="id">
+      <li class=[
+        styles.line,
+        styles[message.tone === "chat" ? "chatTone" : message.tone],
+      ]>
+        ${message.text}
+      </li>
     </for>
   </ol>
 
-  <form
-    class=styles.form
-    onSubmit(event) {
-      event.preventDefault();
-      input.onSay(draft);
-      draft = "";
-    }
-  >
-    <label class=styles.label for="chat-input">Say</label>
-    <input
-      id="chat-input"
-      class=styles.input
-      autocomplete="off"
-      placeholder="Type a message and press enter"
-      value:=draft
+  <show=input.open>
+    <form
+      class=styles.form
+      onSubmit(event) {
+        event.preventDefault();
+        input.onSay(draft);
+        draft = "";
+      }
     >
-  </form>
+      <label class=styles.label for="chat-input">Say</label>
+      <input
+        id="chat-input"
+        class=styles.input
+        autocomplete="off"
+        placeholder="Say something…"
+        value:=draft
+      >
+    </form>
+  </show>
 </div>
 
 <script>
   // Keep the newest message in view as the log grows.
   void input.messages.length;
+  void input.open;
   log().scrollTop = log().scrollHeight;
 </script>

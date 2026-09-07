@@ -1,37 +1,63 @@
-import { MINIMAP_SIZE, VIEW_HEIGHT, VIEW_WIDTH } from "../../game/config";
 import { Engine } from "../../game/engine";
 import {
   bagIcon,
+  chatIcon,
   cogIcon,
   gearIcon,
-  mapIcon,
   statsIcon,
 } from "../../game/icons";
 import type { EquipSlot } from "../../game/items";
 import type { MenuEntry, MenuState } from "../../game/menu";
 import type { Point } from "../../game/pathfinding";
-import type { CombatStyle } from "../../game/state";
 import { minimapTileAt, renderMinimap } from "../../game/render/minimap";
-import { cameraFor, renderWorld, tileAtScreen } from "../../game/render/world";
+import {
+  cameraFor,
+  renderWorld,
+  tileAtScreen,
+  type Viewport,
+  viewportFor,
+} from "../../game/render/world";
 import { clearSave, loadGame, saveGame } from "../../game/save";
+import type { CombatStyle } from "../../game/state";
 import { buildUi, initialUi } from "../../game/ui";
 import styles from "./styles.module.css";
 
 static const TABS = [
-  { id: "map", name: "Map", icon: mapIcon() },
   { id: "inventory", name: "Inventory", icon: bagIcon() },
   { id: "equipment", name: "Worn", icon: gearIcon() },
   { id: "stats", name: "Stats", icon: statsIcon() },
   { id: "settings", name: "Options", icon: cogIcon() },
 ];
 
+/** Minimap edge length in CSS pixels. */
+static const MINIMAP = 132;
+
+/** A press this long without moving opens the menu, standing in for a right click. */
+static const LONG_PRESS_MS = 420;
+
 <let/ui=initialUi()>
-<let/tab="map">
+<let/tab=null as string | null>
+<let/chatOpen=false>
 <let/hover="">
 <let/menu=null as MenuState | null>
 
-// Values the animation loop and event handlers share without driving renders.
-<const/session={ engine: null as Engine | null, tile: null as Point | null }>
+// Values the animation loop and pointer handlers share without driving renders.
+<const/session={
+  engine: null as Engine | null,
+  tile: null as Point | null,
+  view: viewportFor(1024, 768) as Viewport,
+  panelOpen: false,
+  /** Recomputes `view` from the cached layout and the panel's open state. */
+  applyView: null as (() => void) | null,
+  press: null as { x: number; y: number; tile: Point; held: boolean } | null,
+  timer: 0,
+}>
+
+<const/setTab(next: string | null) {
+  tab = next;
+  session.panelOpen = next !== null;
+  session.applyView?.();
+}>
 
 <const/refresh() {
   const game = session.engine;
@@ -45,20 +71,43 @@ static const TABS = [
   });
 }>
 
-<const/tileFrom(event: MouseEvent, canvas: HTMLCanvasElement) {
+<const/tileFrom(clientX: number, clientY: number, canvas: HTMLCanvasElement) {
   const game = session.engine!;
   const rect = canvas.getBoundingClientRect();
   return tileAtScreen(
-    cameraFor(game.state),
-    ((event.clientX - rect.left) / rect.width) * VIEW_WIDTH,
-    ((event.clientY - rect.top) / rect.height) * VIEW_HEIGHT,
+    cameraFor(game.state, session.view),
+    session.view,
+    clientX - rect.left,
+    clientY - rect.top,
   );
 }>
 
 <const/openMenu(clientX: number, clientY: number, entries: MenuEntry[]) {
   if (!entries.length) return;
   const rect = frame().getBoundingClientRect();
-  menu = { x: clientX - rect.left, y: clientY - rect.top, entries };
+  menu = {
+    x: Math.min(clientX - rect.left, rect.width - 170),
+    y: Math.min(clientY - rect.top, rect.height - 40 - entries.length * 22),
+    entries,
+  };
+}>
+
+<const/openWorldMenu(tile: Point, clientX: number, clientY: number) {
+  const game = session.engine;
+  if (!game) return;
+  openMenu(
+    clientX,
+    clientY,
+    game.optionsAt(tile.x, tile.y).map((option) => ({
+      label: option.label,
+      run: () => game.choose(option),
+    })),
+  );
+}>
+
+<const/endPress() {
+  clearTimeout(session.timer);
+  session.press = null;
 }>
 
 <const/activateSlot(slot: number) {
@@ -80,156 +129,174 @@ static const TABS = [
 }>
 
 <div/frame class=styles.frame>
-  <div class=styles.main>
-    <div class=styles.viewport>
-      <canvas/view
-        class=styles.view
-        width=VIEW_WIDTH
-        height=VIEW_HEIGHT
-        aria-label="Game view"
-        onMouseMove(event, canvas) {
-          const game = session.engine;
-          if (!game) return;
-          const tile = tileFrom(event, canvas);
-          session.tile = tile;
-          hover = game.describeTile(tile.x, tile.y) ?? "";
-        }
-        onMouseLeave() {
-          session.tile = null;
-          hover = "";
-        }
+  <canvas/view
+    class=styles.view
+    aria-label="Game view"
+    onPointerDown(event, canvas) {
+      if (event.pointerType === "mouse" && event.button !== 0) return;
+      if (!session.engine) return;
+      const tile = tileFrom(event.clientX, event.clientY, canvas);
+      const { clientX, clientY } = event;
+      session.press = { x: clientX, y: clientY, tile, held: false };
+      clearTimeout(session.timer);
+      session.timer = window.setTimeout(() => {
+        if (!session.press) return;
+        session.press.held = true;
+        openWorldMenu(tile, clientX, clientY);
+      }, LONG_PRESS_MS);
+    }
+    onPointerMove(event, canvas) {
+      const game = session.engine;
+      if (!game) return;
+      const press = session.press;
+      if (
+        press &&
+        Math.hypot(event.clientX - press.x, event.clientY - press.y) > 12
+      ) {
+        endPress();
+      }
+      if (event.pointerType !== "mouse") return;
+      const tile = tileFrom(event.clientX, event.clientY, canvas);
+      session.tile = tile;
+      hover = game.describeTile(tile.x, tile.y) ?? "";
+    }
+    onPointerUp() {
+      const press = session.press;
+      clearTimeout(session.timer);
+      session.press = null;
+      if (!press || press.held) return;
+      const game = session.engine;
+      const option = game?.optionsAt(press.tile.x, press.tile.y)[0];
+      if (option) game!.choose(option);
+    }
+    onPointerCancel() {
+      endPress();
+    }
+    onPointerLeave() {
+      endPress();
+      session.tile = null;
+      hover = "";
+    }
+    onContextMenu(event, canvas) {
+      event.preventDefault();
+      endPress();
+      if (!session.engine) return;
+      openWorldMenu(
+        tileFrom(event.clientX, event.clientY, canvas),
+        event.clientX,
+        event.clientY,
+      );
+    }
+  />
+
+  <p class=styles.hover>${hover}</p>
+
+  <div class=styles.corner>
+    <div class=styles.minimapWrap>
+      <canvas/minimap
+        class=styles.minimap
+        style=`width:${MINIMAP}px;height:${MINIMAP}px`
+        aria-label="Minimap, tap to walk"
         onClick(event, canvas) {
           const game = session.engine;
           if (!game) return;
-          const tile = tileFrom(event, canvas);
-          const option = game.optionsAt(tile.x, tile.y)[0];
-          if (option) game.choose(option);
-        }
-        onContextMenu(event, canvas) {
-          event.preventDefault();
-          const game = session.engine;
-          if (!game) return;
-          const tile = tileFrom(event, canvas);
-          openMenu(
-            event.clientX,
-            event.clientY,
-            game.optionsAt(tile.x, tile.y).map((option) => ({
-              label: option.label,
-              run: () => game.choose(option),
-            })),
+          const rect = canvas.getBoundingClientRect();
+          const tile = minimapTileAt(
+            game.state,
+            MINIMAP,
+            ((event.clientX - rect.left) / rect.width) * MINIMAP,
+            ((event.clientY - rect.top) / rect.height) * MINIMAP,
           );
+          game.choose({
+            label: "Walk here",
+            action: "walk",
+            target: { kind: "tile", ...tile },
+          });
         }
       />
-
-      <p class=styles.hover>${hover}</p>
-
-      <show=ui.dead>
-        <p class=styles.dead>Oh dear, you are dead!</p>
-      </show>
-
-      <if=ui.overlay === "bank">
-        <bank-panel
-          bank=ui.bank
-          inventory=ui.inventory
-          onWithdraw(id, count) {
-            session.engine?.withdraw(id, count);
-          }
-          onDeposit(slot, count) {
-            session.engine?.deposit(slot, count);
-          }
-          onDepositAll(id) {
-            session.engine?.depositAll(id);
-          }
-          onClose() {
-            session.engine?.closeOverlay();
-          }
-        />
-      </if>
-      <else if=ui.overlay === "shop">
-        <shop-panel
-          shop=ui.shop
-          inventory=ui.inventory
-          coins=ui.coins
-          onBuy(id) {
-            session.engine?.buy(id);
-          }
-          onSell(slot) {
-            session.engine?.sell(slot);
-          }
-          onClose() {
-            session.engine?.closeOverlay();
-          }
-        />
-      </else>
+      <button
+        type="button"
+        class=styles.expand
+        title="Toggle full screen"
+        aria-label="Toggle full screen"
+        onClick() {
+          if (document.fullscreenElement) document.exitFullscreen();
+          else frame().requestFullscreen?.();
+        }
+      >
+        ⛶
+      </button>
     </div>
 
-    <div class=styles.chat>
-      <chat-box
-        messages=ui.messages
-        onSay(text) {
-          session.engine?.say(text);
-        }
-      />
+    <p class=styles.region>${ui.region}</p>
+
+    <div
+      class=styles.orb
+      style=`--fill:${Math.round((ui.hits / ui.maxHits) * 100)}%`
+      title=`Hits ${ui.hits} of ${ui.maxHits}`
+    >
+      ${ui.hits}
     </div>
   </div>
 
-  <aside class=styles.panel>
-    <nav class=styles.tabs>
-      <for|entry| of=TABS by="id">
-        <button
-          type="button"
-          class=[styles.tab, tab === entry.id && styles.activeTab]
-          title=entry.name
-          aria-pressed=tab === entry.id && "true"
-          onClick() {
-            tab = entry.id;
-          }
-        >
-          <item-icon icon=entry.icon size=20/>
-        </button>
-      </for>
-    </nav>
+  <div class=[styles.chat, chatOpen && styles.chatOpen]>
+    <chat-box
+      messages=ui.messages
+      open=chatOpen
+      onSay(text) {
+        session.engine?.say(text);
+      }
+    />
+  </div>
 
-    <div class=styles.body>
-      <show=tab === "map">
-        <canvas/minimap
-          class=styles.minimap
-          width=MINIMAP_SIZE
-          height=MINIMAP_SIZE
-          aria-label="Minimap, click to walk"
-          onClick(event, canvas) {
-            const game = session.engine;
-            if (!game) return;
-            const rect = canvas.getBoundingClientRect();
-            const tile = minimapTileAt(
-              game.state,
-              ((event.clientX - rect.left) / rect.width) * MINIMAP_SIZE,
-              ((event.clientY - rect.top) / rect.height) * MINIMAP_SIZE,
-            );
-            game.choose({
-              label: "Walk here",
-              action: "walk",
-              target: { kind: "tile", ...tile },
-            });
-          }
-        />
-        <p class=styles.region>${ui.region}</p>
-        <dl class=styles.vitals>
-          <div>
-            <dt>Hits</dt>
-            <dd>${ui.hits}/${ui.maxHits}</dd>
-          </div>
-          <div>
-            <dt>Combat</dt>
-            <dd>${ui.combatLevel}</dd>
-          </div>
-          <div>
-            <dt>Coins</dt>
-            <dd>${ui.coins}</dd>
-          </div>
-        </dl>
-      </show>
+  <nav class=styles.tabs>
+    <button
+      type="button"
+      class=[styles.tab, chatOpen && styles.tabActive]
+      title="Chat"
+      aria-pressed=chatOpen && "true"
+      onClick() {
+        chatOpen = !chatOpen;
+      }
+    >
+      <item-icon icon=chatIcon() size=22/>
+    </button>
+    <for|entry| of=TABS by="id">
+      <button
+        type="button"
+        class=[styles.tab, tab === entry.id && styles.tabActive]
+        title=entry.name
+        aria-pressed=tab === entry.id && "true"
+        onClick() {
+          setTab(tab === entry.id ? null : entry.id);
+        }
+      >
+        <item-icon icon=entry.icon size=22/>
+      </button>
+    </for>
+  </nav>
 
+  <section/panel
+    class=[styles.panel, tab && styles.panelOpen]
+    aria-hidden=!tab && "true"
+  >
+    <header class=styles.panelHead>
+      <h2 class=styles.panelTitle>
+        ${TABS.find((entry) => entry.id === tab)?.name ?? ""}
+      </h2>
+      <button
+        type="button"
+        class=styles.close
+        aria-label="Close panel"
+        onClick() {
+          setTab(null);
+        }
+      >
+        ✕
+      </button>
+    </header>
+
+    <div class=styles.panelBody>
       <show=tab === "inventory">
         <inventory-panel
           items=ui.inventory
@@ -288,7 +355,46 @@ static const TABS = [
         />
       </show>
     </div>
-  </aside>
+  </section>
+
+  <show=ui.dead>
+    <p class=styles.dead>Oh dear, you are dead!</p>
+  </show>
+
+  <if=ui.overlay === "bank">
+    <bank-panel
+      bank=ui.bank
+      inventory=ui.inventory
+      onWithdraw(id, count) {
+        session.engine?.withdraw(id, count);
+      }
+      onDeposit(slot, count) {
+        session.engine?.deposit(slot, count);
+      }
+      onDepositAll(id) {
+        session.engine?.depositAll(id);
+      }
+      onClose() {
+        session.engine?.closeOverlay();
+      }
+    />
+  </if>
+  <else if=ui.overlay === "shop">
+    <shop-panel
+      shop=ui.shop
+      inventory=ui.inventory
+      coins=ui.coins
+      onBuy(id) {
+        session.engine?.buy(id);
+      }
+      onSell(slot) {
+        session.engine?.sell(slot);
+      }
+      onClose() {
+        session.engine?.closeOverlay();
+      }
+    />
+  </else>
 
   <if=menu>
     <context-menu
@@ -312,28 +418,84 @@ static const TABS = [
     const minimapContext = minimap().getContext("2d")!;
     const unsubscribe = game.subscribe(refresh);
 
+    // Layout reads live here rather than in the animation loop. The panel is
+    // observed too: its height only settles once a tab's content mounts.
+    let box = { width: 1, height: 1, panelTop: 1, panelLeft: 1, panelWidth: 0 };
+    let surface = { width: 0, height: 0, ratio: 0 };
+
+    const applyView = () => {
+      const docked = box.panelWidth < box.width * 0.7;
+      const visible = !session.panelOpen
+        ? { width: box.width, height: box.height }
+        : docked
+          ? { width: box.panelLeft, height: box.height }
+          : { width: box.width, height: box.panelTop };
+      session.view = viewportFor(box.width, box.height, visible);
+    };
+
+    const measure = () => {
+      box = {
+        width: Math.max(1, frame().clientWidth),
+        height: Math.max(1, frame().clientHeight),
+        panelTop: panel().offsetTop,
+        panelLeft: panel().offsetLeft,
+        panelWidth: panel().offsetWidth,
+      };
+      applyView();
+    };
+
+    const resize = () => {
+      measure();
+      const ratio = Math.min(2, window.devicePixelRatio || 1);
+      const { width, height } = box;
+      if (
+        surface.width === width &&
+        surface.height === height &&
+        surface.ratio === ratio
+      ) {
+        return;
+      }
+      surface = { width, height, ratio };
+      view().width = Math.round(width * ratio);
+      view().height = Math.round(height * ratio);
+      viewContext.setTransform(ratio, 0, 0, ratio, 0, 0);
+      minimap().width = Math.round(MINIMAP * ratio);
+      minimap().height = Math.round(MINIMAP * ratio);
+      minimapContext.setTransform(ratio, 0, 0, ratio, 0, 0);
+    };
+
+    const observer = new ResizeObserver(resize);
+    observer.observe(frame());
+    observer.observe(panel());
+    session.applyView = measure;
+    resize();
+
     let frameId = 0;
     const loop = (now: number) => {
       frameId = requestAnimationFrame(loop);
       game.advance(now);
-      renderWorld(viewContext, game.state, now, session.tile);
-      renderMinimap(minimapContext, game.state);
+      renderWorld(viewContext, game.state, session.view, now, session.tile);
+      renderMinimap(minimapContext, game.state, MINIMAP);
     };
 
     session.engine = game;
     frameId = requestAnimationFrame(loop);
+    if (window.innerWidth >= 900) setTab("inventory");
     refresh();
 
     return {
       stop() {
         cancelAnimationFrame(frameId);
+        observer.disconnect();
         unsubscribe();
+        session.applyView = null;
         saveGame(game.state);
       },
     };
   }
   onDestroy() {
     this.stop();
+    clearTimeout(session.timer);
     session.engine = null;
   }
 >

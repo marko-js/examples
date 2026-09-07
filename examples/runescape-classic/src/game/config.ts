@@ -1,15 +1,22 @@
 /** Tuning constants for the world, the render surfaces, and the tick loop. */
 
-/** World pixels per tile. Sprites are authored against this size. */
-export const TILE_SIZE = 32;
+/**
+ * The game view fills its element, so tiles are sized from the surface rather
+ * than fixed. Aiming for roughly this many tiles across the shorter axis keeps
+ * a phone and a desktop showing a comparable slice of the world.
+ */
+export const TILES_ACROSS_SHORT_AXIS = 12;
+export const MIN_TILE_SIZE = 26;
+export const MAX_TILE_SIZE = 56;
 
-/** Game view surface, sized after the 512x334 RuneScape Classic viewport. */
-export const VIEW_WIDTH = 512;
-export const VIEW_HEIGHT = 336;
+/** World pixels per tile for a surface of the given size. */
+export function tileSizeFor(width: number, height: number): number {
+  const target = Math.min(width, height) / TILES_ACROSS_SHORT_AXIS;
+  return Math.round(Math.min(MAX_TILE_SIZE, Math.max(MIN_TILE_SIZE, target)));
+}
 
-/** Minimap surface and how many world tiles fit into one of its pixels. */
-export const MINIMAP_SIZE = 156;
-export const MINIMAP_SCALE = 3;
+/** How many world tiles the minimap spans, whatever size it is drawn at. */
+export const MINIMAP_TILES = 52;
 
 /** Length of a game tick. Combat rounds and skilling attempts are tick aligned. */
 export const TICK_MS = 600;

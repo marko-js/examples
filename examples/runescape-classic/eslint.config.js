@@ -43,6 +43,9 @@ export default defineConfig([
     rules: {
       // Design tokens are declared in the layout, which this rule cannot see.
       "css/no-invalid-properties": ["error", { allowUnknownVariables: true }],
+      // The touch handling this game needs (overscroll-behavior, user-select)
+      // is newly baseline rather than widely.
+      "css/use-baseline": ["error", { available: "newly" }],
     },
     extends: [css.configs.recommended],
   },

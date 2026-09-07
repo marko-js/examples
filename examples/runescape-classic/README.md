@@ -18,11 +18,14 @@ Then `npm run dev` and open the printed URL.
 
 ## Playing
 
-- **Left click** the world to walk, or to run the first action on whatever is
-  under the pointer. **Right click** anything for the full menu.
-- **Left click** an inventory item to wield, eat or bury it. **Right click** it
-  to use, drop or examine it.
-- Click the **minimap** to walk somewhere further away.
+Built for a phone first: the game fills the screen, the minimap, chat and tabs
+sit over it, and every control works by touch.
+
+- **Tap** the world to walk, or to run the first action on whatever is under
+  your finger. **Hold** (or right click) anything for the full menu.
+- **Tap** an inventory item to wield, eat or bury it. **Hold** it to use, drop
+  or examine it.
+- Tap the **minimap** to travel further, or the **⛶** button for full screen.
 - Use a **tinderbox on logs** to light a fire, then use **raw fish on the fire**
   to cook it.
 - Bank chests are north east of the Lumbridge crossroads, the general store is
@@ -45,8 +48,9 @@ re-renders only when the game says something changed.
   - `engine.ts` is the tick loop: pathing, gathering, combat, drops, respawns.
   - `ui.ts` turns game state into a plain `UiState` snapshot, the single value
     every panel renders from.
-  - `render/` draws the game view and the minimap onto canvases.
-- `src/tags` — the interface. `<game-client>` creates the engine in a
+  - `render/` draws the game view and the minimap onto canvases, sized from
+    the surface it is handed so one code path covers a phone and a desktop.
+- `src/tags` — the HUD, overlaid on the canvas. `<game-client>` creates the engine in a
   [`<lifecycle>`](https://markojs.com/docs/reference/core-tag#lifecycle) hook,
   drives `requestAnimationFrame`, and assigns each new snapshot to a
   [`<let>`](https://markojs.com/docs/reference/core-tag#let). Panels are pure

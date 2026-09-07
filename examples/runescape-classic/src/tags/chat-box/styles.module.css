@@ -1,24 +1,46 @@
 .chat {
   display: grid;
   grid-template-rows: 1fr auto;
+  min-height: 0;
   height: 100%;
-  border: 2px solid var(--rs-border);
-  border-radius: 3px;
-  background: #0d0d0d;
+  /* Collapsed, the log is a read-only overlay that taps pass straight through. */
+  pointer-events: none;
+}
+
+.open {
+  border: 1px solid #000;
+  border-radius: 6px;
+  background: rgba(8, 8, 8, 0.82);
+  pointer-events: auto;
+  backdrop-filter: blur(2px);
 }
 
 .log {
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
   margin: 0;
-  padding: 4px 6px;
+  padding: 6px 8px;
   list-style: none;
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.open .log {
+  justify-content: flex-start;
+  overflow-y: auto;
+  /* eslint-disable-next-line css/use-baseline -- needed for touch play; supported everywhere this game runs */
+  overscroll-behavior: contain;
 }
 
 .line {
-  text-shadow: 1px 1px 0 #000;
   overflow-wrap: anywhere;
+  text-shadow:
+    1px 1px 0 #000,
+    -1px 1px 0 #000,
+    1px -1px 0 #000,
+    -1px -1px 0 #000;
 }
 
 .game {
@@ -37,7 +59,7 @@
   color: #4ad2e8;
 }
 
-.chat {
+.chatTone {
   color: #ffffff;
 }
 
@@ -45,24 +67,25 @@
   display: flex;
   gap: 6px;
   align-items: center;
-  border-top: 1px solid #262626;
-  padding: 4px 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 6px;
 }
 
 .label {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--rs-gold);
 }
 
 .input {
   flex: 1;
+  min-width: 0;
   border: 1px solid #303030;
-  border-radius: 2px;
+  border-radius: 3px;
   background: #161616;
-  padding: 3px 5px;
+  padding: 6px 8px;
   color: #fff;
   font: inherit;
-  font-size: 12px;
+  font-size: 16px;
 }
 
 .input:focus {
