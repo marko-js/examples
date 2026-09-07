@@ -2,6 +2,7 @@ import { itemSellPrice, type UiItem, type UiShopEntry } from "../../game/ui";
 import styles from "./styles.module.css";
 
 export interface Input {
+  shopName: string;
   shop: UiShopEntry[];
   inventory: (UiItem | null)[];
   coins: number;
@@ -12,7 +13,7 @@ export interface Input {
 
 <section class=styles.window>
   <header class=styles.header>
-    <h2 class=styles.title>Lumbridge General Store</h2>
+    <h2 class=styles.title>${input.shopName}</h2>
     <p class=styles.purse>${input.coins} coins</p>
     <button
       type="button"

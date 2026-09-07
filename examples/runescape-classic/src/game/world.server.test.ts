@@ -1,34 +1,16 @@
+import { RESPAWN_TILE, TUTORIAL_START } from "./config";
+import { PLACES } from "./mainland";
 import { adjacentTile, chebyshev, findPath } from "./pathfinding";
-import {
-  inBounds,
-  isWalkable,
-  objectAt,
-  regionAt,
-  TERRAIN,
-  terrainAt,
-} from "./world";
+import { inBounds, isWalkable, objectAt, TERRAIN, terrainAt } from "./world";
 import { generateWorld } from "./worldgen";
 
 const map = generateWorld();
 
-test("generation is deterministic for a seed", () => {
-  const again = generateWorld();
-  expect(Array.from(again.terrain)).toEqual(Array.from(map.terrain));
-});
-
-test("the island is ringed by water", () => {
-  for (let i = 0; i < map.size; i++) {
-    expect(terrainAt(map, i, 0)).toBe(TERRAIN.water);
-    expect(terrainAt(map, i, map.size - 1)).toBe(TERRAIN.water);
-    expect(terrainAt(map, 0, i)).toBe(TERRAIN.water);
-    expect(terrainAt(map, map.size - 1, i)).toBe(TERRAIN.water);
-  }
-});
-
-test("every landmark is reachable on foot from the spawn point", () => {
+/** Every tile you can walk to from a starting point. */
+function reachableFrom(start: { x: number; y: number }): Uint8Array {
   const seen = new Uint8Array(map.size * map.size);
-  const queue = [{ x: 72, y: 80 }];
-  seen[80 * map.size + 72] = 1;
+  const queue = [start];
+  seen[start.y * map.size + start.x] = 1;
   while (queue.length) {
     const tile = queue.pop()!;
     for (const [dx, dy] of [
@@ -39,36 +21,121 @@ test("every landmark is reachable on foot from the spawn point", () => {
     ] as const) {
       const x = tile.x + dx;
       const y = tile.y + dy;
-      if (
-        !inBounds(map, x, y) ||
-        seen[y * map.size + x] ||
-        !isWalkable(map, x, y)
-      )
-        continue;
+      if (!inBounds(map, x, y) || seen[y * map.size + x]) continue;
+      if (!isWalkable(map, x, y)) continue;
       seen[y * map.size + x] = 1;
       queue.push({ x, y });
     }
   }
+  return seen;
+}
 
-  const landmarks = {
-    "castle courtyard": [60, 73],
-    "castle keep": [60, 66],
-    bank: [80, 66],
-    "general store": [80, 83],
-    mine: [23, 70],
-    "chicken farm": [42, 61],
-    "cow field": [53, 46],
-    "east bank of the river": [95, 77],
-    "goblin camp": [107, 82],
-    graveyard: [104, 42],
-    "maple grove": [28, 96],
-    "lake shore": [64, 95],
-    "north forest": [72, 24],
-  };
-  for (const [name, [x, y]] of Object.entries(landmarks)) {
+const fromLumbridge = reachableFrom(RESPAWN_TILE);
+const fromTutorial = reachableFrom(TUTORIAL_START);
+
+/** True when a walkable tile beside the object is in `seen`. */
+function servedBy(seen: Uint8Array, object: { x: number; y: number }): boolean {
+  return [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+    [1, 1],
+    [1, -1],
+    [-1, 1],
+    [-1, -1],
+  ].some(([dx, dy]) => seen[(object.y + dy) * map.size + object.x + dx] === 1);
+}
+
+const onTutorialIsland = (object: { x: number; y: number }) =>
+  object.x >= 176 && object.y >= 176;
+
+test("generation is deterministic for a seed", () => {
+  const again = generateWorld();
+  expect(Array.from(again.terrain)).toEqual(Array.from(map.terrain));
+});
+
+test("every free-to-play town can be walked to from Lumbridge", () => {
+  for (const [name, at] of Object.entries(PLACES)) {
+    if (name === "miningGuild") continue; // an open pit, not a walkable marker
+    const reached =
+      fromLumbridge[at.y * map.size + at.x] === 1 ||
+      servedBy(fromLumbridge, at);
+    expect(`${name}: ${reached ? "reachable" : "cut off"}`).toBe(
+      `${name}: reachable`,
+    );
+  }
+});
+
+test("the towns sit where the Classic map puts them", () => {
+  expect(PLACES.varrock.y).toBeLessThan(PLACES.lumbridge.y); // Varrock is north
+  expect(PLACES.falador.x).toBeLessThan(PLACES.varrock.x); // Falador is west
+  expect(PLACES.portSarim.y).toBeGreaterThan(PLACES.falador.y); // and south of it
+  expect(PLACES.rimmington.x).toBeLessThan(PLACES.portSarim.x);
+  expect(PLACES.draynor.x).toBeLessThan(PLACES.lumbridge.x);
+  expect(PLACES.alKharid.x).toBeGreaterThan(PLACES.lumbridge.x); // over the Lum
+  expect(PLACES.edgeville.y).toBeLessThan(PLACES.varrock.y); // borders the Wilderness
+});
+
+test("every shop counter and bank on the mainland can be reached", () => {
+  const serve = ["shop_counter", "bank_chest", "furnace", "anvil", "range"];
+  for (const object of map.objects) {
+    if (!object || onTutorialIsland(object)) continue;
+    if (!serve.includes(object.defId)) continue;
+    const label = `${object.defId} at ${object.x},${object.y}`;
     expect(
-      `${name}: ${seen[y * map.size + x] ? "reachable" : "unreachable"}`,
-    ).toBe(`${name}: reachable`);
+      `${label}: ${servedBy(fromLumbridge, object) ? "served" : "cut off"}`,
+    ).toBe(`${label}: served`);
+  }
+});
+
+test("Tutorial Island is its own island, cut off from the mainland", () => {
+  expect(fromTutorial[RESPAWN_TILE.y * map.size + RESPAWN_TILE.x]).toBe(0);
+  expect(fromLumbridge[TUTORIAL_START.y * map.size + TUTORIAL_START.x]).toBe(0);
+});
+
+test("every stage of Tutorial Island is reachable once its doors open", () => {
+  const opened = generateWorld();
+  for (const object of opened.objects) {
+    if (object?.defId === "tut_door") object.defId = "gate";
+  }
+  const seen = new Uint8Array(opened.size * opened.size);
+  const queue = [TUTORIAL_START];
+  seen[TUTORIAL_START.y * opened.size + TUTORIAL_START.x] = 1;
+  while (queue.length) {
+    const tile = queue.pop()!;
+    for (const [dx, dy] of [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ] as const) {
+      const x = tile.x + dx;
+      const y = tile.y + dy;
+      if (!inBounds(opened, x, y) || seen[y * opened.size + x]) continue;
+      if (!isWalkable(opened, x, y)) continue;
+      seen[y * opened.size + x] = 1;
+      queue.push({ x, y });
+    }
+  }
+
+  for (const object of opened.objects) {
+    if (!object || !onTutorialIsland(object)) continue;
+    if (!["furnace", "anvil", "range", "bank_chest"].includes(object.defId)) {
+      continue;
+    }
+    const label = `${object.defId} at ${object.x},${object.y}`;
+    const near = [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+      [1, 1],
+      [1, -1],
+      [-1, 1],
+      [-1, -1],
+    ].some(([dx, dy]) => seen[(object.y + dy) * opened.size + object.x + dx]);
+    expect(`${label}: ${near ? "served" : "cut off"}`).toBe(`${label}: served`);
   }
 });
 
@@ -80,14 +147,10 @@ test("the world holds the resources each skill needs", () => {
   expect(counts.get("tree")).toBeGreaterThan(50);
   expect(counts.get("oak")).toBeGreaterThan(5);
   expect(counts.get("willow")).toBeGreaterThan(5);
-  expect(counts.get("maple")).toBeGreaterThan(5);
-  expect(counts.get("rock_copper")).toBeGreaterThan(1);
-  expect(counts.get("rock_coal")).toBeGreaterThan(1);
+  expect(counts.get("rock_copper")).toBeGreaterThan(2);
+  expect(counts.get("rock_coal")).toBeGreaterThan(2);
   expect(counts.get("rock_mithril")).toBeGreaterThan(0);
-  expect(counts.get("fish_net")).toBeGreaterThan(0);
-  expect(counts.get("bank_chest")).toBe(4);
-  expect(counts.get("shop_counter")).toBe(3);
-  expect(counts.get("furnace")).toBe(1);
+  expect(counts.get("furnace")).toBe(2);
   expect(counts.get("anvil")).toBe(2);
 });
 
@@ -102,16 +165,11 @@ test("fishing spots sit on water so they are fished from the shore", () => {
   }
 });
 
-test("regions are named after the area a tile falls in", () => {
-  expect(regionAt(map, 72, 80)).toBe("Lumbridge");
-  expect(regionAt(map, 23, 70)).toBe("Dwarven Mine");
-  expect(regionAt(map, 107, 82)).toBe("Goblin Swamp");
-});
-
 test("paths step one tile at a time and end at the goal", () => {
-  const path = findPath(map, { x: 72, y: 80 }, { x: 66, y: 86 });
-  expect(path.at(-1)).toEqual({ x: 66, y: 86 });
-  let previous = { x: 72, y: 80 };
+  const goal = { x: RESPAWN_TILE.x - 6, y: RESPAWN_TILE.y + 4 };
+  const path = findPath(map, RESPAWN_TILE, goal);
+  expect(path.at(-1)).toEqual(goal);
+  let previous = RESPAWN_TILE as { x: number; y: number };
   for (const step of path) {
     expect(chebyshev(previous, step)).toBe(1);
     expect(isWalkable(map, step.x, step.y)).toBe(true);
@@ -120,9 +178,9 @@ test("paths step one tile at a time and end at the goal", () => {
 });
 
 test("an unreachable goal walks as close as it can instead", () => {
-  const wall = { x: 60, y: 60 };
+  const wall = { x: PLACES.varrock.x - 17, y: PLACES.varrock.y - 13 };
   expect(objectAt(map, wall.x, wall.y)?.defId).toBe("wall_stone");
-  const path = findPath(map, { x: 72, y: 80 }, wall);
+  const path = findPath(map, RESPAWN_TILE, wall);
   expect(path.length).toBeGreaterThan(0);
   expect(path.at(-1)).not.toEqual(wall);
   expect(isWalkable(map, path.at(-1)!.x, path.at(-1)!.y)).toBe(true);

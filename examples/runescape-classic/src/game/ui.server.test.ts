@@ -8,8 +8,8 @@ function snapshot(engine: ReturnType<typeof createMainlandEngine>) {
     player: engine.state.player,
     messages: engine.state.messages,
     overlay: engine.state.overlay,
-    shopStock: engine.state.shopStock,
     region: engine.region,
+    shop: engine.openShop,
   });
 }
 
@@ -57,10 +57,10 @@ test("gaining experience moves the level and its progress bar", () => {
   expect(skill.toNextLevel).toBe(74);
 });
 
-test("the shop snapshot prices stock above its base value", () => {
+test("the shop snapshot names the counter's own shop and prices its stock", () => {
   const engine = createMainlandEngine();
   const counter = engine.state.map.objects.find(
-    (object) => object?.defId === "shop_counter",
+    (object) => object?.defId === "shop_counter" && object.shopId === "general",
   )!;
   engine.choose({
     label: "",
@@ -71,6 +71,7 @@ test("the shop snapshot prices stock above its base value", () => {
 
   const ui = snapshot(engine);
   expect(ui.overlay).toBe("shop");
+  expect(ui.shopName).toBe("General Store");
   const bread = ui.shop.find((entry) => entry.id === "bread")!;
   expect(bread.price).toBeGreaterThan(12);
   expect(bread.count).toBe(20);

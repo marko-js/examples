@@ -25,6 +25,7 @@ import {
 } from "./pathfinding";
 import { pick, randInt } from "./rng";
 import { applySave, type SaveData } from "./save";
+import { createStock, getShop } from "./shops";
 import {
   baseLevel,
   levelForXp,
@@ -48,13 +49,13 @@ import {
   freeSlots,
   type GameState,
   type GroundItem,
+  type ItemStack,
   type MessageTone,
   type Npc,
   npcByUid,
   type Player,
   removeAt,
   removeItem,
-  SHOP_BASE_STOCK,
   type Target,
 } from "./state";
 import {
@@ -114,7 +115,7 @@ export class Engine {
       splats: [],
       overlay: { kind: "none" },
       dialogue: null,
-      shopStock: SHOP_BASE_STOCK.map((stack) => ({ ...stack })),
+      shopStock: createStock(),
       nextUid: 1,
       nextMessageId: 1,
     };
@@ -496,8 +497,19 @@ export class Engine {
     this.invalidate();
   }
 
+  /** Stock of the shop currently open, or an empty list. */
+  get openShop(): { id: string; name: string; stock: ItemStack[] } | null {
+    const { overlay, shopStock } = this.state;
+    if (overlay.kind !== "shop") return null;
+    const def = getShop(overlay.shopId);
+    return { id: def.id, name: def.name, stock: shopStock[def.id] ?? [] };
+  }
+
   buy(id: string): void {
-    const { player, shopStock } = this.state;
+    const { player } = this.state;
+    const shop = this.openShop;
+    if (!shop) return;
+    const shopStock = shop.stock;
     const entry = shopStock.find((stock) => stock.id === id);
     if (!entry || entry.count <= 0) {
       this.message("game", "The shop has run out of stock.");
@@ -523,7 +535,10 @@ export class Engine {
   }
 
   sell(slot: number): void {
-    const { player, shopStock } = this.state;
+    const { player } = this.state;
+    const shop = this.openShop;
+    if (!shop) return;
+    const shopStock = shop.stock;
     const stack = player.inventory[slot];
     if (!stack || stack.id === "coins") return;
     const price = sellPrice(getItem(stack.id));
@@ -896,9 +911,17 @@ export class Engine {
         this.state.overlay = { kind: "bank" };
         this.setFlag("banked");
         break;
-      case "shop":
-        this.state.overlay = { kind: "shop" };
+      case "shop": {
+        const object =
+          target.kind === "object"
+            ? this.state.map.objects[target.index]
+            : null;
+        this.state.overlay = {
+          kind: "shop",
+          shopId: object?.shopId ?? "general",
+        };
         break;
+      }
       case "talk":
         this.talkTo(target);
         break;

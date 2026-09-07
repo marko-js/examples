@@ -68,7 +68,7 @@ static const LONG_PRESS_MS = 420;
     player: game.state.player,
     messages: game.state.messages,
     overlay: game.state.overlay,
-    shopStock: game.state.shopStock,
+    shop: game.openShop,
     region: game.region,
     dialogue: game.dialogueView,
     spells: game.spellbook,
@@ -412,6 +412,7 @@ static const LONG_PRESS_MS = 420;
   </if>
   <else if=ui.overlay === "shop">
     <shop-panel
+      shopName=ui.shopName
       shop=ui.shop
       inventory=ui.inventory
       coins=ui.coins

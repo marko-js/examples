@@ -105,6 +105,7 @@ export interface UiState {
   selectedSlot: number | null;
   overlay: Overlay["kind"];
   bank: UiItem[];
+  shopName: string;
   shop: UiShopEntry[];
   combatStyle: CombatStyle;
   dialogue: UiDialogue | null;
@@ -117,7 +118,8 @@ export interface UiInput {
   player: Player;
   messages: ChatMessage[];
   overlay: Overlay;
-  shopStock: ItemStack[];
+  /** The shop the player has open, if any. */
+  shop?: { name: string; stock: ItemStack[] } | null;
   region: string;
   dialogue?: UiDialogue | null;
   spells?: { id: string; name: string; level: number; ready: boolean }[];
@@ -165,7 +167,8 @@ export function buildUi(input: UiInput): UiState {
     selectedSlot: player.selectedSlot,
     overlay: input.overlay.kind,
     bank: player.bank.map((stack, slot) => toItem(stack, slot)!),
-    shop: input.shopStock
+    shopName: input.shop?.name ?? "",
+    shop: (input.shop?.stock ?? [])
       .filter((stock) => stock.count > 0)
       .map((stock) => ({
         id: stock.id,
@@ -193,7 +196,6 @@ export function initialUi(): UiState {
       { id: 2, tone: "game", text: "Loading Lumbridge…" },
     ],
     overlay: { kind: "none" },
-    shopStock: [],
     region: "Tutorial Island",
   });
 }

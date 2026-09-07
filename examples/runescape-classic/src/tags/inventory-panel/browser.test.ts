@@ -13,7 +13,6 @@ function carrying(): ReturnType<typeof buildUi> {
     player,
     messages: [],
     overlay: { kind: "none" },
-    shopStock: [],
     region: "Lumbridge",
   });
 }

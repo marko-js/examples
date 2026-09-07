@@ -8,7 +8,7 @@ import { building, clear, fence, place, setTerrain } from "./mapbuild";
 import { TERRAIN, type TerrainId, type WorldMap } from "./world";
 
 /** Where the island's local grid sits in the world. */
-export const TUTORIAL_ORIGIN = { x: 6, y: 138 };
+export const TUTORIAL_ORIGIN = { x: 176, y: 176 };
 export const TUTORIAL_SIZE = 72;
 
 interface Area {

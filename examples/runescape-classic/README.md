@@ -4,11 +4,25 @@ A RuneScape tribute built with [Marko 6](https://markojs.com) and
 [@marko/run](https://github.com/marko-js/run): RuneScape 2 mechanics wearing
 RuneScape Classic's flat, chunky look.
 
-The whole game runs natively in the browser: Tutorial Island and a mainland on
-one 216×216 tile grid, a 600ms tick loop, twenty skills, melee, ranged and
-magic combat, smithing, banking, shops, and a save file in `localStorage`.
-There is no server and no art pipeline — every sprite, item icon and tile is
-drawn from code.
+The whole game runs natively in the browser: the free-to-play Classic world and
+Tutorial Island on one 256×256 tile grid, a 600ms tick loop, twenty skills,
+melee, ranged and magic combat, smithing, banking, shops, and a save file in
+`localStorage`. There is no server and no art pipeline — every sprite, item icon
+and tile is drawn from code.
+
+## The world
+
+Misthalin and Asgarnia are laid out from the official RuneScape Classic world
+map, with each town placed where that map puts it. Lumbridge sits on the west
+bank of the Lum with the bridge east to Al Kharid; the road north runs to
+Varrock, whose walls hold the palace, two banks and the shop row. West of the
+river are Barbarian Village, Falador and the White Knights' castle, Draynor and
+its manor, Port Sarim's docks and Rimmington. Edgeville sits on the edge of the
+Wilderness, which covers the north of the map behind its fence. The Dwarven
+Mine, Mining Guild, Al Kharid mine and Rimmington mine hold the ore, and the
+banks and shops — Bob's axes, Varrock Swords, Lowe's archery, Aubury's runes,
+Cassie's shields, Gerrant's fishing supplies and the rest — each keep their own
+stock.
 
 ## Tutorial Island
 
@@ -40,8 +54,9 @@ sit over it, and every control works by touch.
 - Tap the **minimap** to travel further, or the **⛶** button for full screen.
 - Use a **tinderbox on logs** to light a fire, then use **raw fish on the fire**
   to cook it.
-- Bank chests are north east of the Lumbridge crossroads, the general store is
-  south east, the mine is west, and goblins are across the Lum bridge.
+- Banks are in Varrock, Falador, Draynor, Edgeville and Al Kharid. Shops sell
+  what their signs say, and each buys back at its own price.
+- The Wilderness runs across the north of the map, past Edgeville.
 
 Trainable skills are Attack, Defense, Strength, Hits, Prayer (bury bones),
 Cooking, Woodcut, Fishing, Firemaking and Mining. Progress saves every fifteen
@@ -55,9 +70,10 @@ re-renders only when the game says something changed.
 
 - `src/game` — the engine. Plain TypeScript with no DOM dependency, so all of it
   is unit tested in Node.
-  - `worldgen.ts` builds the world from a seed, so the server and the browser
-    agree on the map without shipping any map data; `tutorialgen.ts` lays out
-    Tutorial Island beside it.
+  - `mainland.ts` places the free-to-play towns from the Classic map's own
+    positions and `tutorialgen.ts` lays out Tutorial Island in the sea beside
+    them; `worldgen.ts` builds both from a seed, so the server and the browser
+    agree on the map without shipping any map data.
   - `tutorial.ts` holds the stages and every line the instructors speak, so the
     script is data the engine walks rather than code.
   - `engine.ts` is the tick loop: pathing, gathering, combat, drops, respawns.

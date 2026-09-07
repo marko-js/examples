@@ -20,7 +20,6 @@ const ui = buildUi({
   player,
   messages: [],
   overlay: { kind: "none" },
-  shopStock: [],
   region: "Lumbridge",
 });
 

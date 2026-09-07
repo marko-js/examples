@@ -1,3 +1,4 @@
+import { RESPAWN_TILE } from "./config";
 import { getItem } from "./items";
 import { addItem, countItem, findSlot, removeItem } from "./state";
 import {
@@ -192,22 +193,22 @@ test("the general store buys and sells at its own prices", () => {
   const engine = createMainlandEngine();
   const counter = nearestObject(
     engine,
-    (object) => object.defId === "shop_counter",
+    (object) => object.defId === "shop_counter" && object.shopId === "general",
   );
 
   act(engine, "shop", { kind: "object", index: counter.index });
   advanceUntil(engine, () => engine.state.overlay.kind === "shop");
 
   const before = countItem(engine.state.player.inventory, "coins");
-  engine.buy("bronze_sword");
+  engine.buy("tinderbox");
   const spent = before - countItem(engine.state.player.inventory, "coins");
-  expect(spent).toBe(Math.round(getItem("bronze_sword").value * 1.15));
-  expect(countItem(engine.state.player.inventory, "bronze_sword")).toBe(1);
+  expect(spent).toBe(Math.round(getItem("tinderbox").value * 1.15));
+  expect(countItem(engine.state.player.inventory, "tinderbox")).toBe(2);
 
-  engine.sell(findSlot(engine.state.player.inventory, "bronze_sword"));
+  engine.sell(findSlot(engine.state.player.inventory, "tinderbox"));
   const earned =
     countItem(engine.state.player.inventory, "coins") - (before - spent);
-  expect(earned).toBe(Math.floor(getItem("bronze_sword").value * 0.4));
+  expect(earned).toBe(Math.floor(getItem("tinderbox").value * 0.4));
   expect(earned).toBeLessThan(spent);
 });
 
@@ -223,12 +224,15 @@ test("dying sends the player back to Lumbridge with full hitpoints", () => {
   act(engine, "attack", { kind: "npc", uid: hobgoblin.uid });
   advanceUntil(
     engine,
-    () => player.x === 72 && player.y === 80 && player.respawnTick === null,
+    () =>
+      player.x === RESPAWN_TILE.x &&
+      player.y === RESPAWN_TILE.y &&
+      player.respawnTick === null,
   );
 
   expect(player.respawnTick).toBeNull();
   expect(player.hitpoints).toBe(player.maxHitpoints);
-  expect({ x: player.x, y: player.y }).toEqual({ x: 72, y: 80 });
+  expect({ x: player.x, y: player.y }).toEqual(RESPAWN_TILE);
   expect(engine.state.messages.map((message) => message.text)).toContain(
     "Oh dear, you are dead!",
   );
@@ -243,9 +247,8 @@ test("menu options describe what is under the pointer", () => {
     "Chop Tree",
     "Examine Tree",
   ]);
-  expect(
-    engine.describeTile(engine.state.player.x, engine.state.player.y),
-  ).toBe("Walk here");
+  const empty = { x: tree.x + 3, y: tree.y + 3 };
+  expect(engine.describeTile(empty.x, empty.y)).toBe("Walk here");
 });
 
 test("a save that points at an unwalkable tile falls back to the spawn", () => {
@@ -253,8 +256,8 @@ test("a save that points at an unwalkable tile falls back to the spawn", () => {
   engine.load({
     version: 1,
     name: "Guest",
-    x: 64,
-    y: 110,
+    x: 6,
+    y: 6,
     hitpoints: 10,
     xp: {},
     inventory: engine.state.player.inventory,
@@ -263,10 +266,10 @@ test("a save that points at an unwalkable tile falls back to the spawn", () => {
     combatStyle: "aggressive",
   });
 
-  expect({ x: engine.state.player.x, y: engine.state.player.y }).toEqual({
-    x: 72,
-    y: 80,
-  });
+  expect({
+    x: engine.state.player.x,
+    y: engine.state.player.y,
+  }).toEqual(RESPAWN_TILE);
   expect(engine.state.player.combatStyle).toBe("aggressive");
 });
 

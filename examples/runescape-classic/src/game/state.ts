@@ -160,7 +160,8 @@ export interface DialogueState {
   line: number;
 }
 
-export type Overlay = { kind: "none" } | { kind: "bank" } | { kind: "shop" };
+export type Overlay =
+  { kind: "none" } | { kind: "bank" } | { kind: "shop"; shopId: string };
 
 export interface GameState {
   map: WorldMap;
@@ -172,8 +173,8 @@ export interface GameState {
   splats: Splat[];
   overlay: Overlay;
   dialogue: DialogueState | null;
-  /** Stock of the general store, refreshed slowly as items are bought. */
-  shopStock: ItemStack[];
+  /** Stock per shop, keyed by shop id. */
+  shopStock: Record<string, ItemStack[]>;
   nextUid: number;
   nextMessageId: number;
 }
@@ -184,19 +185,6 @@ export const DEFAULT_APPEARANCE: Appearance = {
   shirt: "#9a4b3f",
   legs: "#3f4a63",
 };
-
-export const SHOP_BASE_STOCK: ItemStack[] = [
-  { id: "bronze_axe", count: 5 },
-  { id: "bronze_pickaxe", count: 5 },
-  { id: "bronze_sword", count: 5 },
-  { id: "bronze_shield", count: 4 },
-  { id: "bronze_helmet", count: 4 },
-  { id: "tinderbox", count: 10 },
-  { id: "small_net", count: 10 },
-  { id: "fishing_rod", count: 8 },
-  { id: "lobster_pot", count: 5 },
-  { id: "bread", count: 20 },
-];
 
 export function createPlayer(): Player {
   return {

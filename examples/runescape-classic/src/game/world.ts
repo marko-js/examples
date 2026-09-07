@@ -635,6 +635,8 @@ export interface WorldObject {
   restoreTo?: string;
   /** For a tutorial door: the stage that must be finished before it opens. */
   stage?: number;
+  /** For a shop counter: which shop it opens. */
+  shopId?: string;
 }
 
 export interface NpcSpawn {
