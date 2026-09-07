@@ -1,0 +1,12 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+}
+
+.footer {
+  margin: 6px 0 0;
+  font-size: 11px;
+  text-align: center;
+  color: var(--rs-text-dim);
+}

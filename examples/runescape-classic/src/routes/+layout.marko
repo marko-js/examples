@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" sizes="32x32" href="./favicon.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+      name="description"
+      content="A RuneScape Classic style browser MMO built with Marko 6 and @marko/run."
+    >
+    <title>${$global.meta?.pageTitle || "RuneScape Classic"}</title>
+  </head>
+  <body>
+    <${input.content}/>
+  </body>
+</html>
+
+<style>
+  :root {
+    --rs-wood: #2f2519;
+    --rs-border: #191309;
+    --rs-panel: #3b3226;
+    --rs-slot: #4a3f2f;
+    --rs-slot-hover: #5b4e3a;
+    --rs-slot-border: #241c11;
+    --rs-text: #e8e0c8;
+    --rs-text-dim: #a89e84;
+    --rs-gold: #ffd42a;
+
+    color-scheme: dark;
+  }
+
+  body {
+    margin: 0;
+    background: #14100a
+      radial-gradient(circle at 50% 0%, #241d12 0%, #0d0a06 70%) fixed;
+    color: var(--rs-text);
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    line-height: 1.4;
+  }
+
+  button {
+    font-family: inherit;
+  }
+</style>

@@ -1,0 +1,70 @@
+.chat {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  height: 100%;
+  border: 2px solid var(--rs-border);
+  border-radius: 3px;
+  background: #0d0d0d;
+}
+
+.log {
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px 6px;
+  list-style: none;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.line {
+  text-shadow: 1px 1px 0 #000;
+  overflow-wrap: anywhere;
+}
+
+.game {
+  color: #ffd42a;
+}
+
+.skill {
+  color: #7fdc5a;
+}
+
+.combat {
+  color: #ff8a6a;
+}
+
+.quest {
+  color: #4ad2e8;
+}
+
+.chat {
+  color: #ffffff;
+}
+
+.form {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  border-top: 1px solid #262626;
+  padding: 4px 6px;
+}
+
+.label {
+  font-size: 11px;
+  color: var(--rs-gold);
+}
+
+.input {
+  flex: 1;
+  border: 1px solid #303030;
+  border-radius: 2px;
+  background: #161616;
+  padding: 3px 5px;
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+}
+
+.input:focus {
+  outline: 1px solid var(--rs-gold);
+}

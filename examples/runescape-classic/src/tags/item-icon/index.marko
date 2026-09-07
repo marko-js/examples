@@ -1,0 +1,36 @@
+import type { Icon } from "../../game/icons";
+import styles from "./styles.module.css";
+
+export interface Input {
+  icon: Icon;
+  size?: number;
+}
+
+<const/size=input.size ?? 32>
+
+<svg
+  class=styles.icon
+  viewBox="0 0 32 32"
+  width=size
+  height=size
+  aria-hidden="true"
+>
+  <for|shape| of=input.icon>
+    <if=shape.kind === "rect">
+      <rect
+        x=shape.x
+        y=shape.y
+        width=shape.w
+        height=shape.h
+        rx=shape.rx
+        fill=shape.fill
+      />
+    </if>
+    <else if=shape.kind === "circle">
+      <circle cx=shape.cx cy=shape.cy r=shape.r fill=shape.fill/>
+    </else>
+    <else>
+      <polygon points=shape.points fill=shape.fill/>
+    </else>
+  </for>
+</svg>

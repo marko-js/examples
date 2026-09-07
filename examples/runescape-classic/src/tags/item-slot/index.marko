@@ -1,0 +1,39 @@
+import { formatCount } from "../../game/format";
+import type { UiItem } from "../../game/ui";
+import styles from "./styles.module.css";
+
+export interface Input {
+  item?: UiItem | null;
+  /** Text shown under the icon, such as a price or a slot name. */
+  caption?: string;
+  selected?: boolean;
+  size?: number;
+  title?: string;
+  onSelect?: () => void;
+  onMenu?: (x: number, y: number) => void;
+}
+
+<const/size=input.size ?? 30>
+
+<button
+  type="button"
+  class=[styles.slot, input.selected && styles.selected]
+  title=input.title ?? input.item?.name
+  disabled=!input.item
+  onClick() {
+    input.onSelect?.();
+  }
+  onContextMenu(event) {
+    if (!input.onMenu) return;
+    event.preventDefault();
+    input.onMenu(event.clientX, event.clientY);
+  }
+>
+  <if=input.item>
+    <item-icon icon=input.item.icon size=size/>
+    <if=(input.item.stackable || input.item.count > 1)>
+      <span class=styles.count>${formatCount(input.item.count)}</span>
+    </if>
+  </if>
+  <if=input.caption><span class=styles.caption>${input.caption}</span></if>
+</button>

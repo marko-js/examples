@@ -1,0 +1,50 @@
+import type { Bonus, EquipSlot } from "../../game/items";
+import type { UiEquipSlot } from "../../game/ui";
+import styles from "./styles.module.css";
+
+export interface Input {
+  slots: UiEquipSlot[];
+  bonus: Bonus;
+  maxHit: number;
+  onRemove: (slot: EquipSlot) => void;
+}
+
+<div class=styles.grid>
+  <for|entry| of=input.slots by="slot">
+    <item-slot
+      item=entry.item
+      caption=entry.item ? undefined : entry.name
+      title=entry.item ? `${entry.item.name} — click to remove` : entry.name
+      onSelect() {
+        if (entry.item) input.onRemove(entry.slot);
+      }
+    />
+  </for>
+</div>
+
+<dl class=styles.stats>
+  <div>
+    <dt>Weapon aim</dt>
+    <dd>+${input.bonus.aim}</dd>
+  </div>
+  <div>
+    <dt>Weapon power</dt>
+    <dd>+${input.bonus.power}</dd>
+  </div>
+  <div>
+    <dt>Armour</dt>
+    <dd>+${input.bonus.armour}</dd>
+  </div>
+  <div>
+    <dt>Magic</dt>
+    <dd>+${input.bonus.magic}</dd>
+  </div>
+  <div>
+    <dt>Prayer</dt>
+    <dd>+${input.bonus.prayer}</dd>
+  </div>
+  <div class=styles.highlight>
+    <dt>Max hit</dt>
+    <dd>${input.maxHit}</dd>
+  </div>
+</dl>

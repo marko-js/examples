@@ -1,0 +1,48 @@
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.menu {
+  position: absolute;
+  z-index: 6;
+  min-width: 140px;
+  max-width: 240px;
+  margin: 0;
+  border: 1px solid var(--rs-gold);
+  background: rgba(20, 18, 12, 0.96);
+  padding: 0;
+  list-style: none;
+}
+
+.title {
+  border-bottom: 1px solid var(--rs-slot-border);
+  padding: 3px 6px;
+  color: var(--rs-gold);
+  font-size: 11px;
+}
+
+.entry {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 3px 6px;
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.entry:hover,
+.entry:focus-visible {
+  outline: none;
+  background: var(--rs-gold);
+  color: #1a1408;
+}

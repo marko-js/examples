@@ -1,0 +1,11 @@
+__screenshots__
+.DS_Store
+.env
+.vitest-attachments
+.vscode/settings.json
+*.log
+*.tsbuildinfo
+coverage
+dist
+node_modules
+Thumbs.db

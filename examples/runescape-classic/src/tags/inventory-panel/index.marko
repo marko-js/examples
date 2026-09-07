@@ -1,0 +1,30 @@
+import type { UiItem } from "../../game/ui";
+import styles from "./styles.module.css";
+
+export interface Input {
+  items: (UiItem | null)[];
+  selected: number | null;
+  freeSlots: number;
+  onActivate: (slot: number) => void;
+  onMenu: (slot: number, x: number, y: number) => void;
+}
+
+<div class=styles.grid>
+  <for|item, slot| of=input.items>
+    <item-slot
+      item=item
+      selected=input.selected === slot
+      title=item ? `${item.name} — right click for options` : "Empty slot"
+      onSelect() {
+        input.onActivate(slot);
+      }
+      onMenu(x, y) {
+        if (item) input.onMenu(slot, x, y);
+      }
+    />
+  </for>
+</div>
+
+<p class=styles.footer>
+  ${input.freeSlots} free ${input.freeSlots === 1 ? "slot" : "slots"}
+</p>

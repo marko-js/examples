@@ -1,0 +1,78 @@
+import { xpForLevel } from "./skills";
+import { addItem, countItem, findSlot } from "./state";
+import { advanceUntil, createTestEngine } from "./test-helpers";
+import { buildUi, initialUi } from "./ui";
+
+function snapshot(engine: ReturnType<typeof createTestEngine>) {
+  return buildUi({
+    player: engine.state.player,
+    messages: engine.state.messages,
+    overlay: engine.state.overlay,
+    shopStock: engine.state.shopStock,
+    region: engine.region,
+  });
+}
+
+test("the server render snapshot describes a brand new character", () => {
+  const ui = initialUi();
+  expect(ui.combatLevel).toBe(3);
+  expect(ui.hits).toBe(10);
+  expect(ui.totalLevel).toBe(27);
+  expect(ui.skills).toHaveLength(18);
+  expect(ui.inventory).toHaveLength(30);
+  expect(ui.freeSlots).toBe(24);
+  expect(ui.coins).toBe(50);
+  expect(ui.region).toBe("Lumbridge");
+});
+
+test("equipping a weapon shows up in the snapshot bonuses", () => {
+  const engine = createTestEngine();
+  engine.addXp("strength", xpForLevel(40));
+  addItem(engine.state.player.inventory, "iron_sword");
+  engine.inventoryAction(
+    findSlot(engine.state.player.inventory, "iron_sword"),
+    "equip",
+  );
+
+  const ui = snapshot(engine);
+  expect(ui.equipment.find((slot) => slot.slot === "weapon")?.item?.name).toBe(
+    "Iron sword",
+  );
+  expect(ui.bonus.aim).toBe(12);
+  expect(ui.bonus.power).toBe(12);
+  expect(ui.maxHit).toBe(5);
+});
+
+test("gaining experience moves the level and its progress bar", () => {
+  const engine = createTestEngine();
+  engine.addXp("woodcut", 100);
+
+  const skill = snapshot(engine).skills.find(
+    (entry) => entry.id === "woodcut",
+  )!;
+  expect(skill.base).toBe(2);
+  expect(skill.xp).toBe(100);
+  expect(skill.progress).toBeGreaterThan(0);
+  expect(skill.progress).toBeLessThan(1);
+  expect(skill.toNextLevel).toBe(74);
+});
+
+test("the shop snapshot prices stock above its base value", () => {
+  const engine = createTestEngine();
+  const counter = engine.state.map.objects.find(
+    (object) => object?.defId === "shop_counter",
+  )!;
+  engine.choose({
+    label: "",
+    action: "shop",
+    target: { kind: "object", index: counter.index },
+  });
+  advanceUntil(engine, () => engine.state.overlay.kind === "shop");
+
+  const ui = snapshot(engine);
+  expect(ui.overlay).toBe("shop");
+  const bread = ui.shop.find((entry) => entry.id === "bread")!;
+  expect(bread.price).toBeGreaterThan(12);
+  expect(bread.count).toBe(20);
+  expect(ui.coins).toBe(countItem(engine.state.player.inventory, "coins"));
+});

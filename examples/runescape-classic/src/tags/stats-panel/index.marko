@@ -1,0 +1,43 @@
+import { formatXp } from "../../game/format";
+import type { UiSkill } from "../../game/ui";
+import styles from "./styles.module.css";
+
+export interface Input {
+  skills: UiSkill[];
+  combatLevel: number;
+  totalLevel: number;
+  totalXp: number;
+}
+
+<ul class=styles.list>
+  <for|skill| of=input.skills by="id">
+    <li
+      class=styles.skill
+      title=`${formatXp(skill.xp)} xp — ${skill.toNextLevel ? `${formatXp(skill.toNextLevel)} to level ${skill.base + 1}` : "maxed"}`
+    >
+      <span class=styles.name>${skill.name}</span>
+      <span class=[styles.level, skill.level !== skill.base && styles.altered]>
+        ${skill.level}/${skill.base}
+      </span>
+      <span
+        class=styles.bar
+        style=`--fill:${Math.round(skill.progress * 100)}%`
+      />
+    </li>
+  </for>
+</ul>
+
+<dl class=styles.totals>
+  <div>
+    <dt>Combat level</dt>
+    <dd>${input.combatLevel}</dd>
+  </div>
+  <div>
+    <dt>Total level</dt>
+    <dd>${input.totalLevel}</dd>
+  </div>
+  <div>
+    <dt>Total xp</dt>
+    <dd>${formatXp(input.totalXp)}</dd>
+  </div>
+</dl>

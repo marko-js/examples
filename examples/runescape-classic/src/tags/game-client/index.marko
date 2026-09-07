@@ -1,0 +1,335 @@
+import { MINIMAP_SIZE, VIEW_HEIGHT, VIEW_WIDTH } from "../../game/config";
+import { Engine } from "../../game/engine";
+import {
+  bagIcon,
+  cogIcon,
+  gearIcon,
+  mapIcon,
+  statsIcon,
+} from "../../game/icons";
+import type { EquipSlot } from "../../game/items";
+import type { MenuEntry, MenuState } from "../../game/menu";
+import type { Point } from "../../game/pathfinding";
+import type { CombatStyle } from "../../game/state";
+import { minimapTileAt, renderMinimap } from "../../game/render/minimap";
+import { cameraFor, renderWorld, tileAtScreen } from "../../game/render/world";
+import { clearSave, loadGame, saveGame } from "../../game/save";
+import { buildUi, initialUi } from "../../game/ui";
+import styles from "./styles.module.css";
+
+static const TABS = [
+  { id: "map", name: "Map", icon: mapIcon() },
+  { id: "inventory", name: "Inventory", icon: bagIcon() },
+  { id: "equipment", name: "Worn", icon: gearIcon() },
+  { id: "stats", name: "Stats", icon: statsIcon() },
+  { id: "settings", name: "Options", icon: cogIcon() },
+];
+
+<let/ui=initialUi()>
+<let/tab="map">
+<let/hover="">
+<let/menu=null as MenuState | null>
+
+// Values the animation loop and event handlers share without driving renders.
+<const/session={ engine: null as Engine | null, tile: null as Point | null }>
+
+<const/refresh() {
+  const game = session.engine;
+  if (!game) return;
+  ui = buildUi({
+    player: game.state.player,
+    messages: game.state.messages,
+    overlay: game.state.overlay,
+    shopStock: game.state.shopStock,
+    region: game.region,
+  });
+}>
+
+<const/tileFrom(event: MouseEvent, canvas: HTMLCanvasElement) {
+  const game = session.engine!;
+  const rect = canvas.getBoundingClientRect();
+  return tileAtScreen(
+    cameraFor(game.state),
+    ((event.clientX - rect.left) / rect.width) * VIEW_WIDTH,
+    ((event.clientY - rect.top) / rect.height) * VIEW_HEIGHT,
+  );
+}>
+
+<const/openMenu(clientX: number, clientY: number, entries: MenuEntry[]) {
+  if (!entries.length) return;
+  const rect = frame().getBoundingClientRect();
+  menu = { x: clientX - rect.left, y: clientY - rect.top, entries };
+}>
+
+<const/activateSlot(slot: number) {
+  const game = session.engine;
+  if (!game) return;
+  if (ui.selectedSlot !== null && ui.selectedSlot !== slot) {
+    game.useOnSlot(ui.selectedSlot, slot);
+    return;
+  }
+  const primary = game
+    .inventoryOptions(slot)
+    .find(
+      (option) =>
+        option.action === "equip" ||
+        option.action === "eat" ||
+        option.action === "bury",
+    );
+  game.inventoryAction(slot, primary?.action ?? "select");
+}>
+
+<div/frame class=styles.frame>
+  <div class=styles.main>
+    <div class=styles.viewport>
+      <canvas/view
+        class=styles.view
+        width=VIEW_WIDTH
+        height=VIEW_HEIGHT
+        aria-label="Game view"
+        onMouseMove(event, canvas) {
+          const game = session.engine;
+          if (!game) return;
+          const tile = tileFrom(event, canvas);
+          session.tile = tile;
+          hover = game.describeTile(tile.x, tile.y) ?? "";
+        }
+        onMouseLeave() {
+          session.tile = null;
+          hover = "";
+        }
+        onClick(event, canvas) {
+          const game = session.engine;
+          if (!game) return;
+          const tile = tileFrom(event, canvas);
+          const option = game.optionsAt(tile.x, tile.y)[0];
+          if (option) game.choose(option);
+        }
+        onContextMenu(event, canvas) {
+          event.preventDefault();
+          const game = session.engine;
+          if (!game) return;
+          const tile = tileFrom(event, canvas);
+          openMenu(
+            event.clientX,
+            event.clientY,
+            game.optionsAt(tile.x, tile.y).map((option) => ({
+              label: option.label,
+              run: () => game.choose(option),
+            })),
+          );
+        }
+      />
+
+      <p class=styles.hover>${hover}</p>
+
+      <show=ui.dead>
+        <p class=styles.dead>Oh dear, you are dead!</p>
+      </show>
+
+      <if=ui.overlay === "bank">
+        <bank-panel
+          bank=ui.bank
+          inventory=ui.inventory
+          onWithdraw(id, count) {
+            session.engine?.withdraw(id, count);
+          }
+          onDeposit(slot, count) {
+            session.engine?.deposit(slot, count);
+          }
+          onDepositAll(id) {
+            session.engine?.depositAll(id);
+          }
+          onClose() {
+            session.engine?.closeOverlay();
+          }
+        />
+      </if>
+      <else if=ui.overlay === "shop">
+        <shop-panel
+          shop=ui.shop
+          inventory=ui.inventory
+          coins=ui.coins
+          onBuy(id) {
+            session.engine?.buy(id);
+          }
+          onSell(slot) {
+            session.engine?.sell(slot);
+          }
+          onClose() {
+            session.engine?.closeOverlay();
+          }
+        />
+      </else>
+    </div>
+
+    <div class=styles.chat>
+      <chat-box
+        messages=ui.messages
+        onSay(text) {
+          session.engine?.say(text);
+        }
+      />
+    </div>
+  </div>
+
+  <aside class=styles.panel>
+    <nav class=styles.tabs>
+      <for|entry| of=TABS by="id">
+        <button
+          type="button"
+          class=[styles.tab, tab === entry.id && styles.activeTab]
+          title=entry.name
+          aria-pressed=tab === entry.id && "true"
+          onClick() {
+            tab = entry.id;
+          }
+        >
+          <item-icon icon=entry.icon size=20/>
+        </button>
+      </for>
+    </nav>
+
+    <div class=styles.body>
+      <show=tab === "map">
+        <canvas/minimap
+          class=styles.minimap
+          width=MINIMAP_SIZE
+          height=MINIMAP_SIZE
+          aria-label="Minimap, click to walk"
+          onClick(event, canvas) {
+            const game = session.engine;
+            if (!game) return;
+            const rect = canvas.getBoundingClientRect();
+            const tile = minimapTileAt(
+              game.state,
+              ((event.clientX - rect.left) / rect.width) * MINIMAP_SIZE,
+              ((event.clientY - rect.top) / rect.height) * MINIMAP_SIZE,
+            );
+            game.choose({
+              label: "Walk here",
+              action: "walk",
+              target: { kind: "tile", ...tile },
+            });
+          }
+        />
+        <p class=styles.region>${ui.region}</p>
+        <dl class=styles.vitals>
+          <div>
+            <dt>Hits</dt>
+            <dd>${ui.hits}/${ui.maxHits}</dd>
+          </div>
+          <div>
+            <dt>Combat</dt>
+            <dd>${ui.combatLevel}</dd>
+          </div>
+          <div>
+            <dt>Coins</dt>
+            <dd>${ui.coins}</dd>
+          </div>
+        </dl>
+      </show>
+
+      <show=tab === "inventory">
+        <inventory-panel
+          items=ui.inventory
+          selected=ui.selectedSlot
+          freeSlots=ui.freeSlots
+          onActivate=activateSlot
+          onMenu(slot, x, y) {
+            const game = session.engine;
+            if (!game) return;
+            openMenu(
+              x,
+              y,
+              game.inventoryOptions(slot).map((option) => ({
+                label: option.label,
+                run: () => game.inventoryAction(slot, option.action),
+              })),
+            );
+          }
+        />
+      </show>
+
+      <show=tab === "equipment">
+        <equipment-panel
+          slots=ui.equipment
+          bonus=ui.bonus
+          maxHit=ui.maxHit
+          onRemove(slot: EquipSlot) {
+            session.engine?.unequip(slot);
+          }
+        />
+      </show>
+
+      <show=tab === "stats">
+        <stats-panel
+          skills=ui.skills
+          combatLevel=ui.combatLevel
+          totalLevel=ui.totalLevel
+          totalXp=ui.totalXp
+        />
+      </show>
+
+      <show=tab === "settings">
+        <settings-panel
+          combatStyle=ui.combatStyle
+          onCombatStyle(style: CombatStyle) {
+            session.engine?.setCombatStyle(style);
+          }
+          onReset() {
+            clearSave();
+            location.reload();
+          }
+        />
+      </show>
+    </div>
+  </aside>
+
+  <if=menu>
+    <context-menu
+      x=menu.x
+      y=menu.y
+      entries=menu.entries
+      onClose() {
+        menu = null;
+      }
+    />
+  </if>
+</div>
+
+<lifecycle
+  onMount() {
+    const game = new Engine({ onSave: saveGame });
+    const saved = loadGame();
+    if (saved) game.load(saved);
+
+    const viewContext = view().getContext("2d")!;
+    const minimapContext = minimap().getContext("2d")!;
+    const unsubscribe = game.subscribe(refresh);
+
+    let frameId = 0;
+    const loop = (now: number) => {
+      frameId = requestAnimationFrame(loop);
+      game.advance(now);
+      renderWorld(viewContext, game.state, now, session.tile);
+      renderMinimap(minimapContext, game.state);
+    };
+
+    session.engine = game;
+    frameId = requestAnimationFrame(loop);
+    refresh();
+
+    return {
+      stop() {
+        cancelAnimationFrame(frameId);
+        unsubscribe();
+        saveGame(game.state);
+      },
+    };
+  }
+  onDestroy() {
+    this.stop();
+    session.engine = null;
+  }
+>

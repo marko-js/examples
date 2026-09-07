@@ -1,0 +1,41 @@
+import type { MenuEntry } from "../../game/menu";
+import styles from "./styles.module.css";
+
+export interface Input {
+  x: number;
+  y: number;
+  entries: MenuEntry[];
+  onClose: () => void;
+}
+
+<button
+  type="button"
+  class=styles.backdrop
+  aria-label="Close menu"
+  onClick() {
+    input.onClose();
+  }
+  onContextMenu(event) {
+    event.preventDefault();
+    input.onClose();
+  }
+/>
+
+<ul class=styles.menu style=`left:${input.x}px;top:${input.y}px`>
+  <li class=styles.title>Choose option</li>
+  <for|entry, index| of=input.entries>
+    <li>
+      <button
+        type="button"
+        class=styles.entry
+        autofocus=index === 0
+        onClick() {
+          input.onClose();
+          entry.run();
+        }
+      >
+        ${entry.label}
+      </button>
+    </li>
+  </for>
+</ul>

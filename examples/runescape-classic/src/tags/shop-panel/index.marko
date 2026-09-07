@@ -1,0 +1,72 @@
+import { itemSellPrice, type UiItem, type UiShopEntry } from "../../game/ui";
+import styles from "./styles.module.css";
+
+export interface Input {
+  shop: UiShopEntry[];
+  inventory: (UiItem | null)[];
+  coins: number;
+  onBuy: (id: string) => void;
+  onSell: (slot: number) => void;
+  onClose: () => void;
+}
+
+<section class=styles.window>
+  <header class=styles.header>
+    <h2 class=styles.title>Lumbridge General Store</h2>
+    <p class=styles.purse>${input.coins} coins</p>
+    <button
+      type="button"
+      class=styles.close
+      onClick() {
+        input.onClose();
+      }
+    >
+      Close
+    </button>
+  </header>
+
+  <div class=styles.columns>
+    <div>
+      <h3 class=styles.subtitle>For sale</h3>
+      <div class=styles.grid>
+        <for|entry| of=input.shop by="id">
+          <item-slot
+            item={
+              slot: -1,
+              id: entry.id,
+              name: entry.name,
+              count: entry.count,
+              icon: entry.icon,
+              stackable: false,
+            }
+            caption=`${entry.price}`
+            title=`Buy ${entry.name} for ${entry.price} coins`
+            onSelect() {
+              input.onBuy(entry.id);
+            }
+          />
+        </for>
+      </div>
+    </div>
+
+    <div>
+      <h3 class=styles.subtitle>Your items</h3>
+      <div class=styles.grid>
+        <for|item, slot| of=input.inventory>
+          <item-slot
+            item=item
+            caption=(
+              item && item.id !== "coins"
+                ? `${itemSellPrice(item.id)}`
+                : undefined
+            )
+            title=item ? `Sell ${item.name}` : "Empty slot"
+            onSelect() {
+              if (item) input.onSell(slot);
+            }
+          />
+        </for>
+      </div>
+    </div>
+  </div>
+</section>

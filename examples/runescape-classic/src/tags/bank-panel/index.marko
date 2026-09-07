@@ -1,0 +1,83 @@
+import type { UiItem } from "../../game/ui";
+import styles from "./styles.module.css";
+
+export interface Input {
+  bank: UiItem[];
+  inventory: (UiItem | null)[];
+  onWithdraw: (id: string, count: number) => void;
+  onDeposit: (slot: number, count: number) => void;
+  onDepositAll: (id: string) => void;
+  onClose: () => void;
+}
+
+static const AMOUNTS = [1, 5, 10, 0];
+
+<let/amount=1>
+
+<section class=styles.window>
+  <header class=styles.header>
+    <h2 class=styles.title>Bank of Lumbridge</h2>
+    <div class=styles.amounts>
+      <span>Amount</span>
+      <for|option| of=AMOUNTS>
+        <button
+          type="button"
+          class=[styles.amount, amount === option && styles.active]
+          onClick() {
+            amount = option;
+          }
+        >
+          ${option || "All"}
+        </button>
+      </for>
+    </div>
+    <button
+      type="button"
+      class=styles.close
+      onClick() {
+        input.onClose();
+      }
+    >
+      Close
+    </button>
+  </header>
+
+  <div class=styles.columns>
+    <div>
+      <h3 class=styles.subtitle>Stored items</h3>
+      <div class=styles.grid>
+        <if=input.bank.length>
+          <for|item| of=input.bank by="id">
+            <item-slot
+              item=item
+              title=`Withdraw ${item.name}`
+              onSelect() {
+                input.onWithdraw(item.id, amount || item.count);
+              }
+            />
+          </for>
+        </if>
+        <else>
+          <p class=styles.empty>Your bank is empty.</p>
+        </else>
+      </div>
+    </div>
+
+    <div>
+      <h3 class=styles.subtitle>Carried items</h3>
+      <div class=styles.grid>
+        <for|item, slot| of=input.inventory>
+          <item-slot
+            item=item
+            title=item ? `Deposit ${item.name}` : "Empty slot"
+            onSelect() {
+              if (!item) return;
+              if (amount) input.onDeposit(slot, amount);
+              else input.onDepositAll(item.id);
+            }
+          />
+        </for>
+      </div>
+    </div>
+  </div>
+</section>

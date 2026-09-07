@@ -1,0 +1,46 @@
+.slot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 1px solid var(--rs-slot-border);
+  border-radius: 2px;
+  background: var(--rs-slot);
+  color: var(--rs-text);
+  cursor: pointer;
+}
+
+.slot:disabled {
+  cursor: default;
+}
+
+.slot:not(:disabled):hover {
+  border-color: var(--rs-gold);
+  background: var(--rs-slot-hover);
+}
+
+.selected {
+  border-color: var(--rs-gold);
+  box-shadow: inset 0 0 0 1px var(--rs-gold);
+}
+
+.count {
+  position: absolute;
+  top: 1px;
+  left: 2px;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--rs-gold);
+  text-shadow: 1px 1px 0 #000;
+}
+
+.caption {
+  position: absolute;
+  bottom: 1px;
+  right: 2px;
+  font-size: 9px;
+  line-height: 1;
+  color: var(--rs-text-dim);
+  text-shadow: 1px 1px 0 #000;
+}

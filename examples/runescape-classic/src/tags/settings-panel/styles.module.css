@@ -1,0 +1,67 @@
+.section {
+  margin-bottom: 12px;
+}
+
+.heading {
+  margin: 0 0 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--rs-gold);
+}
+
+.option {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  border: 1px solid var(--rs-slot-border);
+  border-radius: 2px;
+  background: var(--rs-slot);
+  margin-bottom: 2px;
+  padding: 3px 5px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.option.active {
+  border-color: var(--rs-gold);
+}
+
+.option span {
+  display: grid;
+}
+
+.option small {
+  font-size: 9px;
+  color: var(--rs-text-dim);
+}
+
+.help {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--rs-text-dim);
+}
+
+.note {
+  margin: 0 0 6px;
+  font-size: 10px;
+  color: var(--rs-text-dim);
+}
+
+.danger {
+  width: 100%;
+  border: 1px solid #7a2a2a;
+  border-radius: 2px;
+  background: #3f1f1f;
+  padding: 5px;
+  color: #ffb4a8;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.danger:hover {
+  background: #552626;
+}

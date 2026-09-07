@@ -1,0 +1,57 @@
+import { COMBAT_STYLES, type CombatStyle } from "../../game/state";
+import styles from "./styles.module.css";
+
+export interface Input {
+  combatStyle: CombatStyle;
+  onCombatStyle: (style: CombatStyle) => void;
+  onReset: () => void;
+}
+
+<section class=styles.section>
+  <h3 class=styles.heading>Combat style</h3>
+  <for|style| of=COMBAT_STYLES by="id">
+    <label class=[
+      styles.option,
+      input.combatStyle === style.id && styles.active,
+    ]>
+      <input
+        type="radio"
+        name="combat-style"
+        value=style.id
+        checkedValue=input.combatStyle
+        onChange() {
+          input.onCombatStyle(style.id);
+        }
+      >
+      <span><strong>${style.name}</strong><small>${style.blurb}</small></span>
+    </label>
+  </for>
+</section>
+
+<section class=styles.section>
+  <h3 class=styles.heading>Controls</h3>
+  <ul class=styles.help>
+    <li>Left click to walk or use the first action.</li>
+    <li>Right click anything for the full menu.</li>
+    <li>Left click an item to wield, eat or bury it.</li>
+    <li>Right click an item to use, drop or examine it.</li>
+    <li>Use a tinderbox on logs to light a fire.</li>
+    <li>Use raw fish on a fire to cook it.</li>
+  </ul>
+</section>
+
+<section class=styles.section>
+  <h3 class=styles.heading>Save</h3>
+  <p class=styles.note>
+    Progress is stored in this browser and saved every 15 seconds.
+  </p>
+  <button
+    type="button"
+    class=styles.danger
+    onClick() {
+      input.onReset();
+    }
+  >
+    Delete save and restart
+  </button>
+</section>
