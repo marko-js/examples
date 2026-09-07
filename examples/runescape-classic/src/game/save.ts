@@ -1,7 +1,13 @@
 /** Local storage persistence. The world regenerates, only the player is saved. */
 import type { EquipSlot } from "./items";
 import { baseLevel, SKILL_IDS, type SkillId } from "./skills";
-import type { CombatStyle, GameState, ItemStack, Player } from "./state";
+import type {
+  CombatStyle,
+  GameState,
+  ItemStack,
+  Player,
+  TutorialProgress,
+} from "./state";
 
 const KEY = "marko-runescape-classic";
 const VERSION = 1;
@@ -11,12 +17,13 @@ export interface SaveData {
   name: string;
   x: number;
   y: number;
-  hits: number;
+  hitpoints: number;
   xp: Partial<Record<SkillId, number>>;
   inventory: (ItemStack | null)[];
   equipment: Partial<Record<EquipSlot, string>>;
   bank: ItemStack[];
   combatStyle: CombatStyle;
+  tutorial?: TutorialProgress;
 }
 
 export function saveGame(state: GameState): void {
@@ -27,12 +34,13 @@ export function saveGame(state: GameState): void {
     name: player.name,
     x: player.x,
     y: player.y,
-    hits: player.hits,
+    hitpoints: player.hitpoints,
     xp: Object.fromEntries(SKILL_IDS.map((id) => [id, player.skills.xp[id]])),
     inventory: player.inventory,
     equipment: player.equipment,
     bank: player.bank,
     combatStyle: player.combatStyle,
+    tutorial: player.tutorial,
   };
   try {
     localStorage.setItem(KEY, JSON.stringify(data));
@@ -69,10 +77,14 @@ export function applySave(player: Player, data: SaveData): void {
     if (typeof xp === "number") player.skills.xp[id] = xp;
     player.skills.current[id] = baseLevel(player.skills, id);
   }
-  player.maxHits = baseLevel(player.skills, "hits");
-  player.hits = Math.min(player.maxHits, data.hits || player.maxHits);
+  player.maxHitpoints = baseLevel(player.skills, "hitpoints");
+  player.hitpoints = Math.min(
+    player.maxHitpoints,
+    data.hitpoints || player.maxHitpoints,
+  );
   if (Array.isArray(data.inventory)) player.inventory = data.inventory;
   if (data.equipment) player.equipment = data.equipment;
   if (Array.isArray(data.bank)) player.bank = data.bank;
   player.combatStyle = data.combatStyle ?? player.combatStyle;
+  if (data.tutorial) player.tutorial = data.tutorial;
 }

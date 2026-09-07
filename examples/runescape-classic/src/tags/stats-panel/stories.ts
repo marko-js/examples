@@ -21,7 +21,7 @@ export const NewCharacter: Story<Input> = { args: {} };
 export const PartlyTrained: Story<Input> = {
   args: {
     skills: ui.skills.map((skill) =>
-      skill.id === "woodcut"
+      skill.id === "woodcutting"
         ? {
             ...skill,
             level: 42,

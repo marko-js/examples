@@ -2,15 +2,29 @@
  * Builds the island the game is played on. Generation is seeded, so the map is
  * identical on the server render and in the browser.
  */
-import { WORLD_SIZE } from "./config";
-import { mulberry32, pick, randInt, type Rng } from "./rng";
+import { MAINLAND_SIZE, WORLD_SIZE } from "./config";
+import {
+  bridgeOverWater,
+  building,
+  field,
+  fillRect,
+  isEdgeOf,
+  patch,
+  place,
+  placeScenery,
+  road,
+  scatter,
+  setTerrain,
+  softenShore,
+  terrain,
+} from "./mapbuild";
+import { mulberry32, randInt, type Rng } from "./rng";
+import { layTutorialIsland } from "./tutorialgen";
 import {
   inBounds,
   isWalkable,
   type RegionLabel,
   TERRAIN,
-  type TerrainId,
-  tileIndex,
   type WorldMap,
 } from "./world";
 
@@ -18,7 +32,7 @@ export function generateWorld(seed = 20250907): WorldMap {
   const size = WORLD_SIZE;
   const map: WorldMap = {
     size,
-    terrain: new Uint8Array(size * size).fill(TERRAIN.grass),
+    terrain: new Uint8Array(size * size).fill(TERRAIN.water),
     objects: new Array(size * size),
     spawns: [],
     labels: [],
@@ -33,16 +47,18 @@ export function generateWorld(seed = 20250907): WorldMap {
   layBuildings(map);
   layScenery(map, rng);
   layFishingSpots(map);
-  map.labels = REGIONS;
-  map.spawns = SPAWNS;
+  map.labels = [...REGIONS];
+  map.spawns = [...SPAWNS];
+  layTutorialIsland(map);
 
   return map;
 }
 
 /* --------------------------------------------------------------- landmass */
 
+/** Carves the mainland out of the open sea, inside its own square. */
 function carveCoastline(map: WorldMap): void {
-  const { size } = map;
+  const size = MAINLAND_SIZE;
   const margin = (a: number) =>
     6 + Math.sin(a * 0.19) * 2.5 + Math.sin(a * 0.07) * 2;
   for (let y = 0; y < size; y++) {
@@ -53,8 +69,8 @@ function carveCoastline(map: WorldMap): void {
         size - 1 - x - margin(y),
         size - 1 - y - margin(x),
       );
-      if (depth < 0) setTerrain(map, x, y, TERRAIN.water);
-      else if (depth < 2.2) setTerrain(map, x, y, TERRAIN.sand);
+      if (depth < 0) continue;
+      setTerrain(map, x, y, depth < 2.2 ? TERRAIN.sand : TERRAIN.grass);
     }
   }
 }
@@ -330,215 +346,3 @@ const SPAWNS = [
   { defId: "banker", x: 81, y: 65, radius: 0, count: 1 },
   { defId: "shopkeeper", x: 80, y: 83, radius: 0, count: 1 },
 ];
-
-/* ----------------------------------------------------------------- helpers */
-
-function terrain(map: WorldMap, x: number, y: number): TerrainId {
-  if (!inBounds(map, x, y)) return TERRAIN.water;
-  return map.terrain[tileIndex(map, x, y)] as TerrainId;
-}
-
-function setTerrain(map: WorldMap, x: number, y: number, id: TerrainId): void {
-  if (inBounds(map, x, y)) map.terrain[tileIndex(map, x, y)] = id;
-}
-
-function softenShore(map: WorldMap, x: number, y: number): void {
-  if (inBounds(map, x, y) && terrain(map, x, y) !== TERRAIN.water) {
-    setTerrain(map, x, y, TERRAIN.sand);
-  }
-}
-
-function fillRect(
-  map: WorldMap,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  id: TerrainId,
-): void {
-  for (let dy = 0; dy < h; dy++) {
-    for (let dx = 0; dx < w; dx++) {
-      if (terrain(map, x + dx, y + dy) !== TERRAIN.water)
-        setTerrain(map, x + dx, y + dy, id);
-    }
-  }
-}
-
-function patch(
-  map: WorldMap,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  id: TerrainId,
-): void {
-  fillRect(map, x, y, w, h, id);
-  for (let dy = 0; dy < h; dy++) {
-    for (let dx = 0; dx < w; dx++) clear(map, x + dx, y + dy);
-  }
-}
-
-function place(map: WorldMap, x: number, y: number, defId: string): void {
-  if (!inBounds(map, x, y)) return;
-  const index = tileIndex(map, x, y);
-  map.objects[index] = { index, defId, x, y };
-}
-
-/** Place only where scenery belongs: an empty, non-road, non-floor tile. */
-function placeScenery(
-  map: WorldMap,
-  x: number,
-  y: number,
-  defId: string,
-): boolean {
-  if (!inBounds(map, x, y)) return false;
-  const index = tileIndex(map, x, y);
-  if (map.objects[index]) return false;
-  const id = map.terrain[index] as TerrainId;
-  if (id === TERRAIN.path || id === TERRAIN.bridge) return false;
-  if (id === TERRAIN.stoneFloor || id === TERRAIN.woodFloor) return false;
-  const wet = id === TERRAIN.water;
-  const wantsWater = defId.startsWith("fish_");
-  if (wet !== wantsWater) return false;
-  map.objects[index] = { index, defId, x, y };
-  return true;
-}
-
-function clear(map: WorldMap, x: number, y: number): void {
-  if (inBounds(map, x, y)) map.objects[tileIndex(map, x, y)] = undefined;
-}
-
-/** Paint a walkable path along a polyline, two tiles wide. */
-function road(
-  map: WorldMap,
-  points: readonly (readonly [number, number])[],
-): void {
-  for (let i = 0; i < points.length - 1; i++) {
-    const [x1, y1] = points[i];
-    const [x2, y2] = points[i + 1];
-    const steps = Math.max(
-      1,
-      Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1)) * 2,
-    );
-    for (let step = 0; step <= steps; step++) {
-      const t = step / steps;
-      const x = Math.round(x1 + (x2 - x1) * t);
-      const y = Math.round(y1 + (y2 - y1) * t);
-      for (const [dx, dy] of [
-        [0, 0],
-        [1, 0],
-        [0, 1],
-        [1, 1],
-      ] as const) {
-        if (terrain(map, x + dx, y + dy) === TERRAIN.water) continue;
-        setTerrain(map, x + dx, y + dy, TERRAIN.path);
-        clear(map, x + dx, y + dy);
-      }
-    }
-  }
-}
-
-/** Turn the stretch of river the road meets into a walkable bridge. */
-function bridgeOverWater(
-  map: WorldMap,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-): void {
-  for (let dy = 0; dy < h; dy++) {
-    for (let dx = 0; dx < w; dx++) {
-      if (terrain(map, x + dx, y + dy) === TERRAIN.water) {
-        setTerrain(map, x + dx, y + dy, TERRAIN.bridge);
-        clear(map, x + dx, y + dy);
-      }
-    }
-  }
-}
-
-interface BuildingOptions {
-  wall: string;
-  floor: TerrainId;
-  doors: readonly (readonly [number, number])[];
-}
-
-function building(
-  map: WorldMap,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  options: BuildingOptions,
-): void {
-  for (let dy = 0; dy < h; dy++) {
-    for (let dx = 0; dx < w; dx++) {
-      const tx = x + dx;
-      const ty = y + dy;
-      setTerrain(map, tx, ty, options.floor);
-      const onEdge = dx === 0 || dy === 0 || dx === w - 1 || dy === h - 1;
-      if (onEdge) place(map, tx, ty, options.wall);
-      else clear(map, tx, ty);
-    }
-  }
-  for (const [dx, dy] of options.doors) place(map, dx, dy, "gate");
-}
-
-/** Fenced enclosure with gates punched through the perimeter. */
-function field(
-  map: WorldMap,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  gates: readonly (readonly [number, number])[],
-  floor: TerrainId,
-): void {
-  fillRect(map, x + 1, y + 1, w - 2, h - 2, floor);
-  for (let dy = 1; dy < h - 1; dy++) {
-    for (let dx = 1; dx < w - 1; dx++) clear(map, x + dx, y + dy);
-  }
-  for (let dx = 0; dx < w; dx++) {
-    place(map, x + dx, y, "fence");
-    place(map, x + dx, y + h - 1, "fence");
-  }
-  for (let dy = 0; dy < h; dy++) {
-    place(map, x, y + dy, "fence");
-    place(map, x + w - 1, y + dy, "fence");
-  }
-  for (const [gx, gy] of gates) place(map, gx, gy, "gate");
-}
-
-interface Rect {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
-
-function scatter(
-  map: WorldMap,
-  rng: Rng,
-  rect: Rect,
-  defIds: readonly string[],
-  count: number,
-): void {
-  let remaining = count;
-  for (let i = 0; i < count * 8 && remaining > 0; i++) {
-    const x = randInt(rng, rect.x, rect.x + rect.w - 1);
-    const y = randInt(rng, rect.y, rect.y + rect.h - 1);
-    if (placeScenery(map, x, y, pick(rng, defIds))) remaining--;
-  }
-}
-
-function isEdgeOf(map: WorldMap, x: number, y: number, id: TerrainId): boolean {
-  if (terrain(map, x, y) !== id) return false;
-  for (const [dx, dy] of [
-    [1, 0],
-    [-1, 0],
-    [0, 1],
-    [0, -1],
-  ] as const) {
-    if (terrain(map, x + dx, y + dy) !== id) return true;
-  }
-  return false;
-}

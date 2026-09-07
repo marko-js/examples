@@ -1,11 +1,25 @@
 import { fireEvent, render, screen } from "@marko/testing-library";
 
-import { initialUi } from "../../game/ui";
+import { addItem, createPlayer } from "../../game/state";
+import { buildUi } from "../../game/ui";
 import Template from "./index.marko";
 
-const ui = initialUi();
+function carrying(): ReturnType<typeof buildUi> {
+  const player = createPlayer();
+  addItem(player.inventory, "bronze_axe");
+  addItem(player.inventory, "bread", 3);
+  addItem(player.inventory, "coins", 50);
+  return buildUi({
+    player,
+    messages: [],
+    overlay: { kind: "none" },
+    shopStock: [],
+    region: "Lumbridge",
+  });
+}
 
 test("shows one button per slot and reports which one was used", async () => {
+  const ui = carrying();
   const used: number[] = [];
   await render(Template, {
     items: ui.inventory,
@@ -16,7 +30,8 @@ test("shows one button per slot and reports which one was used", async () => {
   });
 
   expect(screen.getAllByRole("button")).toHaveLength(30);
-  expect(screen.getByText("24 free slots")).toBeInTheDocument();
+  expect(screen.getByText(`${ui.freeSlots} free slots`)).toBeInTheDocument();
+  expect(ui.freeSlots).toBe(25);
 
   await fireEvent.click(screen.getByTitle(/^Bronze axe/));
   expect(used).toEqual([0]);
@@ -24,7 +39,7 @@ test("shows one button per slot and reports which one was used", async () => {
 
 test("an empty slot cannot be clicked", async () => {
   await render(Template, {
-    items: ui.inventory.map(() => null),
+    items: new Array(30).fill(null),
     selected: null,
     freeSlots: 30,
     onActivate: () => {},

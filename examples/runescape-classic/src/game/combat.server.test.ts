@@ -10,7 +10,7 @@ import { mulberry32 } from "./rng";
 const fighter = (overrides: Partial<Fighter> = {}): Fighter => ({
   attack: 1,
   strength: 1,
-  defense: 1,
+  defence: 1,
   aim: 0,
   power: 0,
   armour: 0,
@@ -27,8 +27,8 @@ test("max hit grows with strength and weapon power", () => {
 
 test("accuracy rises with attack and falls with the target's armour", () => {
   const attacker = fighter({ attack: 40, aim: 30 });
-  const weak = fighter({ defense: 1 });
-  const armoured = fighter({ defense: 40, armour: 60 });
+  const weak = fighter({ defence: 1 });
+  const armoured = fighter({ defence: 40, armour: 60 });
   expect(hitChance(attacker, weak)).toBeGreaterThan(
     hitChance(attacker, armoured),
   );
@@ -39,7 +39,7 @@ test("accuracy rises with attack and falls with the target's armour", () => {
 test("damage never exceeds the max hit and zero means a block", () => {
   const rng = mulberry32(3);
   const attacker = fighter({ attack: 30, strength: 30, aim: 20, power: 20 });
-  const defender = fighter({ defense: 10, armour: 10 });
+  const defender = fighter({ defence: 10, armour: 10 });
   const cap = maxHit(attacker.strength, attacker.power);
   let landed = 0;
   for (let i = 0; i < 2000; i++) {

@@ -13,6 +13,7 @@ import {
   TICKS_PER_ROUND,
   TILES_PER_SECOND,
 } from "./config";
+import { RESPAWN_TILE as LUMBRIDGE } from "./config";
 import { EQUIP_SLOTS, getItem, type ItemDef, itemName } from "./items";
 import { getNpcDef, npcCombatLevel, type NpcDef } from "./npcs";
 import {
@@ -31,6 +32,7 @@ import {
   SKILL_NAMES,
   type SkillId,
 } from "./skills";
+import { getSpell, rollSpellDamage, SPELLS } from "./spells";
 import {
   type Activity,
   addItem,
@@ -51,9 +53,18 @@ import {
   npcByUid,
   type Player,
   removeAt,
+  removeItem,
   SHOP_BASE_STOCK,
   type Target,
 } from "./state";
+import {
+  DIALOGUE,
+  type DialogueEffect,
+  type DialogueNode,
+  entryNode,
+  TUTORIAL_STAGES,
+} from "./tutorial";
+import type { UiDialogue } from "./ui";
 import {
   getObjectDef,
   isWalkable,
@@ -102,6 +113,7 @@ export class Engine {
       messages: [],
       splats: [],
       overlay: { kind: "none" },
+      dialogue: null,
       shopStock: SHOP_BASE_STOCK.map((stack) => ({ ...stack })),
       nextUid: 1,
       nextMessageId: 1,
@@ -203,6 +215,13 @@ export class Engine {
       const def = getNpcDef(npc.defId);
       const target: Target = { kind: "npc", uid: npc.uid };
       const label = `${def.name} (level-${npcCombatLevel(def)})`;
+      if (state.player.selectedSpell) {
+        options.push({
+          label: `Cast ${getSpell(state.player.selectedSpell).name} on ${def.name}`,
+          action: "cast",
+          target,
+        });
+      }
       if (usingItem)
         options.push({
           label: `Use ${itemName(usingItem.id)} with ${def.name}`,
@@ -249,6 +268,12 @@ export class Engine {
     if (object) {
       const def = getObjectDef(object.defId);
       const target: Target = { kind: "object", index: object.index };
+      if (object.defId === "tut_door") {
+        return [
+          { label: "Open Door", action: "door", target },
+          { label: "Examine Door", action: "examine", target },
+        ];
+      }
       if (usingItem)
         options.push({
           label: `Use ${itemName(usingItem.id)} with ${def.name}`,
@@ -393,7 +418,10 @@ export class Engine {
     const a = player.inventory[fromSlot];
     const b = player.inventory[toSlot];
     if (!a || !b || fromSlot === toSlot) return;
-    if (!this.tryLightFire(fromSlot, toSlot)) {
+    if (
+      !this.tryLightFire(fromSlot, toSlot) &&
+      !this.tryMakeDough(a.id, b.id)
+    ) {
       this.message("game", "Nothing interesting happens.");
     }
     this.invalidate();
@@ -511,6 +539,286 @@ export class Engine {
     this.invalidate();
   }
 
+  /* --------------------------------------------------------------- magic */
+
+  /** Spells the player has the level for, with whether the runes are in hand. */
+  get spellbook(): {
+    id: string;
+    name: string;
+    level: number;
+    ready: boolean;
+  }[] {
+    const { player } = this.state;
+    const magic = baseLevel(player.skills, "magic");
+    return SPELLS.map((spell) => ({
+      id: spell.id,
+      name: spell.name,
+      level: spell.level,
+      ready:
+        magic >= spell.level &&
+        spell.runes.every(
+          (rune) => countItem(player.inventory, rune.id) >= rune.count,
+        ),
+    }));
+  }
+
+  selectSpell(id: string | null): void {
+    const { player } = this.state;
+    player.selectedSpell = player.selectedSpell === id ? null : id;
+    if (player.selectedSpell) player.selectedSlot = null;
+    this.invalidate();
+  }
+
+  private castSpell(target: Target): void {
+    const { state } = this;
+    const { player } = state;
+    const id = player.selectedSpell;
+    player.selectedSpell = null;
+    if (!id || target.kind !== "npc") return;
+    const npc = npcByUid(state, target.uid);
+    if (!npc || npc.respawnTick) return;
+
+    const spell = getSpell(id);
+    const magic = baseLevel(player.skills, "magic");
+    if (magic < spell.level) {
+      this.message("game", `You need Magic level ${spell.level} to cast that.`);
+      return;
+    }
+    const short = spell.runes.find(
+      (rune) => countItem(player.inventory, rune.id) < rune.count,
+    );
+    if (short) {
+      this.message(
+        "game",
+        `You do not have enough ${itemName(short.id).toLowerCase()}.`,
+      );
+      return;
+    }
+    for (const rune of spell.runes) {
+      removeItem(player.inventory, rune.id, rune.count);
+    }
+
+    player.facing = directionTo(player, npc);
+    const damage = rollSpellDamage(magic, spell, this.random);
+    npc.hitpoints = Math.max(0, npc.hitpoints - damage);
+    this.splat(npc, damage);
+    this.addXp("magic", damage ? spell.xp : Math.ceil(spell.xp / 2));
+    this.setFlag("spellCast");
+    this.message(
+      "combat",
+      damage
+        ? `You cast ${spell.name.toLowerCase()}.`
+        : `Your ${spell.name.toLowerCase()} splashes.`,
+    );
+    if (npc.hitpoints <= 0) this.killNpc(npc, getNpcDef(npc.defId));
+    this.invalidate();
+  }
+
+  /* ------------------------------------------------------------ dialogue */
+
+  /** Line the conversation is currently showing, or null when none is open. */
+  get dialogueNode(): DialogueNode | null {
+    const open = this.state.dialogue;
+    if (!open) return null;
+    return DIALOGUE[open.speaker]?.[open.node] ?? null;
+  }
+
+  /** Step to the next line, or close the node once its lines run out. */
+  advanceDialogue(): void {
+    const open = this.state.dialogue;
+    const node = this.dialogueNode;
+    if (!open || !node) return;
+    if (open.line < node.lines.length - 1) {
+      open.line++;
+      this.invalidate();
+      return;
+    }
+    if (node.options?.length) return;
+    this.closeDialogue(node);
+  }
+
+  chooseDialogue(index: number): void {
+    const open = this.state.dialogue;
+    const node = this.dialogueNode;
+    if (!open || !node?.options) return;
+    const option = node.options[index];
+    if (!option) return;
+    open.node = option.goto;
+    open.line = 0;
+    this.invalidate();
+  }
+
+  closeDialogue(node?: DialogueNode | null): void {
+    const finished = node ?? this.dialogueNode;
+    this.state.dialogue = null;
+    if (finished) this.applyDialogue(finished);
+    this.invalidate();
+  }
+
+  private openDialogue(npcUid: number, name: string, speaker: string): void {
+    const node = entryNode(speaker, this.state.player.tutorial);
+    this.state.dialogue = { npcUid, speaker, name, node, line: 0 };
+    this.invalidate();
+  }
+
+  /** What the interface should draw for the open conversation, if any. */
+  get dialogueView(): UiDialogue | null {
+    const open = this.state.dialogue;
+    const node = this.dialogueNode;
+    if (!open || !node) return null;
+    const line = node.lines[open.line];
+    const last = open.line >= node.lines.length - 1;
+    return {
+      name: open.name,
+      who: line.who,
+      text: line.text,
+      options: last ? (node.options ?? []).map((option) => option.label) : [],
+    };
+  }
+
+  private applyDialogue(node: DialogueNode): void {
+    if (node.effect) this.applyEffect(node.effect);
+    if (node.advance) this.advanceStage();
+  }
+
+  private applyEffect(effect: DialogueEffect): void {
+    const { player } = this.state;
+    const give = (id: string, count = 1) => {
+      addItem(player.inventory, id, count);
+      this.message("game", `You are given ${itemName(id).toLowerCase()}.`);
+    };
+    switch (effect) {
+      case "give-net":
+        if (!countItem(player.inventory, "small_net")) give("small_net");
+        this.setFlag("netGiven");
+        break;
+      case "give-axe":
+        if (!countItem(player.inventory, "bronze_axe")) give("bronze_axe");
+        if (!countItem(player.inventory, "tinderbox")) give("tinderbox");
+        this.setFlag("axeGiven");
+        break;
+      case "give-cooking-kit":
+        if (!countItem(player.inventory, "pot_of_flour")) give("pot_of_flour");
+        if (!countItem(player.inventory, "bucket_of_water")) {
+          give("bucket_of_water");
+        }
+        this.setFlag("cookingKit");
+        break;
+      case "give-pickaxe":
+        if (!countItem(player.inventory, "bronze_pickaxe")) {
+          give("bronze_pickaxe");
+        }
+        this.setFlag("pickaxeGiven");
+        break;
+      case "give-hammer":
+        if (!countItem(player.inventory, "hammer")) give("hammer");
+        break;
+      case "give-melee-gear":
+        give("bronze_sword");
+        give("wooden_shield");
+        this.setFlag("meleeGear");
+        break;
+      case "give-ranged-gear":
+        give("shortbow");
+        give("bronze_arrows", 50);
+        this.setFlag("rangedGear");
+        break;
+      case "give-bones":
+        if (!countItem(player.inventory, "bones")) give("bones");
+        this.setFlag("bonesGiven");
+        break;
+      case "give-runes":
+        if (!countItem(player.inventory, "air_rune")) {
+          give("air_rune", 25);
+          give("mind_rune", 25);
+        }
+        this.setFlag("runesGiven");
+        break;
+      case "open-bank":
+        this.state.overlay = { kind: "bank" };
+        this.setFlag("banked");
+        break;
+      case "finish-tutorial":
+        this.finishTutorial();
+        break;
+    }
+  }
+
+  /* ------------------------------------------------------------ tutorial */
+
+  get tutorialObjective(): string | null {
+    const { tutorial } = this.state.player;
+    if (tutorial.done) return null;
+    return TUTORIAL_STAGES[tutorial.stage]?.objective ?? null;
+  }
+
+  /** Records a one-off tutorial event and re-checks the current stage. */
+  setFlag(name: string): void {
+    const { tutorial } = this.state.player;
+    if (tutorial.done || tutorial.flags[name]) return;
+    tutorial.flags[name] = true;
+    this.checkStage();
+    this.invalidate();
+  }
+
+  /** Stages that finish by doing something rather than by talking. */
+  private checkStage(): void {
+    const { tutorial } = this.state.player;
+    const stage = TUTORIAL_STAGES[tutorial.stage];
+    if (!stage) return;
+    const done: Record<string, boolean> = {
+      mining: !!tutorial.flags.daggerSmithed,
+      melee: !!tutorial.flags.ratKilled,
+      ranged: !!tutorial.flags.ratShot,
+      banking: !!tutorial.flags.banked,
+      prayer: !!tutorial.flags.bonesBuried,
+    };
+    if (done[stage.id]) this.advanceStage();
+  }
+
+  private advanceStage(): void {
+    const { tutorial } = this.state.player;
+    if (tutorial.done) return;
+    this.openDoor(tutorial.stage);
+    tutorial.stage++;
+    if (tutorial.stage >= TUTORIAL_STAGES.length) return;
+    this.message("quest", TUTORIAL_STAGES[tutorial.stage].objective);
+    this.invalidate();
+  }
+
+  /** Swings the door that the finished stage was holding shut. */
+  private openDoor(stage: number): void {
+    for (const object of this.state.map.objects) {
+      if (object?.defId === "tut_door" && object.stage === stage) {
+        object.defId = "gate";
+      }
+    }
+  }
+
+  private finishTutorial(): void {
+    const { player } = this.state;
+    player.tutorial.done = true;
+    player.x = LUMBRIDGE.x;
+    player.y = LUMBRIDGE.y;
+    player.fx = player.x;
+    player.fy = player.y;
+    player.path = [];
+    player.activity = null;
+    player.pending = null;
+    for (const id of [
+      "bronze_axe",
+      "bronze_pickaxe",
+      "tinderbox",
+      "small_net",
+    ]) {
+      if (!countItem(player.inventory, id)) addItem(player.inventory, id);
+    }
+    addItem(player.inventory, "coins", 25);
+    this.message("quest", "You have completed the tutorial.");
+    this.message("game", "Welcome to Lumbridge.");
+    this.invalidate();
+  }
+
   /* ------------------------------------------------------------ chat api */
 
   message(tone: MessageTone, text: string): void {
@@ -586,12 +894,23 @@ export class Engine {
         break;
       case "bank":
         this.state.overlay = { kind: "bank" };
+        this.setFlag("banked");
         break;
       case "shop":
         this.state.overlay = { kind: "shop" };
         break;
       case "talk":
         this.talkTo(target);
+        break;
+      case "cast":
+        this.castSpell(target);
+        break;
+      case "door":
+        this.message(
+          "game",
+          TUTORIAL_STAGES[this.state.player.tutorial.stage]?.blocked ??
+            "The door is locked.",
+        );
         break;
       case "use":
         this.useOnTarget(target, usingSlot);
@@ -634,7 +953,8 @@ export class Engine {
       player.activity = null;
       return;
     }
-    if (!isAdjacent(player, npc)) {
+    const range = this.attackRange();
+    if (chebyshev(player, npc) > range) {
       if (chebyshev(player, npc) > 12) {
         player.activity = null;
         npc.targetPlayer = false;
@@ -654,30 +974,48 @@ export class Engine {
     npc.nextRoundTick = state.tick + TICKS_PER_ROUND;
 
     const def = getNpcDef(npc.defId);
+    const shooting = range > 1;
+    if (shooting) removeItem(player.inventory, "bronze_arrows");
     const damage = rollDamage(
-      this.playerFighter(),
+      this.playerFighter(shooting),
       npcFighter(def),
       this.random,
     );
-    npc.hits = Math.max(0, npc.hits - damage);
+    npc.hitpoints = Math.max(0, npc.hitpoints - damage);
     this.splat(npc, damage);
-    if (damage) this.awardCombatXp(damage);
+    if (damage) this.awardCombatXp(damage, shooting);
 
-    if (npc.hits <= 0) {
+    if (npc.hitpoints <= 0) {
       this.killNpc(npc, def);
       return;
     }
 
     const back = rollDamage(npcFighter(def), this.playerFighter(), this.random);
-    player.hits = Math.max(0, player.hits - back);
-    this.splat(player, back);
-    if (player.hits <= 0) this.killPlayer();
+    this.damagePlayer(back);
     this.invalidate();
   }
 
-  private awardCombatXp(damage: number): void {
+  /** Tiles a fight can be held at: adjacent unless a loaded bow is wielded. */
+  private attackRange(): number {
+    return this.isShooting() ? 5 : 1;
+  }
+
+  private isShooting(): boolean {
+    const { player } = this.state;
+    return (
+      player.equipment.weapon === "shortbow" &&
+      countItem(player.inventory, "bronze_arrows") > 0
+    );
+  }
+
+  private awardCombatXp(damage: number, shooting = false): void {
     const total = combatXp(damage);
     const share = Math.round(total / 3);
+    if (shooting) {
+      this.addXp("ranged", total);
+      this.addXp("hitpoints", Math.max(1, share));
+      return;
+    }
     switch (this.state.player.combatStyle) {
       case "accurate":
         this.addXp("attack", total);
@@ -686,18 +1024,23 @@ export class Engine {
         this.addXp("strength", total);
         break;
       case "defensive":
-        this.addXp("defense", total);
+        this.addXp("defence", total);
         break;
       default:
         this.addXp("attack", share);
         this.addXp("strength", share);
-        this.addXp("defense", share);
+        this.addXp("defence", share);
     }
-    this.addXp("hits", Math.max(1, share));
+    this.addXp("hitpoints", Math.max(1, share));
   }
 
   private killNpc(npc: Npc, def: NpcDef): void {
     const { state } = this;
+    if (def.id === "tutorial_rat") {
+      this.setFlag(
+        state.player.tutorial.flags.ratKilled ? "ratShot" : "ratKilled",
+      );
+    }
     state.player.activity = null;
     npc.respawnTick = state.tick + Math.max(10, def.respawnTicks);
     npc.targetPlayer = false;
@@ -740,8 +1083,8 @@ export class Engine {
     player.y = RESPAWN_TILE.y;
     player.fx = RESPAWN_TILE.x;
     player.fy = RESPAWN_TILE.y;
-    player.maxHits = baseLevel(player.skills, "hits");
-    player.hits = player.maxHits;
+    player.maxHitpoints = baseLevel(player.skills, "hitpoints");
+    player.hitpoints = player.maxHitpoints;
     for (const id of Object.keys(player.skills.current) as SkillId[]) {
       player.skills.current[id] = baseLevel(player.skills, id);
     }
@@ -749,13 +1092,18 @@ export class Engine {
     this.invalidate();
   }
 
-  private playerFighter(): Fighter {
+  private playerFighter(shooting = false): Fighter {
     const { player } = this.state;
     const bonus = equipmentBonus(player);
+    const level = shooting
+      ? player.skills.current.ranged
+      : player.skills.current.attack;
     return {
-      attack: player.skills.current.attack,
-      strength: player.skills.current.strength,
-      defense: player.skills.current.defense,
+      attack: level,
+      strength: shooting
+        ? player.skills.current.ranged
+        : player.skills.current.strength,
+      defence: player.skills.current.defence,
       aim: bonus.aim,
       power: bonus.power,
       armour: bonus.armour,
@@ -827,6 +1175,7 @@ export class Engine {
     if (this.random() > Math.min(0.85, Math.max(0.06, odds))) return;
 
     addItem(player.inventory, gather.item);
+    if (gather.item === "raw_shrimp") this.setFlag("shrimpCaught");
     this.addXp(gather.skill, gather.xp);
     this.message(
       "skill",
@@ -855,12 +1204,32 @@ export class Engine {
 
     if (target.kind === "object") {
       const object = this.state.map.objects[target.index];
-      if (object?.defId === "fire") {
+      const use = object && getObjectDef(object.defId).use;
+      if (use === "cook") {
         this.cook(usingSlot, stack.id);
+        return;
+      }
+      if (use === "smelt") {
+        this.smelt();
+        return;
+      }
+      if (use === "smith") {
+        this.smith(usingSlot, stack.id);
         return;
       }
     }
     this.message("game", "Nothing interesting happens.");
+  }
+
+  private tryMakeDough(a: string, b: string): boolean {
+    const pair = new Set([a, b]);
+    if (!pair.has("pot_of_flour") || !pair.has("bucket_of_water")) return false;
+    const { player } = this.state;
+    removeItem(player.inventory, "pot_of_flour");
+    removeItem(player.inventory, "bucket_of_water");
+    addItem(player.inventory, "bread_dough");
+    this.message("skill", "You mix the flour and water into bread dough.");
+    return true;
   }
 
   /** Tinderbox plus logs lights a fire on the tile the player is standing on. */
@@ -921,6 +1290,53 @@ export class Engine {
     return true;
   }
 
+  /** Copper and tin become a bronze bar in a furnace. */
+  private smelt(): void {
+    const { player } = this.state;
+    if (
+      !countItem(player.inventory, "copper_ore") ||
+      !countItem(player.inventory, "tin_ore")
+    ) {
+      this.message("game", "You need copper ore and tin ore to make bronze.");
+      return;
+    }
+    removeItem(player.inventory, "copper_ore");
+    removeItem(player.inventory, "tin_ore");
+    addItem(player.inventory, "bronze_bar");
+    this.setFlag("barSmelted");
+    this.addXp("smithing", 6);
+    this.message("skill", "You smelt the ore into a bronze bar.");
+  }
+
+  /** A bar plus a hammer becomes a weapon on an anvil. */
+  private smith(slot: number, id: string): void {
+    const { player } = this.state;
+    const recipe = getItem(id).smith;
+    if (!recipe) {
+      this.message("game", "You can only hammer metal bars on an anvil.");
+      return;
+    }
+    if (!countItem(player.inventory, "hammer")) {
+      this.message("game", "You need a hammer to work the metal.");
+      return;
+    }
+    if (baseLevel(player.skills, "smithing") < recipe.level) {
+      this.message(
+        "game",
+        `You need Smithing level ${recipe.level} to make that.`,
+      );
+      return;
+    }
+    removeAt(player.inventory, slot, 1);
+    addItem(player.inventory, recipe.into);
+    if (recipe.into === "bronze_dagger") this.setFlag("daggerSmithed");
+    this.addXp("smithing", recipe.xp);
+    this.message(
+      "skill",
+      `You hammer out a ${itemName(recipe.into).toLowerCase()}.`,
+    );
+  }
+
   private cook(slot: number, id: string): void {
     const { player } = this.state;
     const cook = getItem(id).cook;
@@ -937,13 +1353,18 @@ export class Engine {
       return;
     }
     removeAt(player.inventory, slot, 1);
-    const odds = Math.min(0.95, 0.4 + (level - cook.level) * 0.03);
+    // Food never burns on Tutorial Island, as in the original.
+    const odds = player.tutorial.done
+      ? Math.min(0.95, 0.4 + (level - cook.level) * 0.03)
+      : 1;
     if (this.random() > odds) {
       addItem(player.inventory, cook.burnt);
       this.message("skill", "You accidentally burn the fish.");
       return;
     }
     addItem(player.inventory, cook.into);
+    if (cook.into === "shrimp") this.setFlag("shrimpCooked");
+    if (cook.into === "bread") this.setFlag("breadBaked");
     this.addXp("cooking", cook.xp);
     this.message(
       "skill",
@@ -955,16 +1376,20 @@ export class Engine {
     const { player } = this.state;
     if (!def.heals) return;
     removeAt(player.inventory, slot, 1);
-    const before = player.hits;
-    player.hits = Math.min(player.maxHits, player.hits + def.heals);
+    const before = player.hitpoints;
+    player.hitpoints = Math.min(
+      player.maxHitpoints,
+      player.hitpoints + def.heals,
+    );
     this.message("game", `You eat the ${def.name.toLowerCase()}.`);
-    if (player.hits > before)
-      this.splatText(player, `+${player.hits - before}`, "xp");
+    if (player.hitpoints > before)
+      this.splatText(player, `+${player.hitpoints - before}`, "xp");
   }
 
   private bury(slot: number, def: ItemDef): void {
     if (!def.buryXp) return;
     removeAt(this.state.player.inventory, slot, 1);
+    this.setFlag("bonesBuried");
     this.addXp("prayer", def.buryXp);
     this.message("skill", "You dig a hole in the ground and bury the bones.");
   }
@@ -1023,6 +1448,10 @@ export class Engine {
     const npc = npcByUid(this.state, target.uid);
     if (!npc) return;
     const def = getNpcDef(npc.defId);
+    if (def.dialogue) {
+      this.openDialogue(npc.uid, def.name, def.dialogue);
+      return;
+    }
     this.message(
       "chat",
       `${def.name}: ${def.chat ? pick(this.random, def.chat) : "..."}`,
@@ -1089,17 +1518,24 @@ export class Engine {
       this.playerFighter(),
       this.random,
     );
-    player.hits = Math.max(0, player.hits - damage);
-    this.splat(player, damage);
-    if (player.hits <= 0) this.killPlayer();
+    this.damagePlayer(damage);
     this.invalidate();
+  }
+
+  /** A blow cannot be fatal while the tutorial is still running. */
+  private damagePlayer(amount: number): void {
+    const { player } = this.state;
+    const floor = player.tutorial.done ? 0 : 1;
+    player.hitpoints = Math.max(floor, player.hitpoints - amount);
+    this.splat(player, amount);
+    if (player.hitpoints <= 0) this.killPlayer();
   }
 
   private reviveNpc(npc: Npc): void {
     const def = getNpcDef(npc.defId);
     npc.respawnTick = null;
-    npc.hits = def.levels.hits;
-    npc.maxHits = def.levels.hits;
+    npc.hitpoints = def.levels.hitpoints;
+    npc.maxHitpoints = def.levels.hitpoints;
     npc.x = npc.home.x;
     npc.y = npc.home.y;
     npc.fx = npc.home.x;
@@ -1165,9 +1601,9 @@ export class Engine {
     const after = levelForXp(player.skills.xp[skill]);
     if (after > before) {
       player.skills.current[skill] += after - before;
-      if (skill === "hits") {
-        player.maxHits = after;
-        player.hits += after - before;
+      if (skill === "hitpoints") {
+        player.maxHitpoints = after;
+        player.hitpoints += after - before;
       }
       this.message(
         "quest",
@@ -1290,8 +1726,8 @@ export class Engine {
           fy: home.y,
           path: [],
           facing: 4 as Direction,
-          hits: def.levels.hits,
-          maxHits: def.levels.hits,
+          hitpoints: def.levels.hitpoints,
+          maxHitpoints: def.levels.hitpoints,
           home,
           radius: spawn.radius,
           respawnTick: null,
@@ -1327,7 +1763,7 @@ export function npcFighter(def: NpcDef): Fighter {
   return {
     attack: def.levels.attack,
     strength: def.levels.strength,
-    defense: def.levels.defense,
+    defence: def.levels.defence,
     aim: def.bonus.aim,
     power: def.bonus.power,
     armour: def.bonus.armour,

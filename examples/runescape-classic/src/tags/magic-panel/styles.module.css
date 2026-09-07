@@ -1,0 +1,49 @@
+.list {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.spell {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  border: 1px solid var(--rs-slot-border);
+  border-radius: 3px;
+  background: var(--rs-slot);
+  padding: 8px 10px;
+  color: var(--rs-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.spell:not(:disabled):hover {
+  border-color: var(--rs-gold);
+}
+
+.selected {
+  border-color: var(--rs-gold);
+  color: var(--rs-gold);
+}
+
+.unready {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.name {
+  flex: 1;
+}
+
+.level {
+  color: var(--rs-text-dim);
+}
+
+.hint {
+  margin: 8px 0 0;
+  font-size: 10px;
+  color: var(--rs-text-dim);
+}

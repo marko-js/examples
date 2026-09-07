@@ -1,5 +1,5 @@
 /** Game state shape plus the pure helpers that read and mutate it. */
-import { INVENTORY_SIZE, RESPAWN_TILE } from "./config";
+import { INVENTORY_SIZE, TUTORIAL_START } from "./config";
 import {
   addBonus,
   type Bonus,
@@ -20,7 +20,7 @@ export const COMBAT_STYLES: { id: CombatStyle; name: string; blurb: string }[] =
     {
       id: "controlled",
       name: "Controlled",
-      blurb: "Shared attack, strength and defense",
+      blurb: "Shared attack, strength and defence",
     },
     {
       id: "aggressive",
@@ -31,7 +31,7 @@ export const COMBAT_STYLES: { id: CombatStyle; name: string; blurb: string }[] =
     {
       id: "defensive",
       name: "Defensive",
-      blurb: "All experience into defense",
+      blurb: "All experience into defence",
     },
   ];
 
@@ -52,8 +52,8 @@ export interface Actor {
   fy: number;
   path: Point[];
   facing: Direction;
-  hits: number;
-  maxHits: number;
+  hitpoints: number;
+  maxHitpoints: number;
 }
 
 export type Target =
@@ -87,6 +87,7 @@ export interface Player extends Actor {
   equipment: Partial<Record<EquipSlot, string>>;
   bank: ItemStack[];
   combatStyle: CombatStyle;
+  tutorial: TutorialProgress;
   activity: Activity | null;
   pending: PendingAction | null;
   /** Tick the next combat round may resolve on. */
@@ -97,6 +98,8 @@ export interface Player extends Actor {
   respawnTick: number | null;
   /** Inventory slot picked up for a "use with" interaction. */
   selectedSlot: number | null;
+  /** Spell armed from the magic tab, waiting for a target. */
+  selectedSpell: string | null;
 }
 
 export interface Npc extends Actor {
@@ -137,6 +140,26 @@ export interface Splat {
   bornAt: number;
 }
 
+/** How far through Tutorial Island the player is. */
+export interface TutorialProgress {
+  /** Number of stages completed; indexes into TUTORIAL_STAGES. */
+  stage: number;
+  done: boolean;
+  /** One-off events a stage waits on, such as burning the first piece of meat. */
+  flags: Record<string, boolean>;
+}
+
+/** An NPC conversation being played out one line at a time. */
+export interface DialogueState {
+  npcUid: number;
+  /** Key into the dialogue scripts. */
+  speaker: string;
+  /** Display name shown above the lines. */
+  name: string;
+  node: string;
+  line: number;
+}
+
 export type Overlay = { kind: "none" } | { kind: "bank" } | { kind: "shop" };
 
 export interface GameState {
@@ -148,6 +171,7 @@ export interface GameState {
   messages: ChatMessage[];
   splats: Splat[];
   overlay: Overlay;
+  dialogue: DialogueState | null;
   /** Stock of the general store, refreshed slowly as items are bought. */
   shopStock: ItemStack[];
   nextUid: number;
@@ -178,32 +202,27 @@ export function createPlayer(): Player {
   return {
     name: "Guest",
     appearance: { ...DEFAULT_APPEARANCE },
-    x: RESPAWN_TILE.x,
-    y: RESPAWN_TILE.y,
-    fx: RESPAWN_TILE.x,
-    fy: RESPAWN_TILE.y,
+    x: TUTORIAL_START.x,
+    y: TUTORIAL_START.y,
+    fx: TUTORIAL_START.x,
+    fy: TUTORIAL_START.y,
     path: [],
     facing: 4,
-    hits: 10,
-    maxHits: 10,
+    hitpoints: 10,
+    maxHitpoints: 10,
     skills: createSkills(),
-    inventory: createInventory([
-      { id: "bronze_axe", count: 1 },
-      { id: "bronze_pickaxe", count: 1 },
-      { id: "tinderbox", count: 1 },
-      { id: "small_net", count: 1 },
-      { id: "bread", count: 3 },
-      { id: "coins", count: 50 },
-    ]),
+    inventory: createInventory(),
     equipment: {},
     bank: [],
     combatStyle: "controlled",
+    tutorial: { stage: 0, done: false, flags: {} },
     activity: null,
     pending: null,
     nextRoundTick: 0,
     nextGatherTick: 0,
     respawnTick: null,
     selectedSlot: null,
+    selectedSpell: null,
   };
 }
 
@@ -315,8 +334,8 @@ export function equipmentBonus(player: Player): Bonus {
   return total;
 }
 
-export function maxHitsOf(player: Player): number {
-  return baseLevel(player.skills, "hits");
+export function maxHitpointsOf(player: Player): number {
+  return baseLevel(player.skills, "hitpoints");
 }
 
 /* ------------------------------------------------------------------- npcs */

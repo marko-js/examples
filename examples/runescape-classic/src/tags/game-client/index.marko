@@ -4,6 +4,7 @@ import {
   chatIcon,
   cogIcon,
   gearIcon,
+  spellbookIcon,
   statsIcon,
 } from "../../game/icons";
 import type { EquipSlot } from "../../game/items";
@@ -25,6 +26,7 @@ import styles from "./styles.module.css";
 static const TABS = [
   { id: "inventory", name: "Inventory", icon: bagIcon() },
   { id: "equipment", name: "Worn", icon: gearIcon() },
+  { id: "magic", name: "Magic", icon: spellbookIcon() },
   { id: "stats", name: "Stats", icon: statsIcon() },
   { id: "settings", name: "Options", icon: cogIcon() },
 ];
@@ -68,6 +70,9 @@ static const LONG_PRESS_MS = 420;
     overlay: game.state.overlay,
     shopStock: game.state.shopStock,
     region: game.region,
+    dialogue: game.dialogueView,
+    spells: game.spellbook,
+    objective: game.tutorialObjective,
   });
 }>
 
@@ -232,10 +237,10 @@ static const LONG_PRESS_MS = 420;
 
     <div
       class=styles.orb
-      style=`--fill:${Math.round((ui.hits / ui.maxHits) * 100)}%`
-      title=`Hits ${ui.hits} of ${ui.maxHits}`
+      style=`--fill:${Math.round((ui.hitpoints / ui.maxHitpoints) * 100)}%`
+      title=`Hits ${ui.hitpoints} of ${ui.maxHitpoints}`
     >
-      ${ui.hits}
+      ${ui.hitpoints}
     </div>
   </div>
 
@@ -329,6 +334,15 @@ static const LONG_PRESS_MS = 420;
         />
       </show>
 
+      <show=tab === "magic">
+        <magic-panel
+          spells=ui.spells
+          onSelect(id) {
+            session.engine?.selectSpell(id);
+          }
+        />
+      </show>
+
       <show=tab === "stats">
         <stats-panel
           skills=ui.skills
@@ -356,6 +370,23 @@ static const LONG_PRESS_MS = 420;
       </show>
     </div>
   </section>
+
+  <show=!!ui.objective && !ui.dialogue>
+    <p class=styles.objective>${ui.objective}</p>
+  </show>
+
+  <if=ui.dialogue>
+    <dialogue-box
+      dialogue=ui.dialogue
+      playerName=ui.name
+      onContinue() {
+        session.engine?.advanceDialogue();
+      }
+      onChoose(index) {
+        session.engine?.chooseDialogue(index);
+      }
+    />
+  </if>
 
   <show=ui.dead>
     <p class=styles.dead>Oh dear, you are dead!</p>

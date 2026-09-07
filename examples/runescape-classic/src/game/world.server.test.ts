@@ -85,8 +85,10 @@ test("the world holds the resources each skill needs", () => {
   expect(counts.get("rock_coal")).toBeGreaterThan(1);
   expect(counts.get("rock_mithril")).toBeGreaterThan(0);
   expect(counts.get("fish_net")).toBeGreaterThan(0);
-  expect(counts.get("bank_chest")).toBe(2);
+  expect(counts.get("bank_chest")).toBe(4);
   expect(counts.get("shop_counter")).toBe(3);
+  expect(counts.get("furnace")).toBe(1);
+  expect(counts.get("anvil")).toBe(2);
 });
 
 test("fishing spots sit on water so they are fished from the shore", () => {

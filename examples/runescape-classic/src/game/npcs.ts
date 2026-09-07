@@ -34,7 +34,7 @@ export interface NpcDef {
   id: string;
   name: string;
   examine: string;
-  levels: Record<"attack" | "defense" | "strength" | "hits", number>;
+  levels: Record<"attack" | "defence" | "strength" | "hitpoints", number>;
   bonus: { aim: number; power: number; armour: number };
   attackable: boolean;
   aggressive: boolean;
@@ -48,6 +48,8 @@ export interface NpcDef {
   sprite: NpcSprite;
   role?: "bank" | "shop";
   chat?: string[];
+  /** Key into the tutorial dialogue scripts, for instructors. */
+  dialogue?: string;
 }
 
 const NPC_LIST: NpcDef[] = [
@@ -55,7 +57,7 @@ const NPC_LIST: NpcDef[] = [
     id: "chicken",
     name: "Chicken",
     examine: "Yep, definitely a chicken.",
-    levels: { attack: 1, defense: 1, strength: 1, hits: 3 },
+    levels: { attack: 1, defence: 1, strength: 1, hitpoints: 3 },
     bonus: { aim: 0, power: 0, armour: 0 },
     attackable: true,
     aggressive: false,
@@ -75,7 +77,7 @@ const NPC_LIST: NpcDef[] = [
     id: "rat",
     name: "Rat",
     examine: "A vicious looking rodent.",
-    levels: { attack: 3, defense: 2, strength: 2, hits: 5 },
+    levels: { attack: 3, defence: 2, strength: 2, hitpoints: 5 },
     bonus: { aim: 2, power: 2, armour: 1 },
     attackable: true,
     aggressive: false,
@@ -98,7 +100,7 @@ const NPC_LIST: NpcDef[] = [
     id: "giant_rat",
     name: "Giant rat",
     examine: "Now that is a big rat.",
-    levels: { attack: 8, defense: 6, strength: 7, hits: 14 },
+    levels: { attack: 8, defence: 6, strength: 7, hitpoints: 14 },
     bonus: { aim: 8, power: 8, armour: 6 },
     attackable: true,
     aggressive: true,
@@ -121,7 +123,7 @@ const NPC_LIST: NpcDef[] = [
     id: "cow",
     name: "Cow",
     examine: "Converts grass into beef.",
-    levels: { attack: 2, defense: 2, strength: 3, hits: 8 },
+    levels: { attack: 2, defence: 2, strength: 3, hitpoints: 8 },
     bonus: { aim: 1, power: 2, armour: 2 },
     attackable: true,
     aggressive: false,
@@ -144,7 +146,7 @@ const NPC_LIST: NpcDef[] = [
     id: "goblin",
     name: "Goblin",
     examine: "An ugly green creature.",
-    levels: { attack: 6, defense: 6, strength: 6, hits: 12 },
+    levels: { attack: 6, defence: 6, strength: 6, hitpoints: 12 },
     bonus: { aim: 6, power: 6, armour: 6 },
     attackable: true,
     aggressive: true,
@@ -170,7 +172,7 @@ const NPC_LIST: NpcDef[] = [
     id: "man",
     name: "Man",
     examine: "One of Lumbridge's citizens.",
-    levels: { attack: 4, defense: 4, strength: 4, hits: 12 },
+    levels: { attack: 4, defence: 4, strength: 4, hitpoints: 12 },
     bonus: { aim: 3, power: 3, armour: 3 },
     attackable: true,
     aggressive: false,
@@ -194,7 +196,7 @@ const NPC_LIST: NpcDef[] = [
     id: "guard",
     name: "Guard",
     examine: "He is on the lookout for trouble.",
-    levels: { attack: 20, defense: 20, strength: 18, hits: 22 },
+    levels: { attack: 20, defence: 20, strength: 18, hitpoints: 22 },
     bonus: { aim: 22, power: 20, armour: 26 },
     attackable: true,
     aggressive: false,
@@ -219,7 +221,7 @@ const NPC_LIST: NpcDef[] = [
     id: "skeleton",
     name: "Skeleton",
     examine: "It has seen better days.",
-    levels: { attack: 22, defense: 20, strength: 22, hits: 24 },
+    levels: { attack: 22, defence: 20, strength: 22, hitpoints: 24 },
     bonus: { aim: 24, power: 24, armour: 20 },
     attackable: true,
     aggressive: true,
@@ -244,7 +246,7 @@ const NPC_LIST: NpcDef[] = [
     id: "hobgoblin",
     name: "Hobgoblin",
     examine: "A large goblin with a nasty temper.",
-    levels: { attack: 30, defense: 28, strength: 30, hits: 36 },
+    levels: { attack: 30, defence: 28, strength: 30, hitpoints: 36 },
     bonus: { aim: 34, power: 34, armour: 30 },
     attackable: true,
     aggressive: true,
@@ -269,7 +271,7 @@ const NPC_LIST: NpcDef[] = [
     id: "banker",
     name: "Banker",
     examine: "He can look after my items for me.",
-    levels: { attack: 1, defense: 1, strength: 1, hits: 20 },
+    levels: { attack: 1, defence: 1, strength: 1, hitpoints: 20 },
     bonus: { aim: 0, power: 0, armour: 0 },
     attackable: false,
     aggressive: false,
@@ -292,7 +294,7 @@ const NPC_LIST: NpcDef[] = [
     id: "shopkeeper",
     name: "Shopkeeper",
     examine: "He owns the general store.",
-    levels: { attack: 1, defense: 1, strength: 1, hits: 20 },
+    levels: { attack: 1, defence: 1, strength: 1, hitpoints: 20 },
     bonus: { aim: 0, power: 0, armour: 0 },
     attackable: false,
     aggressive: false,
@@ -312,6 +314,161 @@ const NPC_LIST: NpcDef[] = [
     },
   },
 ];
+
+/* Tutorial Island instructors. They cannot be attacked and never wander. */
+
+const INSTRUCTORS: {
+  id: string;
+  name: string;
+  examine: string;
+  shirt: string;
+  legs: string;
+  hair: string;
+}[] = [
+  {
+    id: "gielinor_guide",
+    name: "Gielinor Guide",
+    examine: "He welcomes new arrivals to Gielinor.",
+    shirt: "#7a3f8a",
+    legs: "#3c3c4a",
+    hair: "#8a8a8a",
+  },
+  {
+    id: "survival_expert",
+    name: "Survival Expert",
+    examine: "She knows her way around the wild.",
+    shirt: "#3f7a4f",
+    legs: "#4a3a28",
+    hair: "#8a5a2a",
+  },
+  {
+    id: "master_chef",
+    name: "Master Chef",
+    examine: "Something smells good.",
+    shirt: "#e8e4dc",
+    legs: "#8a8a8a",
+    hair: "#4a3524",
+  },
+  {
+    id: "quest_guide",
+    name: "Quest Guide",
+    examine: "He knows a tale or two.",
+    shirt: "#7a5a2f",
+    legs: "#3c3c4a",
+    hair: "#c8c4b4",
+  },
+  {
+    id: "mining_instructor",
+    name: "Mining Instructor",
+    examine: "A veteran of the rocks.",
+    shirt: "#6b5334",
+    legs: "#4a3a28",
+    hair: "#3a2a18",
+  },
+  {
+    id: "combat_instructor",
+    name: "Combat Instructor",
+    examine: "He looks like he can handle himself.",
+    shirt: "#8b8b94",
+    legs: "#5a5a62",
+    hair: "#2e2418",
+  },
+  {
+    id: "account_guide",
+    name: "Account Guide",
+    examine: "He looks after the paperwork.",
+    shirt: "#2f4f7a",
+    legs: "#23232c",
+    hair: "#5a4632",
+  },
+  {
+    id: "brother_brace",
+    name: "Brother Brace",
+    examine: "A monk of Saradomin.",
+    shirt: "#e0d8c0",
+    legs: "#c8c0a8",
+    hair: "#6a5a3a",
+  },
+  {
+    id: "magic_instructor",
+    name: "Magic Instructor",
+    examine: "There is good magic potential in this one.",
+    shirt: "#3f3f8a",
+    legs: "#2a2a5a",
+    hair: "#c8c4b4",
+  },
+];
+
+for (const person of INSTRUCTORS) {
+  NPC_LIST.push({
+    id: person.id,
+    name: person.name,
+    examine: person.examine,
+    levels: { attack: 1, defence: 1, strength: 1, hitpoints: 20 },
+    bonus: { aim: 0, power: 0, armour: 0 },
+    attackable: false,
+    aggressive: false,
+    wander: 0,
+    respawnTicks: 0,
+    always: [],
+    drops: [],
+    dialogue: person.id,
+    sprite: {
+      kind: "humanoid",
+      skin: "#d8a87a",
+      hair: person.hair,
+      shirt: person.shirt,
+      legs: person.legs,
+      height: 1,
+    },
+  });
+}
+
+NPC_LIST.push(
+  {
+    id: "tutorial_rat",
+    name: "Rat",
+    examine: "A vicious looking rodent.",
+    levels: { attack: 1, defence: 1, strength: 1, hitpoints: 5 },
+    bonus: { aim: 0, power: 0, armour: 0 },
+    attackable: true,
+    aggressive: false,
+    wander: 3,
+    respawnTicks: 20,
+    always: [],
+    drops: [],
+    sprite: {
+      kind: "beast",
+      body: "#6b6157",
+      belly: "#8a8076",
+      snout: "#c99a9a",
+      width: 0.8,
+      height: 0.5,
+      tail: true,
+      horns: false,
+    },
+  },
+  {
+    id: "tutorial_chicken",
+    name: "Chicken",
+    examine: "Yep, definitely a chicken.",
+    levels: { attack: 1, defence: 1, strength: 1, hitpoints: 3 },
+    bonus: { aim: 0, power: 0, armour: 0 },
+    attackable: true,
+    aggressive: false,
+    wander: 3,
+    respawnTicks: 20,
+    always: [],
+    drops: [],
+    sprite: {
+      kind: "bird",
+      body: "#f0eee6",
+      wing: "#d8d4c6",
+      beak: "#e0a52a",
+      comb: "#c43a2f",
+    },
+  },
+);
 
 export const NPCS: Record<string, NpcDef> = Object.fromEntries(
   NPC_LIST.map((def) => [def.id, def]),

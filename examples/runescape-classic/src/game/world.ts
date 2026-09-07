@@ -131,7 +131,12 @@ export type ObjectArt =
   | { kind: "sign"; text: string }
   | { kind: "well" }
   | { kind: "altar" }
-  | { kind: "table" };
+  | { kind: "table" }
+  | { kind: "range" }
+  | { kind: "furnace" }
+  | { kind: "anvil" }
+  | { kind: "door"; colour: string }
+  | { kind: "boat" };
 
 export interface GatherDef {
   skill: SkillId;
@@ -157,7 +162,7 @@ export interface ObjectDef {
   art: ObjectArt;
   gather?: GatherDef;
   /** Extra menu actions handled by the engine, such as "Bank" or "Trade". */
-  use?: "bank" | "shop";
+  use?: "bank" | "shop" | "cook" | "smelt" | "smith" | "boat";
   /** Drawn one tile tall rather than overlapping the tile above. */
   flat?: boolean;
 }
@@ -183,7 +188,7 @@ const OBJECT_LIST: ObjectDef[] = [
     "tree",
     "Tree",
     {
-      skill: "woodcut",
+      skill: "woodcutting",
       level: 1,
       xp: 25,
       item: "logs",
@@ -205,7 +210,7 @@ const OBJECT_LIST: ObjectDef[] = [
     "oak",
     "Oak tree",
     {
-      skill: "woodcut",
+      skill: "woodcutting",
       level: 15,
       xp: 37,
       item: "oak_logs",
@@ -227,7 +232,7 @@ const OBJECT_LIST: ObjectDef[] = [
     "willow",
     "Willow tree",
     {
-      skill: "woodcut",
+      skill: "woodcutting",
       level: 30,
       xp: 63,
       item: "willow_logs",
@@ -249,7 +254,7 @@ const OBJECT_LIST: ObjectDef[] = [
     "maple",
     "Maple tree",
     {
-      skill: "woodcut",
+      skill: "woodcutting",
       level: 45,
       xp: 100,
       item: "maple_logs",
@@ -484,7 +489,7 @@ OBJECT_LIST.push(
     name: "Wall",
     examine: "A wooden wall.",
     blocking: true,
-    art: { kind: "wall", face: "#7d5b33", top: "#96703f" },
+    art: { kind: "wall", face: "#9a7440", top: "#bd9256" },
   },
   {
     id: "fence",
@@ -507,7 +512,46 @@ OBJECT_LIST.push(
     examine: "A fire. It is nice and toasty.",
     blocking: false,
     flat: true,
+    use: "cook",
     art: { kind: "fire" },
+  },
+  {
+    id: "range",
+    name: "Range",
+    examine: "A hot stove for cooking on.",
+    blocking: true,
+    use: "cook",
+    art: { kind: "range" },
+  },
+  {
+    id: "furnace",
+    name: "Furnace",
+    examine: "Hot enough to melt ore.",
+    blocking: true,
+    use: "smelt",
+    art: { kind: "furnace" },
+  },
+  {
+    id: "anvil",
+    name: "Anvil",
+    examine: "Useful for hammering metal into shape.",
+    blocking: true,
+    use: "smith",
+    art: { kind: "anvil" },
+  },
+  {
+    id: "boat",
+    name: "Boat",
+    examine: "A small rowing boat.",
+    blocking: true,
+    art: { kind: "boat" },
+  },
+  {
+    id: "tut_door",
+    name: "Door",
+    examine: "A sturdy wooden door.",
+    blocking: true,
+    art: { kind: "door", colour: "#7a5230" },
   },
   {
     id: "bank_chest",
@@ -589,6 +633,8 @@ export interface WorldObject {
   readyAt?: number;
   /** Object to restore when `readyAt` passes. Absent means remove. */
   restoreTo?: string;
+  /** For a tutorial door: the stage that must be finished before it opens. */
+  stage?: number;
 }
 
 export interface NpcSpawn {

@@ -213,6 +213,114 @@ export function potIcon(fill: string): Icon {
   ];
 }
 
+export function runeIcon(face: string, rim: string): Icon {
+  return [
+    { kind: "poly", points: "16,3 27,11 23,26 9,26 5,11", fill: rim },
+    { kind: "poly", points: "16,6 24,12 21,23 11,23 8,12", fill: face },
+    { kind: "rect", x: 15, y: 10, w: 2.5, h: 10, fill: rim },
+    { kind: "rect", x: 11, y: 13, w: 10, h: 2.5, fill: rim },
+  ];
+}
+
+export function meatIcon(raw: boolean): Icon {
+  const flesh = raw ? "#c9615c" : "#a8683a";
+  return [
+    { kind: "poly", points: "8,9 22,7 27,15 22,25 11,26 5,18", fill: flesh },
+    {
+      kind: "poly",
+      points: "10,11 20,10 23,15 19,22 12,22 8,17",
+      fill: raw ? "#dd8480" : "#c98a54",
+    },
+    { kind: "rect", x: 3, y: 20, w: 7, h: 3.5, fill: "#efe7d2", rx: 1.75 },
+  ];
+}
+
+export function sleepingBagIcon(): Icon {
+  return [
+    { kind: "rect", x: 4, y: 10, w: 24, h: 14, fill: "#3f6a8a", rx: 6 },
+    { kind: "rect", x: 4, y: 10, w: 24, h: 5, fill: "#5589ad", rx: 2.5 },
+    { kind: "rect", x: 14, y: 12, w: 3, h: 11, fill: "#2b4a63" },
+    { kind: "circle", cx: 22, cy: 17, r: 2, fill: "#d8d2c2" },
+  ];
+}
+
+export function shieldWoodIcon(): Icon {
+  return [
+    { kind: "poly", points: "6,4 26,4 26,20 16,29 6,20", fill: "#8a6136" },
+    { kind: "poly", points: "6,4 16,4 16,29 6,20", fill: "#a67c47" },
+    { kind: "rect", x: 5, y: 9, w: 22, h: 3, fill: "#5b3c22" },
+    { kind: "rect", x: 5, y: 16, w: 22, h: 3, fill: "#5b3c22" },
+  ];
+}
+
+export function longswordIcon(blade: string, shine: string): Icon {
+  return [
+    { kind: "poly", points: "16,1 20,7 20,22 16,26 12,22 12,7", fill: blade },
+    { kind: "poly", points: "16,1 16,26 12,22 12,7", fill: shine },
+    { kind: "rect", x: 6, y: 25, w: 20, h: 3, fill: "#c9a227", rx: 1 },
+    { kind: "rect", x: 14.5, y: 28, w: 3, h: 4, fill: "#5b3c22", rx: 1 },
+  ];
+}
+
+export function daggerIcon(blade: string, shine: string): Icon {
+  return [
+    { kind: "poly", points: "16,5 20,11 20,20 16,23 12,20 12,11", fill: blade },
+    { kind: "poly", points: "16,5 16,23 12,20 12,11", fill: shine },
+    { kind: "rect", x: 9, y: 22, w: 14, h: 2.5, fill: "#c9a227", rx: 1 },
+    { kind: "rect", x: 14.5, y: 24, w: 3, h: 5, fill: "#5b3c22", rx: 1 },
+  ];
+}
+
+export function bowIcon(): Icon {
+  return [
+    {
+      kind: "poly",
+      points: "10,3 14,8 14,24 10,29 8,29 12,24 12,8 8,3",
+      fill: "#7a5230",
+    },
+    { kind: "rect", x: 12, y: 4, w: 1.5, h: 24, fill: "#e8e0c8" },
+  ];
+}
+
+export function arrowIcon(head: string): Icon {
+  return [
+    { kind: "rect", x: 15, y: 8, w: 2, h: 20, fill: "#7a5230" },
+    { kind: "poly", points: "16,2 21,10 11,10", fill: head },
+    { kind: "poly", points: "16,22 20,29 16,27 12,29", fill: "#f2f2ea" },
+  ];
+}
+
+export function barIcon(metal: string, shine: string): Icon {
+  return [
+    { kind: "poly", points: "5,14 27,14 24,24 8,24", fill: metal },
+    { kind: "poly", points: "5,14 27,14 24,18 8,18", fill: shine },
+  ];
+}
+
+export function hammerIcon(): Icon {
+  return [
+    { kind: "rect", x: 14, y: 12, w: 4, h: 18, fill: "#7a5230", rx: 1 },
+    { kind: "rect", x: 6, y: 4, w: 20, h: 9, fill: "#8d857c", rx: 2 },
+    { kind: "rect", x: 6, y: 4, w: 20, h: 3.5, fill: "#b3a99f", rx: 2 },
+  ];
+}
+
+export function bucketIcon(fill: string | null): Icon {
+  const shapes: Icon = [
+    { kind: "poly", points: "8,10 24,10 21,28 11,28", fill: "#8d8d95" },
+    { kind: "rect", x: 7, y: 8, w: 18, h: 3, fill: "#a5a5ad", rx: 1.5 },
+  ];
+  if (fill) shapes.push({ kind: "rect", x: 10, y: 13, w: 12, h: 5, fill });
+  return shapes;
+}
+
+export function doughIcon(): Icon {
+  return [
+    { kind: "circle", cx: 16, cy: 19, r: 9, fill: "#e6d7b4" },
+    { kind: "circle", cx: 13, cy: 16, r: 5, fill: "#f2e6c8" },
+  ];
+}
+
 /* Small glyphs used by the side panel tab strip. */
 
 export function mapIcon(): Icon {
@@ -264,6 +372,15 @@ export function chatIcon(): Icon {
     { kind: "poly", points: "9,20 9,29 17,21", fill: "#d8d2c2" },
     { kind: "rect", x: 8, y: 10, w: 16, h: 2.4, fill: "#4a4438", rx: 1 },
     { kind: "rect", x: 8, y: 15, w: 11, h: 2.4, fill: "#4a4438", rx: 1 },
+  ];
+}
+
+export function spellbookIcon(): Icon {
+  return [
+    { kind: "rect", x: 5, y: 5, w: 22, h: 22, fill: "#3f3f8a", rx: 2 },
+    { kind: "rect", x: 5, y: 5, w: 6, h: 22, fill: "#2a2a5a", rx: 2 },
+    { kind: "poly", points: "19,10 22,15 19,20 16,15", fill: "#e8d24a" },
+    { kind: "poly", points: "13,13 24,13 24,17 13,17", fill: "#e8d24a" },
   ];
 }
 

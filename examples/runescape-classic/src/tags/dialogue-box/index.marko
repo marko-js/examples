@@ -1,0 +1,47 @@
+import type { UiDialogue } from "../../game/ui";
+import styles from "./styles.module.css";
+
+export interface Input {
+  dialogue: UiDialogue;
+  playerName: string;
+  onContinue: () => void;
+  onChoose: (index: number) => void;
+}
+
+<const/speaker=input.dialogue.who === "npc"
+  ? input.dialogue.name
+  : input.playerName>
+
+<section class=styles.box aria-live="polite">
+  <p class=styles.speaker>${speaker}</p>
+  <p class=styles.line>${input.dialogue.text}</p>
+
+  <if=input.dialogue.options.length>
+    <ul class=styles.options>
+      <for|label, index| of=input.dialogue.options>
+        <li>
+          <button
+            type="button"
+            class=styles.option
+            onClick() {
+              input.onChoose(index);
+            }
+          >
+            ${label}
+          </button>
+        </li>
+      </for>
+    </ul>
+  </if>
+  <else>
+    <button
+      type="button"
+      class=styles.continue
+      onClick() {
+        input.onContinue();
+      }
+    >
+      Click to continue
+    </button>
+  </else>
+</section>

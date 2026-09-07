@@ -557,6 +557,87 @@ export function drawObjectArt(
       ctx.closePath();
       ctx.fill();
       break;
+    case "range":
+      shadow(ctx, x, y, 14 * s, 4 * s);
+      ctx.fillStyle = "#5f5a55";
+      ctx.fillRect(x - 15 * s, y - 20 * s, 30 * s, 20 * s);
+      ctx.fillStyle = "#736d66";
+      ctx.fillRect(x - 15 * s, y - 24 * s, 30 * s, 5 * s);
+      ctx.fillStyle = "#241c16";
+      ctx.fillRect(x - 10 * s, y - 16 * s, 20 * s, 11 * s);
+      ctx.fillStyle = "#e8622a";
+      flame(ctx, x, y - 6 * s, 7 * s, 11 * s);
+      ctx.fillStyle = "#f8c85a";
+      flame(ctx, x, y - 6 * s, 4 * s, 7 * s);
+      break;
+    case "furnace":
+      shadow(ctx, x, y, 16 * s, 5 * s);
+      ctx.fillStyle = "#6d6560";
+      ctx.beginPath();
+      ctx.moveTo(x - 17 * s, y);
+      ctx.lineTo(x - 14 * s, y - 26 * s);
+      ctx.lineTo(x + 14 * s, y - 26 * s);
+      ctx.lineTo(x + 17 * s, y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = "#8b837b";
+      ctx.fillRect(x - 15 * s, y - 30 * s, 30 * s, 5 * s);
+      ctx.fillStyle = "#241c16";
+      ctx.beginPath();
+      ctx.arc(x, y - 10 * s, 8 * s, Math.PI, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(x - 8 * s, y - 10 * s, 16 * s, 8 * s);
+      ctx.fillStyle = "#f0902a";
+      flame(ctx, x, y - 4 * s, 6 * s, 10 * s);
+      ctx.fillStyle = "#f8e05a";
+      flame(ctx, x, y - 4 * s, 3 * s, 6 * s);
+      break;
+    case "anvil":
+      shadow(ctx, x, y, 11 * s, 4 * s);
+      ctx.fillStyle = "#4a4a52";
+      ctx.fillRect(x - 6 * s, y - 10 * s, 12 * s, 10 * s);
+      ctx.fillStyle = "#5f5f68";
+      ctx.beginPath();
+      ctx.moveTo(x - 14 * s, y - 18 * s);
+      ctx.lineTo(x + 11 * s, y - 18 * s);
+      ctx.lineTo(x + 17 * s, y - 14 * s);
+      ctx.lineTo(x + 11 * s, y - 11 * s);
+      ctx.lineTo(x - 12 * s, y - 11 * s);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = "#7a7a84";
+      ctx.fillRect(x - 14 * s, y - 18 * s, 25 * s, 2 * s);
+      break;
+    case "door":
+      ctx.fillStyle = "#4a3524";
+      ctx.fillRect(x - tile / 2, y - tile * 0.9, tile, tile * 0.9);
+      ctx.fillStyle = art.colour;
+      ctx.fillRect(
+        x - tile / 2 + 2 * s,
+        y - tile * 0.86,
+        tile - 4 * s,
+        tile * 0.82,
+      );
+      ctx.fillStyle = "rgba(0,0,0,0.25)";
+      ctx.fillRect(x - tile / 2 + 2 * s, y - tile * 0.5, tile - 4 * s, 2 * s);
+      ctx.fillStyle = "#c9a227";
+      circle(ctx, x + tile * 0.28, y - tile * 0.45, 2.2 * s);
+      break;
+    case "boat":
+      shadow(ctx, x, y, 18 * s, 5 * s);
+      ctx.fillStyle = "#7a5230";
+      ctx.beginPath();
+      ctx.moveTo(x - 20 * s, y - 12 * s);
+      ctx.lineTo(x + 20 * s, y - 12 * s);
+      ctx.lineTo(x + 13 * s, y - 1 * s);
+      ctx.lineTo(x - 13 * s, y - 1 * s);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = "#96683d";
+      ctx.fillRect(x - 20 * s, y - 14 * s, 40 * s, 3 * s);
+      ctx.fillStyle = "#5b3c22";
+      ctx.fillRect(x - 8 * s, y - 10 * s, 16 * s, 3 * s);
+      break;
     case "altar":
       shadow(ctx, x, y, 14 * s, 4 * s);
       ctx.fillStyle = "#9a9a92";

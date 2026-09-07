@@ -59,6 +59,24 @@ export interface UiEquipSlot {
   item: UiItem | null;
 }
 
+export interface UiDialogue {
+  /** Who is speaking, shown above the line. */
+  name: string;
+  who: "npc" | "player";
+  text: string;
+  /** Choices to show, empty until the last line is reached. */
+  options: string[];
+}
+
+export interface UiSpell {
+  id: string;
+  name: string;
+  level: number;
+  /** True when the level and runes are both in hand. */
+  ready: boolean;
+  selected: boolean;
+}
+
 export interface UiShopEntry {
   id: string;
   name: string;
@@ -70,8 +88,8 @@ export interface UiShopEntry {
 export interface UiState {
   name: string;
   region: string;
-  hits: number;
-  maxHits: number;
+  hitpoints: number;
+  maxHitpoints: number;
   dead: boolean;
   combatLevel: number;
   maxHit: number;
@@ -89,6 +107,10 @@ export interface UiState {
   bank: UiItem[];
   shop: UiShopEntry[];
   combatStyle: CombatStyle;
+  dialogue: UiDialogue | null;
+  spells: UiSpell[];
+  /** Current Tutorial Island objective, or null once it is finished. */
+  objective: string | null;
 }
 
 export interface UiInput {
@@ -97,6 +119,9 @@ export interface UiInput {
   overlay: Overlay;
   shopStock: ItemStack[];
   region: string;
+  dialogue?: UiDialogue | null;
+  spells?: { id: string; name: string; level: number; ready: boolean }[];
+  objective?: string | null;
 }
 
 export function buildUi(input: UiInput): UiState {
@@ -106,8 +131,8 @@ export function buildUi(input: UiInput): UiState {
   return {
     name: player.name,
     region: input.region,
-    hits: player.hits,
-    maxHits: player.maxHits,
+    hitpoints: player.hitpoints,
+    maxHitpoints: player.maxHitpoints,
     dead: player.respawnTick !== null,
     combatLevel: combatLevel(levels),
     maxHit: maxHit(
@@ -150,6 +175,12 @@ export function buildUi(input: UiInput): UiState {
         price: buyPrice(getItem(stock.id)),
       })),
     combatStyle: player.combatStyle,
+    dialogue: input.dialogue ?? null,
+    spells: (input.spells ?? []).map((spell) => ({
+      ...spell,
+      selected: player.selectedSpell === spell.id,
+    })),
+    objective: input.objective ?? null,
   };
 }
 
@@ -163,7 +194,7 @@ export function initialUi(): UiState {
     ],
     overlay: { kind: "none" },
     shopStock: [],
-    region: "Lumbridge",
+    region: "Tutorial Island",
   });
 }
 

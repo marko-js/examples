@@ -1,29 +1,41 @@
 /** Every item in the game, plus the metal tier ladder the gear is built from. */
 import {
+  arrowIcon,
   axeIcon,
+  barIcon,
   bodyIcon,
   bonesIcon,
+  bowIcon,
   breadIcon,
+  bucketIcon,
   coinsIcon,
+  daggerIcon,
+  doughIcon,
   featherIcon,
   fishIcon,
+  hammerIcon,
   helmetIcon,
   type Icon,
   legsIcon,
   logsIcon,
+  longswordIcon,
+  meatIcon,
   netIcon,
   oreIcon,
   pickaxeIcon,
   potIcon,
   rodIcon,
+  runeIcon,
   shieldIcon,
+  shieldWoodIcon,
+  sleepingBagIcon,
   swordIcon,
   tinderboxIcon,
 } from "./icons";
 import type { SkillId } from "./skills";
 
 export type EquipSlot =
-  "weapon" | "shield" | "helmet" | "body" | "legs" | "amulet" | "cape";
+  "weapon" | "ammo" | "shield" | "helmet" | "body" | "legs" | "amulet" | "cape";
 
 export const EQUIP_SLOTS: EquipSlot[] = [
   "helmet",
@@ -33,9 +45,11 @@ export const EQUIP_SLOTS: EquipSlot[] = [
   "legs",
   "weapon",
   "shield",
+  "ammo",
 ];
 
 export const EQUIP_SLOT_NAMES: Record<EquipSlot, string> = {
+  ammo: "Ammo",
   helmet: "Head",
   amulet: "Neck",
   cape: "Back",
@@ -90,9 +104,12 @@ export interface ItemDef {
   burnXp?: number;
   burnLevel?: number;
   cook?: CookDef;
+  /** What a bar becomes when hammered on an anvil. */
+  smith?: { into: string; level: number; xp: number };
 }
 
-export type ToolKind = "axe" | "pickaxe" | "tinderbox" | "net" | "rod" | "pot";
+export type ToolKind =
+  "axe" | "pickaxe" | "tinderbox" | "net" | "rod" | "pot" | "hammer";
 
 export interface Metal {
   id: string;
@@ -174,7 +191,7 @@ for (const metal of METALS) {
   const gearValue = (mult: number) =>
     Math.round((12 + tier * tier * 22) * mult);
   const attack = { skill: "attack" as SkillId, level };
-  const defense = { skill: "defense" as SkillId, level };
+  const defence = { skill: "defence" as SkillId, level };
 
   define({
     id: `${id}_sword`,
@@ -226,7 +243,7 @@ for (const metal of METALS) {
     equip: {
       slot: "helmet",
       colour,
-      requires: defense,
+      requires: defence,
       bonus: { armour: 3 + tier * 4 },
     },
   });
@@ -239,7 +256,7 @@ for (const metal of METALS) {
     equip: {
       slot: "body",
       colour,
-      requires: defense,
+      requires: defence,
       bonus: { armour: 6 + tier * 8 },
     },
   });
@@ -252,7 +269,7 @@ for (const metal of METALS) {
     equip: {
       slot: "legs",
       colour,
-      requires: defense,
+      requires: defence,
       bonus: { armour: 4 + tier * 6 },
     },
   });
@@ -265,7 +282,7 @@ for (const metal of METALS) {
     equip: {
       slot: "shield",
       colour,
-      requires: defense,
+      requires: defence,
       bonus: { armour: 4 + tier * 5 },
     },
   });
@@ -520,6 +537,173 @@ define({
   icon: potIcon("#c9422f"),
   tool: { kind: "pot", tier: 0 },
 });
+
+/* Tutorial Island kit, and the smithing chain the Mining Instructor teaches. */
+
+define({
+  id: "bronze_dagger",
+  name: "Bronze dagger",
+  examine: "A short, stabbing blade.",
+  value: 10,
+  icon: daggerIcon("#a97142", "#cd9560"),
+  equip: {
+    slot: "weapon",
+    colour: "#a97142",
+    requires: { skill: "attack", level: 1 },
+    bonus: { aim: 4, power: 3 },
+  },
+});
+define({
+  id: "shortbow",
+  name: "Shortbow",
+  examine: "A bow made from a bent stick and some string.",
+  value: 50,
+  icon: bowIcon(),
+  equip: {
+    slot: "weapon",
+    colour: "#7a5230",
+    requires: { skill: "ranged", level: 1 },
+    bonus: { aim: 8, power: 0 },
+  },
+});
+define({
+  id: "bronze_arrows",
+  name: "Bronze arrows",
+  examine: "Arrows with bronze tips.",
+  value: 1,
+  stackable: true,
+  icon: arrowIcon("#a97142"),
+  equip: { slot: "ammo", colour: "#a97142", bonus: { power: 7 } },
+});
+define({
+  id: "hammer",
+  name: "Hammer",
+  examine: "Good for hitting things.",
+  value: 12,
+  icon: hammerIcon(),
+  tool: { kind: "hammer", tier: 0 },
+});
+define({
+  id: "bronze_bar",
+  name: "Bronze bar",
+  examine: "It is a bar of bronze.",
+  value: 20,
+  icon: barIcon("#a97142", "#cd9560"),
+  smith: { into: "bronze_dagger", level: 1, xp: 12 },
+});
+define({
+  id: "pot_of_flour",
+  name: "Pot of flour",
+  examine: "A pot filled with flour.",
+  value: 10,
+  icon: potIcon("#f2e6c8"),
+});
+define({
+  id: "bucket_of_water",
+  name: "Bucket of water",
+  examine: "A bucket filled with water.",
+  value: 10,
+  icon: bucketIcon("#3f7ac9"),
+});
+define({
+  id: "bread_dough",
+  name: "Bread dough",
+  examine: "Some uncooked dough.",
+  value: 12,
+  icon: doughIcon(),
+  cook: { into: "bread", level: 1, xp: 40, burnt: "burnt_bread" },
+});
+define({
+  id: "burnt_bread",
+  name: "Burnt bread",
+  examine: "Yuck, I don't want to eat that.",
+  value: 1,
+  icon: breadIcon().map((shape) =>
+    shape.kind === "poly" ? { ...shape, fill: "#3a2c22" } : shape,
+  ),
+});
+
+/* Tutorial Island kit and the runes the Magic instructor hands out. */
+
+define({
+  id: "bronze_longsword",
+  name: "Bronze longsword",
+  examine: "A longer sword, with a longer reach.",
+  value: 40,
+  icon: longswordIcon("#a97142", "#cd9560"),
+  equip: {
+    slot: "weapon",
+    colour: "#a97142",
+    requires: { skill: "attack", level: 1 },
+    bonus: { aim: 6, power: 8 },
+  },
+});
+define({
+  id: "wooden_shield",
+  name: "Wooden shield",
+  examine: "A shield made from wood. It is better than nothing.",
+  value: 20,
+  icon: shieldWoodIcon(),
+  equip: { slot: "shield", colour: "#8a6136", bonus: { armour: 3 } },
+});
+define({
+  id: "raw_rat_meat",
+  name: "Raw rat meat",
+  examine: "I need to cook this first.",
+  value: 1,
+  icon: meatIcon(true),
+  cook: { into: "cooked_meat", level: 1, xp: 30, burnt: "burnt_meat" },
+});
+define({
+  id: "cooked_meat",
+  name: "Cooked meat",
+  examine: "It looks tasty.",
+  value: 4,
+  icon: meatIcon(false),
+  heals: 3,
+});
+define({
+  id: "burnt_meat",
+  name: "Burnt meat",
+  examine: "Yuck, I don't want to eat that.",
+  value: 1,
+  icon: meatIcon(false).map((shape) =>
+    shape.kind === "poly" ? { ...shape, fill: "#3a2c22" } : shape,
+  ),
+});
+define({
+  id: "sleeping_bag",
+  name: "Sleeping bag",
+  examine: "Zzzzzz. Use it to sleep anywhere.",
+  value: 20,
+  icon: sleepingBagIcon(),
+});
+
+const RUNES: {
+  id: string;
+  name: string;
+  face: string;
+  rim: string;
+  value: number;
+}[] = [
+  { id: "air", name: "Air", face: "#dfe6ef", rim: "#98a4b4", value: 4 },
+  { id: "mind", name: "Mind", face: "#cf6a5a", rim: "#8f4034", value: 5 },
+  { id: "water", name: "Water", face: "#5a8fcf", rim: "#34588f", value: 6 },
+  { id: "earth", name: "Earth", face: "#8a6a3c", rim: "#5b4426", value: 6 },
+  { id: "fire", name: "Fire", face: "#e08a4a", rim: "#9a5426", value: 6 },
+  { id: "body", name: "Body", face: "#b48fcf", rim: "#75588f", value: 6 },
+];
+
+for (const rune of RUNES) {
+  define({
+    id: `${rune.id}_rune`,
+    name: `${rune.name} rune`,
+    examine: "One of the basic elemental runes.",
+    value: rune.value,
+    stackable: true,
+    icon: runeIcon(rune.face, rune.rim),
+  });
+}
 
 define({
   id: "amulet_of_strength",

@@ -1,9 +1,28 @@
 import type { Meta, Story } from "@storybook/marko";
 
-import { initialUi } from "../../game/ui";
+import { addItem, createPlayer } from "../../game/state";
+import { buildUi } from "../../game/ui";
 import Template, { type Input } from "./index.marko";
 
-const ui = initialUi();
+const player = createPlayer();
+for (const [id, count] of [
+  ["bronze_axe", 1],
+  ["bronze_pickaxe", 1],
+  ["tinderbox", 1],
+  ["small_net", 1],
+  ["bread", 3],
+  ["coins", 50],
+] as const) {
+  addItem(player.inventory, id, count);
+}
+
+const ui = buildUi({
+  player,
+  messages: [],
+  overlay: { kind: "none" },
+  shopStock: [],
+  region: "Lumbridge",
+});
 
 export default {
   title: "InventoryPanel",

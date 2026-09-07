@@ -1,0 +1,36 @@
+import type { UiSpell } from "../../game/ui";
+import styles from "./styles.module.css";
+
+export interface Input {
+  spells: UiSpell[];
+  onSelect: (id: string) => void;
+}
+
+<ul class=styles.list>
+  <for|spell| of=input.spells by="id">
+    <li>
+      <button
+        type="button"
+        class=[
+          styles.spell,
+          spell.selected && styles.selected,
+          !spell.ready && styles.unready,
+        ]
+        disabled=!spell.ready
+        title=(
+          spell.ready
+            ? `Cast ${spell.name}`
+            : `Needs Magic level ${spell.level} and the runes`
+        )
+        onClick() {
+          input.onSelect(spell.id);
+        }
+      >
+        <span class=styles.name>${spell.name}</span>
+        <span class=styles.level>Lv ${spell.level}</span>
+      </button>
+    </li>
+  </for>
+</ul>
+
+<p class=styles.hint>Select a spell, then tap a target to cast it.</p>

@@ -153,7 +153,10 @@ function drawTerrain(
         drawTexture(ctx, sx, sy, x, y, tile, def.speckle);
       }
 
-      if (id === TERRAIN.bridge) drawPlanks(ctx, sx, sy, tile);
+      if (id === TERRAIN.bridge || id === TERRAIN.woodFloor) {
+        drawPlanks(ctx, sx, sy, tile);
+      }
+      if (id === TERRAIN.stoneFloor) drawFlagstones(ctx, sx, sy, tile);
       blendEdges(ctx, state, x, y, sx, sy, tile, id);
     }
   }
@@ -228,6 +231,17 @@ function drawPlanks(
   for (let i = gap / 2; i < tile; i += gap) {
     ctx.fillRect(sx, sy + Math.round(i), tile, 1);
   }
+}
+
+function drawFlagstones(
+  ctx: CanvasRenderingContext2D,
+  sx: number,
+  sy: number,
+  tile: number,
+): void {
+  ctx.fillStyle = "rgba(0,0,0,0.12)";
+  ctx.fillRect(sx, sy, tile, 1);
+  ctx.fillRect(sx, sy, 1, tile);
 }
 
 /**
@@ -391,13 +405,13 @@ function drawNpcActor(
     npc.facing,
     walkPhase(npc.path.length > 0, time),
   );
-  if (npc.hits < npc.maxHits) {
+  if (npc.hitpoints < npc.maxHitpoints) {
     drawHealthBar(
       ctx,
       sx,
       sy - view.tile * 1.3,
       view.tile,
-      npc.hits / npc.maxHits,
+      npc.hitpoints / npc.maxHitpoints,
     );
   }
   if (npc.targetPlayer) {
@@ -423,13 +437,13 @@ function drawPlayer(
     walkPhase(player.path.length > 0, time),
   );
   drawLabel(ctx, sx, sy - view.tile * 1.5, view.tile, player.name, "#ffffff");
-  if (player.hits < player.maxHits) {
+  if (player.hitpoints < player.maxHitpoints) {
     drawHealthBar(
       ctx,
       sx,
       sy - view.tile * 1.32,
       view.tile,
-      player.hits / player.maxHits,
+      player.hitpoints / player.maxHitpoints,
     );
   }
 }

@@ -1,9 +1,9 @@
 import { xpForLevel } from "./skills";
 import { addItem, countItem, findSlot } from "./state";
-import { advanceUntil, createTestEngine } from "./test-helpers";
+import { advanceUntil, createMainlandEngine } from "./test-helpers";
 import { buildUi, initialUi } from "./ui";
 
-function snapshot(engine: ReturnType<typeof createTestEngine>) {
+function snapshot(engine: ReturnType<typeof createMainlandEngine>) {
   return buildUi({
     player: engine.state.player,
     messages: engine.state.messages,
@@ -16,17 +16,17 @@ function snapshot(engine: ReturnType<typeof createTestEngine>) {
 test("the server render snapshot describes a brand new character", () => {
   const ui = initialUi();
   expect(ui.combatLevel).toBe(3);
-  expect(ui.hits).toBe(10);
-  expect(ui.totalLevel).toBe(27);
-  expect(ui.skills).toHaveLength(18);
+  expect(ui.hitpoints).toBe(10);
+  expect(ui.totalLevel).toBe(29);
+  expect(ui.skills).toHaveLength(20);
   expect(ui.inventory).toHaveLength(30);
-  expect(ui.freeSlots).toBe(24);
-  expect(ui.coins).toBe(50);
-  expect(ui.region).toBe("Lumbridge");
+  expect(ui.freeSlots).toBe(30);
+  expect(ui.coins).toBe(0);
+  expect(ui.region).toBe("Tutorial Island");
 });
 
 test("equipping a weapon shows up in the snapshot bonuses", () => {
-  const engine = createTestEngine();
+  const engine = createMainlandEngine();
   engine.addXp("strength", xpForLevel(40));
   addItem(engine.state.player.inventory, "iron_sword");
   engine.inventoryAction(
@@ -44,11 +44,11 @@ test("equipping a weapon shows up in the snapshot bonuses", () => {
 });
 
 test("gaining experience moves the level and its progress bar", () => {
-  const engine = createTestEngine();
-  engine.addXp("woodcut", 100);
+  const engine = createMainlandEngine();
+  engine.addXp("woodcutting", 100);
 
   const skill = snapshot(engine).skills.find(
-    (entry) => entry.id === "woodcut",
+    (entry) => entry.id === "woodcutting",
   )!;
   expect(skill.base).toBe(2);
   expect(skill.xp).toBe(100);
@@ -58,7 +58,7 @@ test("gaining experience moves the level and its progress bar", () => {
 });
 
 test("the shop snapshot prices stock above its base value", () => {
-  const engine = createTestEngine();
+  const engine = createMainlandEngine();
   const counter = engine.state.map.objects.find(
     (object) => object?.defId === "shop_counter",
   )!;

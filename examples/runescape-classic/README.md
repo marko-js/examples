@@ -1,12 +1,24 @@
 # RuneScape Classic
 
-A tribute to [RuneScape Classic](https://en.wikipedia.org/wiki/RuneScape#RuneScape_Classic),
-built with [Marko 6](https://markojs.com) and [@marko/run](https://github.com/marko-js/run).
+A RuneScape tribute built with [Marko 6](https://markojs.com) and
+[@marko/run](https://github.com/marko-js/run): RuneScape 2 mechanics wearing
+RuneScape Classic's flat, chunky look.
 
-The whole game runs natively in the browser: a 128×128 tile island, a 600ms
-tick loop, eighteen skills, combat, banking, shops, and a save file in
-`localStorage`. There is no server and no art pipeline — every sprite, item icon
-and tile is drawn from code.
+The whole game runs natively in the browser: Tutorial Island and a mainland on
+one 216×216 tile grid, a 600ms tick loop, twenty skills, melee, ranged and
+magic combat, smithing, banking, shops, and a save file in `localStorage`.
+There is no server and no art pipeline — every sprite, item icon and tile is
+drawn from code.
+
+## Tutorial Island
+
+New characters wake up in the starting house and are walked through the RS2
+tutorial, one instructor and one gated door at a time: the Gielinor Guide, the
+Survival Expert's pond, the Master Chef's kitchen, the Quest Guide, the mine
+(where you smelt a bar and hammer out a dagger), the rat pit for melee and
+ranged, the bank, the chapel, and the Magic Instructor who sends you to
+Lumbridge. Every door stays shut until its stage is done, and nothing on the
+island can kill you.
 
 ## Installation
 
@@ -43,8 +55,11 @@ re-renders only when the game says something changed.
 
 - `src/game` — the engine. Plain TypeScript with no DOM dependency, so all of it
   is unit tested in Node.
-  - `worldgen.ts` builds the island from a seed, so the server and the browser
-    agree on the map without shipping any map data.
+  - `worldgen.ts` builds the world from a seed, so the server and the browser
+    agree on the map without shipping any map data; `tutorialgen.ts` lays out
+    Tutorial Island beside it.
+  - `tutorial.ts` holds the stages and every line the instructors speak, so the
+    script is data the engine walks rather than code.
   - `engine.ts` is the tick loop: pathing, gathering, combat, drops, respawns.
   - `ui.ts` turns game state into a plain `UiState` snapshot, the single value
     every panel renders from.

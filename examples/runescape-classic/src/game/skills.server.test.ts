@@ -30,24 +30,39 @@ test("level progress runs from 0 to 1 within a level", () => {
   expect(levelProgress(half)).toBeCloseTo(0.5, 5);
 });
 
-test("combat level starts at 3 and caps at 123", () => {
+test("combat level starts at 3 and caps at 126", () => {
   const fresh = {
     attack: 1,
-    defense: 1,
+    defence: 1,
     strength: 1,
-    hits: 10,
+    hitpoints: 10,
+    ranged: 1,
     prayer: 1,
     magic: 1,
   };
   expect(combatLevel(fresh as never)).toBe(3);
 
   const maxed = Object.fromEntries(SKILL_IDS.map((id) => [id, MAX_LEVEL]));
-  expect(combatLevel(maxed as never)).toBe(123);
+  expect(combatLevel(maxed as never)).toBe(126);
 });
 
-test("a new character has 10 hits and level 1 everywhere else", () => {
+test("a pure ranged character is levelled off ranged, not melee", () => {
+  const ranger = {
+    attack: 1,
+    defence: 1,
+    strength: 1,
+    hitpoints: 10,
+    ranged: 50,
+    prayer: 1,
+    magic: 1,
+  };
+  expect(combatLevel(ranger as never)).toBe(27);
+});
+
+test("a new character has 10 hitpoints and level 1 everywhere else", () => {
   const skills = createSkills();
-  expect(skills.current.hits).toBe(10);
+  expect(skills.current.hitpoints).toBe(10);
   expect(skills.current.attack).toBe(1);
-  expect(skills.xp.hits).toBe(xpForLevel(10));
+  expect(skills.xp.hitpoints).toBe(xpForLevel(10));
+  expect(SKILL_IDS).toHaveLength(20);
 });

@@ -202,6 +202,21 @@
   padding: 8px;
 }
 
+.objective {
+  position: absolute;
+  top: calc(var(--edge-top) + 20px);
+  left: var(--edge-left);
+  max-width: min(52%, 340px);
+  margin: 0;
+  border-left: 3px solid var(--rs-gold);
+  padding: 4px 8px;
+  background: rgba(20, 18, 12, 0.72);
+  color: var(--rs-text);
+  font-size: 12px;
+  line-height: 1.35;
+  pointer-events: none;
+}
+
 .dead {
   position: absolute;
   inset: 0;

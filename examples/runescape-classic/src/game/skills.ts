@@ -2,52 +2,58 @@
 
 export const SKILL_IDS = [
   "attack",
-  "defense",
-  "strength",
-  "hits",
-  "ranged",
-  "prayer",
-  "magic",
-  "cooking",
-  "woodcut",
-  "fletching",
-  "fishing",
-  "firemaking",
-  "crafting",
-  "smithing",
+  "hitpoints",
   "mining",
-  "herblaw",
+  "strength",
   "agility",
+  "smithing",
+  "defence",
+  "herblore",
+  "fishing",
+  "ranged",
   "thieving",
+  "cooking",
+  "prayer",
+  "crafting",
+  "firemaking",
+  "magic",
+  "fletching",
+  "woodcutting",
+  "runecraft",
+  "slayer",
 ] as const;
 
 export type SkillId = (typeof SKILL_IDS)[number];
 
 export const SKILL_NAMES: Record<SkillId, string> = {
   attack: "Attack",
-  defense: "Defense",
-  strength: "Strength",
-  hits: "Hits",
-  ranged: "Ranged",
-  prayer: "Prayer",
-  magic: "Magic",
-  cooking: "Cooking",
-  woodcut: "Woodcut",
-  fletching: "Fletching",
-  fishing: "Fishing",
-  firemaking: "Firemaking",
-  crafting: "Crafting",
-  smithing: "Smithing",
+  hitpoints: "Hitpoints",
   mining: "Mining",
-  herblaw: "Herblaw",
+  strength: "Strength",
   agility: "Agility",
+  smithing: "Smithing",
+  defence: "Defence",
+  herblore: "Herblore",
+  fishing: "Fishing",
+  ranged: "Ranged",
   thieving: "Thieving",
+  cooking: "Cooking",
+  prayer: "Prayer",
+  crafting: "Crafting",
+  firemaking: "Firemaking",
+  magic: "Magic",
+  fletching: "Fletching",
+  woodcutting: "Woodcutting",
+  runecraft: "Runecraft",
+  slayer: "Slayer",
 };
 
 export const MAX_LEVEL = 99;
 
 /** Levels a fresh character starts with. Everything else starts at 1. */
-export const STARTING_LEVELS: Partial<Record<SkillId, number>> = { hits: 10 };
+export const STARTING_LEVELS: Partial<Record<SkillId, number>> = {
+  hitpoints: 10,
+};
 
 export interface Skills {
   /** Total experience earned per skill. */
@@ -95,13 +101,16 @@ export function levelProgress(xp: number): number {
 }
 
 /**
- * RuneScape Classic combat level. Ranged is deliberately absent: Classic
- * weighted the four melee skills a quarter each and prayer and magic an eighth.
+ * RuneScape 2 combat level: a base from the defensive skills, plus whichever
+ * of melee, ranged or magic you have invested in most. Runs from 3 to 126.
  */
 export function combatLevel(levels: Record<SkillId, number>): number {
-  const melee = levels.attack + levels.defense + levels.strength + levels.hits;
-  const support = levels.prayer + levels.magic;
-  return Math.floor(melee * 0.25 + support * 0.125);
+  const base =
+    0.25 * (levels.defence + levels.hitpoints + Math.floor(levels.prayer / 2));
+  const melee = 0.325 * (levels.attack + levels.strength);
+  const ranged = 0.325 * Math.floor(levels.ranged * 1.5);
+  const magic = 0.325 * Math.floor(levels.magic * 1.5);
+  return Math.floor(base + Math.max(melee, ranged, magic));
 }
 
 export function baseLevels(skills: Skills): Record<SkillId, number> {

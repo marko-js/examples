@@ -4,7 +4,7 @@ import {
   act,
   advance,
   advanceUntil,
-  createTestEngine,
+  createMainlandEngine,
   lastMessages,
   lightFire,
   nearestObject,
@@ -12,7 +12,7 @@ import {
 import { objectAt } from "./world";
 
 test("walking moves the player to the tile that was clicked", () => {
-  const engine = createTestEngine();
+  const engine = createMainlandEngine();
   const goal = { x: engine.state.player.x - 4, y: engine.state.player.y + 3 };
   act(engine, "walk", { kind: "tile", ...goal });
   advance(engine, 8000);
@@ -20,7 +20,7 @@ test("walking moves the player to the tile that was clicked", () => {
 });
 
 test("chopping a tree yields logs, experience, and a stump that regrows", () => {
-  const engine = createTestEngine();
+  const engine = createMainlandEngine();
   const tree = nearestObject(engine, (object) => object.defId === "tree");
 
   act(engine, "gather", { kind: "object", index: tree.index });
@@ -29,7 +29,7 @@ test("chopping a tree yields logs, experience, and a stump that regrows", () => 
     () => countItem(engine.state.player.inventory, "logs") > 0,
   );
 
-  expect(engine.state.player.skills.xp.woodcut).toBe(25);
+  expect(engine.state.player.skills.xp.woodcutting).toBe(25);
   expect(objectAt(engine.state.map, tree.x, tree.y)?.defId).toBe("stump");
 
   advance(engine, 20_000);
@@ -37,7 +37,7 @@ test("chopping a tree yields logs, experience, and a stump that regrows", () => 
 });
 
 test("mining an ore rock trains mining and fills the inventory", () => {
-  const engine = createTestEngine();
+  const engine = createMainlandEngine();
   const rock = nearestObject(
     engine,
     (object) => object.defId === "rock_copper",
@@ -54,7 +54,7 @@ test("mining an ore rock trains mining and fills the inventory", () => {
 });
 
 test("fishing needs the matching tool", () => {
-  const engine = createTestEngine();
+  const engine = createMainlandEngine();
   const spot = nearestObject(engine, (object) => object.defId === "fish_net");
   removeItem(engine.state.player.inventory, "small_net");
 
@@ -74,7 +74,7 @@ test("fishing needs the matching tool", () => {
 });
 
 test("a tinderbox and logs light a fire that raw fish can be cooked on", () => {
-  const engine = createTestEngine();
+  const engine = createMainlandEngine();
   const { player } = engine.state;
   addItem(player.inventory, "raw_shrimp");
 
@@ -92,7 +92,7 @@ test("a tinderbox and logs light a fire that raw fish can be cooked on", () => {
 });
 
 test("a fire burns out on its own", () => {
-  const engine = createTestEngine();
+  const engine = createMainlandEngine();
   const { player } = engine.state;
   lightFire(engine);
   expect(objectAt(engine.state.map, player.x, player.y)?.defId).toBe("fire");
@@ -102,19 +102,19 @@ test("a fire burns out on its own", () => {
 });
 
 test("killing a chicken awards combat experience and drops loot", () => {
-  const engine = createTestEngine();
+  const engine = createMainlandEngine();
   const chicken = engine.state.npcs.find((npc) => npc.defId === "chicken")!;
 
   act(engine, "attack", { kind: "npc", uid: chicken.uid });
   advanceUntil(engine, () => chicken.respawnTick !== null);
 
   expect(engine.state.player.skills.xp.attack).toBeGreaterThan(0);
-  expect(engine.state.player.skills.xp.hits).toBeGreaterThan(1154);
+  expect(engine.state.player.skills.xp.hitpoints).toBeGreaterThan(1154);
   expect(engine.state.groundItems.map((item) => item.id)).toContain("bones");
 });
 
 test("bones can be picked up and buried for prayer experience", () => {
-  const engine = createTestEngine();
+  const engine = createMainlandEngine();
   const chicken = engine.state.npcs.find((npc) => npc.defId === "chicken")!;
   act(engine, "attack", { kind: "npc", uid: chicken.uid });
   advanceUntil(engine, () => chicken.respawnTick !== null);
@@ -135,7 +135,7 @@ test("bones can be picked up and buried for prayer experience", () => {
 });
 
 test("equipment applies its bonuses and enforces level requirements", () => {
-  const engine = createTestEngine();
+  const engine = createMainlandEngine();
   const { player } = engine.state;
   addItem(player.inventory, "bronze_sword");
   addItem(player.inventory, "rune_sword");
@@ -154,20 +154,20 @@ test("equipment applies its bonuses and enforces level requirements", () => {
   expect(countItem(player.inventory, "bronze_sword")).toBe(1);
 });
 
-test("eating restores hits without going over the maximum", () => {
-  const engine = createTestEngine();
+test("eating restores hitpoints without going over the maximum", () => {
+  const engine = createMainlandEngine();
   const { player } = engine.state;
-  player.hits = 4;
+  player.hitpoints = 4;
 
   engine.inventoryAction(findSlot(player.inventory, "bread"), "eat");
-  expect(player.hits).toBe(9);
+  expect(player.hitpoints).toBe(9);
 
   engine.inventoryAction(findSlot(player.inventory, "bread"), "eat");
-  expect(player.hits).toBe(10);
+  expect(player.hitpoints).toBe(10);
 });
 
 test("the bank stores items and hands them back", () => {
-  const engine = createTestEngine();
+  const engine = createMainlandEngine();
   const chest = nearestObject(
     engine,
     (object) => object.defId === "bank_chest",
@@ -189,7 +189,7 @@ test("the bank stores items and hands them back", () => {
 });
 
 test("the general store buys and sells at its own prices", () => {
-  const engine = createTestEngine();
+  const engine = createMainlandEngine();
   const counter = nearestObject(
     engine,
     (object) => object.defId === "shop_counter",
@@ -211,8 +211,8 @@ test("the general store buys and sells at its own prices", () => {
   expect(earned).toBeLessThan(spent);
 });
 
-test("dying sends the player back to Lumbridge with full hits", () => {
-  const engine = createTestEngine();
+test("dying sends the player back to Lumbridge with full hitpoints", () => {
+  const engine = createMainlandEngine();
   const { player } = engine.state;
   const hobgoblin = engine.state.npcs.find((npc) => npc.defId === "hobgoblin")!;
   player.x = hobgoblin.x;
@@ -227,7 +227,7 @@ test("dying sends the player back to Lumbridge with full hits", () => {
   );
 
   expect(player.respawnTick).toBeNull();
-  expect(player.hits).toBe(player.maxHits);
+  expect(player.hitpoints).toBe(player.maxHitpoints);
   expect({ x: player.x, y: player.y }).toEqual({ x: 72, y: 80 });
   expect(engine.state.messages.map((message) => message.text)).toContain(
     "Oh dear, you are dead!",
@@ -235,7 +235,7 @@ test("dying sends the player back to Lumbridge with full hits", () => {
 });
 
 test("menu options describe what is under the pointer", () => {
-  const engine = createTestEngine();
+  const engine = createMainlandEngine();
   const tree = nearestObject(engine, (object) => object.defId === "tree");
 
   const options = engine.optionsAt(tree.x, tree.y);
@@ -249,13 +249,13 @@ test("menu options describe what is under the pointer", () => {
 });
 
 test("a save that points at an unwalkable tile falls back to the spawn", () => {
-  const engine = createTestEngine();
+  const engine = createMainlandEngine();
   engine.load({
     version: 1,
     name: "Guest",
     x: 64,
     y: 110,
-    hits: 10,
+    hitpoints: 10,
     xp: {},
     inventory: engine.state.player.inventory,
     equipment: {},
@@ -271,7 +271,7 @@ test("a save that points at an unwalkable tile falls back to the spawn", () => {
 });
 
 test("the combat style decides which skill the experience lands in", () => {
-  const engine = createTestEngine();
+  const engine = createMainlandEngine();
   engine.setCombatStyle("aggressive");
   const chicken = engine.state.npcs.find((npc) => npc.defId === "chicken")!;
 
@@ -280,11 +280,11 @@ test("the combat style decides which skill the experience lands in", () => {
 
   expect(engine.state.player.skills.xp.strength).toBeGreaterThan(0);
   expect(engine.state.player.skills.xp.attack).toBe(0);
-  expect(engine.state.player.skills.xp.defense).toBe(0);
+  expect(engine.state.player.skills.xp.defence).toBe(0);
 });
 
 test("renaming trims, caps at twelve characters, and ignores blanks", () => {
-  const engine = createTestEngine();
+  const engine = createMainlandEngine();
 
   engine.setName("  Duke Horacio the Third  ");
   expect(engine.state.player.name).toBe("Duke Horacio");

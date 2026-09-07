@@ -1,5 +1,5 @@
 /**
- * Damage rolls. Max hits follow the RuneScape Classic strength formula while
+ * Damage rolls. Max hitpoints follow the RuneScape Classic strength formula while
  * accuracy uses the familiar attack roll versus defence roll comparison.
  */
 import type { Rng } from "./rng";
@@ -7,7 +7,7 @@ import type { Rng } from "./rng";
 export interface Fighter {
   attack: number;
   strength: number;
-  defense: number;
+  defence: number;
   aim: number;
   power: number;
   armour: number;
@@ -21,7 +21,7 @@ export function maxHit(strength: number, power: number): number {
 /** Probability that an attack lands, between 0 and 1. */
 export function hitChance(attacker: Fighter, defender: Fighter): number {
   const attackRoll = (attacker.attack + 8) * (attacker.aim + 64);
-  const defenceRoll = (defender.defense + 8) * (defender.armour + 64);
+  const defenceRoll = (defender.defence + 8) * (defender.armour + 64);
   return attackRoll > defenceRoll
     ? 1 - (defenceRoll + 2) / (2 * (attackRoll + 1))
     : attackRoll / (2 * (defenceRoll + 1));

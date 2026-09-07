@@ -28,14 +28,20 @@ export const TICKS_PER_ROUND = 2;
 export const TILES_PER_SECOND = 3.2;
 
 /** The world is a square grid of this many tiles per side. */
-export const WORLD_SIZE = 128;
+export const WORLD_SIZE = 216;
+
+/** The mainland occupies this square; the rest of the grid is open sea. */
+export const MAINLAND_SIZE = 136;
 
 export const INVENTORY_SIZE = 30;
 export const BANK_SIZE = 48;
 export const MAX_CHAT_MESSAGES = 60;
 
-/** Where new players start and where they wake up after dying. */
+/** Where players wake up after dying, in Lumbridge. */
 export const RESPAWN_TILE = { x: 72, y: 80 };
+
+/** Inside the starting house on Tutorial Island, where a new character begins. */
+export const TUTORIAL_START = { x: 17, y: 148 };
 
 /** Ticks a dropped item stays on the ground before it decays. */
 export const GROUND_ITEM_TICKS = 300;
