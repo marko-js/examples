@@ -129,6 +129,14 @@ export class Engine {
     this.message("game", "Welcome back to RuneScape Classic.");
   }
 
+  /** Rename the character. Blank input keeps the current name. */
+  setName(name: string): void {
+    const trimmed = name.trim().slice(0, 12);
+    if (!trimmed) return;
+    this.state.player.name = trimmed;
+    this.invalidate();
+  }
+
   setCombatStyle(style: CombatStyle): void {
     this.state.player.combatStyle = style;
     this.invalidate();

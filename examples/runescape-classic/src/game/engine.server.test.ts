@@ -282,3 +282,13 @@ test("the combat style decides which skill the experience lands in", () => {
   expect(engine.state.player.skills.xp.attack).toBe(0);
   expect(engine.state.player.skills.xp.defense).toBe(0);
 });
+
+test("renaming trims, caps at twelve characters, and ignores blanks", () => {
+  const engine = createTestEngine();
+
+  engine.setName("  Duke Horacio the Third  ");
+  expect(engine.state.player.name).toBe("Duke Horacio");
+
+  engine.setName("   ");
+  expect(engine.state.player.name).toBe("Duke Horacio");
+});

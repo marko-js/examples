@@ -273,7 +273,11 @@ static const TABS = [
 
       <show=tab === "settings">
         <settings-panel
+          name=ui.name
           combatStyle=ui.combatStyle
+          onName(value) {
+            session.engine?.setName(value);
+          }
           onCombatStyle(style: CombatStyle) {
             session.engine?.setCombatStyle(style);
           }

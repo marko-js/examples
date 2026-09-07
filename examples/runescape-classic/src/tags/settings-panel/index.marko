@@ -2,10 +2,27 @@ import { COMBAT_STYLES, type CombatStyle } from "../../game/state";
 import styles from "./styles.module.css";
 
 export interface Input {
+  name: string;
   combatStyle: CombatStyle;
+  onName: (name: string) => void;
   onCombatStyle: (style: CombatStyle) => void;
   onReset: () => void;
 }
+
+<let/draft=input.name>
+
+<section class=styles.section>
+  <h3 class=styles.heading>Display name</h3>
+  <input
+    class=styles.name
+    aria-label="Display name"
+    maxlength=12
+    value:=draft
+    onChange() {
+      input.onName(draft);
+    }
+  >
+</section>
 
 <section class=styles.section>
   <h3 class=styles.heading>Combat style</h3>

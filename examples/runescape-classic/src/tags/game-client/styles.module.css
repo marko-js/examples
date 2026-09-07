@@ -68,7 +68,10 @@
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 4px;
-  min-height: 0;
+  /* Contribute no height of its own, so a long tab scrolls rather than
+     stretching the frame past the game view. */
+  height: 0;
+  min-height: 100%;
   border: 2px solid var(--rs-border);
   border-radius: 3px;
   background: var(--rs-panel);
@@ -148,5 +151,7 @@
 
   .panel {
     grid-template-rows: auto auto;
+    height: auto;
+    min-height: 0;
   }
 }

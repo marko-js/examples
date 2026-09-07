@@ -10,6 +10,22 @@
   color: var(--rs-gold);
 }
 
+.name {
+  width: 100%;
+  border: 1px solid var(--rs-slot-border);
+  border-radius: 2px;
+  background: var(--rs-slot);
+  padding: 4px 6px;
+  color: var(--rs-text);
+  font: inherit;
+  font-size: 12px;
+}
+
+.name:focus {
+  border-color: var(--rs-gold);
+  outline: none;
+}
+
 .option {
   display: flex;
   gap: 6px;
