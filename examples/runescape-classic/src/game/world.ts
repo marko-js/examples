@@ -212,7 +212,7 @@ const OBJECT_LIST: ObjectDef[] = [
     {
       skill: "woodcutting",
       level: 15,
-      xp: 37,
+      xp: 37.5,
       item: "oak_logs",
       tool: "axe",
       action: "Chop",
@@ -234,7 +234,7 @@ const OBJECT_LIST: ObjectDef[] = [
     {
       skill: "woodcutting",
       level: 30,
-      xp: 63,
+      xp: 67.5,
       item: "willow_logs",
       tool: "axe",
       action: "Chop",
@@ -294,6 +294,7 @@ const OBJECT_LIST: ObjectDef[] = [
   },
 ];
 
+/** Ores and their Mining experience, from the published skill table. */
 const ROCKS: {
   id: string;
   name: string;
@@ -309,7 +310,7 @@ const ROCKS: {
     name: "Copper rock",
     item: "copper_ore",
     level: 1,
-    xp: 17,
+    xp: 17.5,
     difficulty: 1,
     respawn: 8,
     vein: "#c1662f",
@@ -319,7 +320,7 @@ const ROCKS: {
     name: "Tin rock",
     item: "tin_ore",
     level: 1,
-    xp: 17,
+    xp: 17.5,
     difficulty: 1,
     respawn: 8,
     vein: "#b6c0c6",
@@ -387,6 +388,7 @@ for (const rock of ROCKS) {
   });
 }
 
+/** Fishing spots. The experience is for the catch, not for cooking it. */
 const FISHING: {
   id: string;
   name: string;
@@ -404,7 +406,7 @@ const FISHING: {
     action: "Net",
     item: "raw_shrimp",
     level: 1,
-    xp: 30,
+    xp: 10,
     difficulty: 1,
   },
   {
@@ -414,7 +416,7 @@ const FISHING: {
     action: "Bait",
     item: "raw_sardine",
     level: 5,
-    xp: 40,
+    xp: 20,
     difficulty: 1,
   },
   {
@@ -424,7 +426,7 @@ const FISHING: {
     action: "Lure",
     item: "raw_trout",
     level: 20,
-    xp: 70,
+    xp: 50,
     difficulty: 3,
   },
   {
@@ -434,7 +436,7 @@ const FISHING: {
     action: "Lure",
     item: "raw_salmon",
     level: 30,
-    xp: 90,
+    xp: 70,
     difficulty: 5,
   },
   {
@@ -444,7 +446,7 @@ const FISHING: {
     action: "Cage",
     item: "raw_lobster",
     level: 40,
-    xp: 120,
+    xp: 90,
     difficulty: 7,
   },
 ];

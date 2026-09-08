@@ -34,7 +34,13 @@ export interface NpcDef {
   id: string;
   name: string;
   examine: string;
-  levels: Record<"attack" | "defence" | "strength" | "hitpoints", number>;
+  levels: Record<"attack" | "defence" | "strength" | "hitpoints", number> &
+    Partial<Record<"magic" | "ranged", number>>;
+  /**
+   * The combat level the game shows. Monster levels are assigned rather than
+   * derived, so a few sit off what the player formula would give.
+   */
+  combat?: number;
   bonus: { aim: number; power: number; armour: number };
   attackable: boolean;
   aggressive: boolean;
@@ -52,18 +58,25 @@ export interface NpcDef {
   dialogue?: string;
 }
 
+/**
+ * Levels and bonuses are the published monster stats. `armour` is the slash
+ * defence bonus, the one most melee attacks are rolled against.
+ *
+ * https://oldschool.runescape.wiki/w/Monster
+ */
 const NPC_LIST: NpcDef[] = [
   {
     id: "chicken",
     name: "Chicken",
     examine: "Yep, definitely a chicken.",
     levels: { attack: 1, defence: 1, strength: 1, hitpoints: 3 },
-    bonus: { aim: 0, power: 0, armour: 0 },
+    combat: 1,
+    bonus: { aim: -47, power: -42, armour: -42 },
     attackable: true,
     aggressive: false,
     wander: 4,
     respawnTicks: 25,
-    always: ["bones"],
+    always: ["bones", "raw_chicken"],
     drops: [{ id: "feather", min: 5, max: 15, weight: 1 }],
     sprite: {
       kind: "bird",
@@ -77,8 +90,9 @@ const NPC_LIST: NpcDef[] = [
     id: "rat",
     name: "Rat",
     examine: "A vicious looking rodent.",
-    levels: { attack: 3, defence: 2, strength: 2, hitpoints: 5 },
-    bonus: { aim: 2, power: 2, armour: 1 },
+    levels: { attack: 1, defence: 1, strength: 1, hitpoints: 2 },
+    combat: 1,
+    bonus: { aim: 0, power: 0, armour: 0 },
     attackable: true,
     aggressive: false,
     wander: 5,
@@ -100,8 +114,9 @@ const NPC_LIST: NpcDef[] = [
     id: "giant_rat",
     name: "Giant rat",
     examine: "Now that is a big rat.",
-    levels: { attack: 8, defence: 6, strength: 7, hitpoints: 14 },
-    bonus: { aim: 8, power: 8, armour: 6 },
+    levels: { attack: 2, defence: 2, strength: 3, hitpoints: 5 },
+    combat: 3,
+    bonus: { aim: 0, power: 0, armour: 0 },
     attackable: true,
     aggressive: true,
     wander: 6,
@@ -123,8 +138,9 @@ const NPC_LIST: NpcDef[] = [
     id: "cow",
     name: "Cow",
     examine: "Converts grass into beef.",
-    levels: { attack: 2, defence: 2, strength: 3, hitpoints: 8 },
-    bonus: { aim: 1, power: 2, armour: 2 },
+    levels: { attack: 1, defence: 1, strength: 1, hitpoints: 8 },
+    combat: 2,
+    bonus: { aim: -15, power: -15, armour: -21 },
     attackable: true,
     aggressive: false,
     wander: 5,
@@ -146,8 +162,9 @@ const NPC_LIST: NpcDef[] = [
     id: "goblin",
     name: "Goblin",
     examine: "An ugly green creature.",
-    levels: { attack: 6, defence: 6, strength: 6, hitpoints: 12 },
-    bonus: { aim: 6, power: 6, armour: 6 },
+    levels: { attack: 1, defence: 1, strength: 1, hitpoints: 5 },
+    combat: 2,
+    bonus: { aim: -15, power: -15, armour: -15 },
     attackable: true,
     aggressive: true,
     wander: 6,
@@ -172,8 +189,9 @@ const NPC_LIST: NpcDef[] = [
     id: "man",
     name: "Man",
     examine: "One of Lumbridge's citizens.",
-    levels: { attack: 4, defence: 4, strength: 4, hitpoints: 12 },
-    bonus: { aim: 3, power: 3, armour: 3 },
+    levels: { attack: 1, defence: 1, strength: 1, hitpoints: 7 },
+    combat: 2,
+    bonus: { aim: 0, power: 0, armour: -21 },
     attackable: true,
     aggressive: false,
     wander: 7,
@@ -196,8 +214,9 @@ const NPC_LIST: NpcDef[] = [
     id: "guard",
     name: "Guard",
     examine: "He is on the lookout for trouble.",
-    levels: { attack: 20, defence: 20, strength: 18, hitpoints: 22 },
-    bonus: { aim: 22, power: 20, armour: 26 },
+    levels: { attack: 19, defence: 14, strength: 18, hitpoints: 22 },
+    combat: 21,
+    bonus: { aim: 4, power: 5, armour: 25 },
     attackable: true,
     aggressive: false,
     wander: 4,
@@ -221,8 +240,9 @@ const NPC_LIST: NpcDef[] = [
     id: "skeleton",
     name: "Skeleton",
     examine: "It has seen better days.",
-    levels: { attack: 22, defence: 20, strength: 22, hitpoints: 24 },
-    bonus: { aim: 24, power: 24, armour: 20 },
+    levels: { attack: 15, defence: 17, strength: 18, hitpoints: 29 },
+    combat: 22,
+    bonus: { aim: 0, power: 0, armour: 5 },
     attackable: true,
     aggressive: true,
     wander: 5,
@@ -246,8 +266,9 @@ const NPC_LIST: NpcDef[] = [
     id: "hobgoblin",
     name: "Hobgoblin",
     examine: "A large goblin with a nasty temper.",
-    levels: { attack: 30, defence: 28, strength: 30, hitpoints: 36 },
-    bonus: { aim: 34, power: 34, armour: 30 },
+    levels: { attack: 22, defence: 24, strength: 24, hitpoints: 29 },
+    combat: 28,
+    bonus: { aim: 0, power: 0, armour: 0 },
     attackable: true,
     aggressive: true,
     wander: 6,
@@ -429,8 +450,9 @@ NPC_LIST.push(
     id: "barbarian",
     name: "Barbarian",
     examine: "He looks like he enjoys a fight.",
-    levels: { attack: 12, defence: 12, strength: 14, hitpoints: 18 },
-    bonus: { aim: 14, power: 16, armour: 12 },
+    levels: { attack: 6, defence: 5, strength: 5, hitpoints: 14 },
+    combat: 8,
+    bonus: { aim: 8, power: 10, armour: 1 },
     attackable: true,
     aggressive: false,
     wander: 5,
@@ -454,8 +476,9 @@ NPC_LIST.push(
     id: "dark_wizard",
     name: "Dark wizard",
     examine: "He is up to no good.",
-    levels: { attack: 13, defence: 12, strength: 12, hitpoints: 16 },
-    bonus: { aim: 12, power: 12, armour: 8 },
+    levels: { attack: 5, defence: 5, strength: 2, hitpoints: 12, magic: 6 },
+    combat: 7,
+    bonus: { aim: 0, power: 0, armour: 0 },
     attackable: true,
     aggressive: true,
     wander: 4,
@@ -479,7 +502,8 @@ NPC_LIST.push(
     id: "monk",
     name: "Monk",
     examine: "A monk of Saradomin.",
-    levels: { attack: 1, defence: 1, strength: 1, hitpoints: 20 },
+    levels: { attack: 2, defence: 3, strength: 2, hitpoints: 5 },
+    combat: 5,
     bonus: { aim: 0, power: 0, armour: 0 },
     attackable: false,
     aggressive: false,
@@ -501,8 +525,9 @@ NPC_LIST.push(
     id: "white_knight",
     name: "White Knight",
     examine: "A knight of Falador.",
-    levels: { attack: 24, defence: 26, strength: 22, hitpoints: 28 },
-    bonus: { aim: 28, power: 26, armour: 34 },
+    levels: { attack: 27, defence: 21, strength: 29, hitpoints: 52 },
+    combat: 36,
+    bonus: { aim: 30, power: 31, armour: 76 },
     attackable: true,
     aggressive: false,
     wander: 3,
@@ -579,11 +604,12 @@ export function getNpcDef(id: string): NpcDef {
 
 /** Combat level shown beside an NPC's name, using the same formula as players. */
 export function npcCombatLevel(def: NpcDef): number {
+  if (def.combat !== undefined) return def.combat;
   const levels = {
-    ...def.levels,
     ranged: 1,
     prayer: 1,
     magic: 1,
+    ...def.levels,
   } as unknown as Record<SkillId, number>;
   return combatLevel(levels);
 }

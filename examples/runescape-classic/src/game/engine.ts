@@ -2,7 +2,16 @@
  * The game loop. Owns mutable world state, resolves a tick every 600ms, and
  * interpolates actor positions between ticks so movement stays smooth.
  */
-import { combatXp, type Fighter, maxHit, rollDamage } from "./combat";
+import {
+  type Fighter,
+  HITPOINTS_XP_PER_DAMAGE,
+  maxHit,
+  meleeXpSplit,
+  MONSTER_STYLE,
+  rollDamage,
+  STYLE_BONUSES,
+  XP_PER_DAMAGE,
+} from "./combat";
 import {
   AUTOSAVE_TICKS,
   FIRE_TICKS,
@@ -14,7 +23,13 @@ import {
   TILES_PER_SECOND,
 } from "./config";
 import { RESPAWN_TILE as LUMBRIDGE } from "./config";
-import { EQUIP_SLOTS, getItem, type ItemDef, itemName } from "./items";
+import {
+  EQUIP_SLOTS,
+  getItem,
+  type ItemDef,
+  itemName,
+  SMELT_XP,
+} from "./items";
 import { getNpcDef, npcCombatLevel, type NpcDef } from "./npcs";
 import {
   adjacentTile,
@@ -1064,29 +1079,15 @@ export class Engine {
   }
 
   private awardCombatXp(damage: number, shooting = false): void {
-    const total = combatXp(damage);
-    const share = Math.round(total / 3);
     if (shooting) {
-      this.addXp("ranged", total);
-      this.addXp("hitpoints", Math.max(1, share));
-      return;
+      this.addXp("ranged", damage * XP_PER_DAMAGE);
+    } else {
+      const split = meleeXpSplit(this.state.player.combatStyle, damage);
+      for (const [skill, xp] of Object.entries(split)) {
+        this.addXp(skill as SkillId, xp);
+      }
     }
-    switch (this.state.player.combatStyle) {
-      case "accurate":
-        this.addXp("attack", total);
-        break;
-      case "aggressive":
-        this.addXp("strength", total);
-        break;
-      case "defensive":
-        this.addXp("defence", total);
-        break;
-      default:
-        this.addXp("attack", share);
-        this.addXp("strength", share);
-        this.addXp("defence", share);
-    }
-    this.addXp("hitpoints", Math.max(1, share));
+    this.addXp("hitpoints", damage * HITPOINTS_XP_PER_DAMAGE);
   }
 
   private killNpc(npc: Npc, def: NpcDef): void {
@@ -1162,6 +1163,7 @@ export class Engine {
       aim: bonus.aim,
       power: bonus.power,
       armour: bonus.armour,
+      style: STYLE_BONUSES[player.combatStyle],
     };
   }
 
@@ -1359,7 +1361,7 @@ export class Engine {
     removeItem(player.inventory, "tin_ore");
     addItem(player.inventory, "bronze_bar");
     this.setFlag("barSmelted");
-    this.addXp("smithing", 6);
+    this.addXp("smithing", SMELT_XP.bronze);
     this.message("skill", "You smelt the ore into a bronze bar.");
   }
 
@@ -1822,11 +1824,21 @@ export function npcFighter(def: NpcDef): Fighter {
     aim: def.bonus.aim,
     power: def.bonus.power,
     armour: def.bonus.armour,
+    style: MONSTER_STYLE,
   };
 }
 
 export function playerMaxHit(player: Player): number {
-  return maxHit(player.skills.current.strength, equipmentBonus(player).power);
+  const bonus = equipmentBonus(player);
+  return maxHit({
+    attack: player.skills.current.attack,
+    strength: player.skills.current.strength,
+    defence: player.skills.current.defence,
+    aim: bonus.aim,
+    power: bonus.power,
+    armour: bonus.armour,
+    style: STYLE_BONUSES[player.combatStyle],
+  });
 }
 
 export { EQUIP_SLOTS, MAX_LEVEL };

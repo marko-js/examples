@@ -24,31 +24,69 @@ import { TERRAIN, type TerrainId, type WorldMap } from "./world";
 /** The mainland occupies this square of the grid; the rest is open sea. */
 export const MAINLAND = { width: 168, height: 184 };
 
-/** Everything north of this line is the Wilderness. */
-export const WILDERNESS_EDGE = 35;
+/**
+ * The map is a scale drawing of the real thing. Everything below is written in
+ * RuneScape 2 world coordinates and converted here, so the bearing and the
+ * walking distance between any two places are the ones players remember. The
+ * game's y axis counts north, this grid's counts south, hence the flip.
+ */
+const ORIGIN = { x: 2886, y: 3640 };
+const SCALE = 0.36;
 
-export const PLACES = {
-  goblinVillage: { x: 16, y: 50 },
-  iceMountain: { x: 36, y: 54 },
-  monastery: { x: 55, y: 52 },
-  edgeville: { x: 79, y: 49 },
-  varrockPalace: { x: 118, y: 56 },
-  lumberMill: { x: 151, y: 41 },
-  dwarvenMine: { x: 39, y: 68 },
-  barbarianVillage: { x: 58, y: 78 },
-  varrock: { x: 117, y: 77 },
-  falador: { x: 28, y: 98 },
-  championsGuild: { x: 105, y: 101 },
-  draynorManor: { x: 72, y: 102 },
-  miningGuild: { x: 40, y: 104 },
-  craftingGuild: { x: 10, y: 127 },
-  draynor: { x: 76, y: 135 },
-  portSarim: { x: 52, y: 149 },
-  rimmington: { x: 19, y: 151 },
-  lumbridge: { x: 121, y: 152 },
-  alKharid: { x: 147, y: 168 },
-  wizardsTower: { x: 73, y: 171 },
-} as const;
+function at(worldX: number, worldY: number): { x: number; y: number } {
+  return {
+    x: Math.round((worldX - ORIGIN.x) * SCALE),
+    y: Math.round((ORIGIN.y - worldY) * SCALE),
+  };
+}
+
+/** A world-coordinate box as a grid rectangle. */
+function box(
+  west: number,
+  south: number,
+  east: number,
+  north: number,
+): { x: number; y: number; w: number; h: number } {
+  const corner = at(west, north);
+  const far = at(east, south);
+  return {
+    x: corner.x,
+    y: corner.y,
+    w: far.x - corner.x,
+    h: far.y - corner.y,
+  };
+}
+
+/** Everything north of the ditch at y = 3520 is the Wilderness. */
+export const WILDERNESS_EDGE = at(0, 3520).y;
+
+/** Where each place stands in RuneScape 2's own world coordinates. */
+export const WORLD_PLACES = {
+  goblinVillage: [2957, 3510],
+  iceMountain: [3003, 3475],
+  monastery: [3050, 3489],
+  edgeville: [3087, 3500],
+  varrockPalace: [3213, 3470],
+  lumberMill: [3305, 3492],
+  dwarvenMine: [3020, 3450],
+  barbarianVillage: [3082, 3420],
+  varrock: [3213, 3424],
+  falador: [2965, 3380],
+  championsGuild: [3191, 3363],
+  draynorManor: [3109, 3341],
+  miningGuild: [3021, 3339],
+  craftingGuild: [2933, 3290],
+  draynor: [3093, 3244],
+  portSarim: [3050, 3200],
+  rimmington: [2957, 3215],
+  lumbridge: [3222, 3218],
+  alKharid: [3293, 3184],
+  wizardsTower: [3110, 3167],
+} as const satisfies Record<string, readonly [number, number]>;
+
+export const PLACES = Object.fromEntries(
+  Object.entries(WORLD_PLACES).map(([name, [x, y]]) => [name, at(x, y)]),
+) as Record<keyof typeof WORLD_PLACES, { x: number; y: number }>;
 
 export function layMainland(map: WorldMap, rng: Rng): void {
   carveLand(map);
@@ -96,14 +134,14 @@ function carveLand(map: WorldMap): void {
  * the Al Kharid road.
  */
 function carveRiverLum(map: WorldMap): void {
-  const course: [number, number][] = [
-    [66, 14],
-    [69, 78],
-    [85, 105],
-    [105, 130],
-    [127, 150],
-    [138, 178],
-  ];
+  const course = [
+    at(3140, 3550),
+    at(3138, 3420),
+    at(3150, 3330),
+    at(3200, 3270),
+    at(3240, 3225),
+    at(3245, 3130),
+  ].map(({ x, y }) => [x, y] as [number, number]);
   for (let leg = 0; leg < course.length - 1; leg++) {
     const [x1, y1] = course[leg];
     const [x2, y2] = course[leg + 1];
@@ -137,35 +175,34 @@ function layZones(map: WorldMap, rng: Rng): void {
     place(map, x, WILDERNESS_EDGE, "fence");
   }
 
-  fillRect(map, 128, 140, 40, 44, TERRAIN.sand); // Kharidian Desert
-  fillRect(map, 104, 162, 28, 20, TERRAIN.swamp); // Lumbridge Swamp
-  fillRect(map, 28, 44, 20, 20, TERRAIN.gravel); // Ice Mountain
-  fillRect(map, 30, 60, 20, 16, TERRAIN.gravel); // Dwarven Mine
-  fillRect(map, 32, 98, 16, 14, TERRAIN.gravel); // Mining Guild
-  fillRect(map, 12, 140, 16, 12, TERRAIN.gravel); // Rimmington mine
-  fillRect(map, 140, 154, 16, 12, TERRAIN.gravel); // Al Kharid mine
+  paint(map, box(3255, 3130, 3360, 3200), TERRAIN.sand); // Kharidian Desert
+  paint(map, box(3150, 3140, 3235, 3195), TERRAIN.swamp); // Lumbridge Swamp
+  paint(map, box(2980, 3465, 3030, 3510), TERRAIN.gravel); // Ice Mountain
+  paint(map, box(3000, 3430, 3050, 3460), TERRAIN.gravel); // Dwarven Mine
+  paint(map, box(3000, 3320, 3040, 3360), TERRAIN.gravel); // Mining Guild
+  paint(map, box(2965, 3225, 3005, 3255), TERRAIN.gravel); // Rimmington mine
+  paint(map, box(3285, 3275, 3315, 3310), TERRAIN.gravel); // Al Kharid mine
 
-  fillRect(map, 88, 88, 26, 22, TERRAIN.darkGrass); // south west Varrock forest
-  fillRect(map, 56, 120, 26, 18, TERRAIN.darkGrass); // Draynor forest
-  fillRect(map, 104, 132, 24, 18, TERRAIN.darkGrass); // Lumbridge forest
+  const varrockForest = box(3140, 3370, 3190, 3410);
+  const draynorForest = box(3070, 3215, 3110, 3255);
+  const lumbridgeForest = box(3170, 3220, 3220, 3260);
+  paint(map, varrockForest, TERRAIN.darkGrass);
+  paint(map, draynorForest, TERRAIN.darkGrass);
+  paint(map, lumbridgeForest, TERRAIN.darkGrass);
 
-  scatter(
-    map,
-    rng,
-    { x: 88, y: 88, w: 26, h: 22 },
-    ["tree", "tree", "oak"],
-    60,
-  );
-  scatter(map, rng, { x: 56, y: 120, w: 26, h: 18 }, ["tree", "willow"], 50);
-  scatter(
-    map,
-    rng,
-    { x: 104, y: 132, w: 24, h: 18 },
-    ["tree", "tree", "oak"],
-    46,
-  );
-  scatter(map, rng, { x: 6, y: 140, w: 20, h: 16 }, ["oak", "tree"], 22);
-  scatter(map, rng, { x: 40, y: 36, w: 50, h: 26 }, ["tree", "bush"], 40);
+  scatter(map, rng, varrockForest, ["tree", "tree", "oak"], 60);
+  scatter(map, rng, draynorForest, ["tree", "willow"], 50);
+  scatter(map, rng, lumbridgeForest, ["tree", "tree", "oak"], 46);
+  scatter(map, rng, box(2900, 3230, 2960, 3280), ["oak", "tree"], 22);
+  scatter(map, rng, box(2990, 3525, 3150, 3580), ["tree", "bush"], 40);
+}
+
+function paint(
+  map: WorldMap,
+  area: { x: number; y: number; w: number; h: number },
+  id: TerrainId,
+): void {
+  fillRect(map, area.x, area.y, area.w, area.h, id);
 }
 
 function layRoads(map: WorldMap): void {
@@ -173,12 +210,12 @@ function layRoads(map: WorldMap): void {
   const routes: [number, number][][] = [
     [
       [p.lumbridge.x, p.lumbridge.y],
-      [118, 120],
+      [120, 118],
       [p.varrock.x, p.varrock.y],
     ],
     [
       [p.lumbridge.x, p.lumbridge.y],
-      [100, 146],
+      [99, 146],
       [p.draynor.x, p.draynor.y],
     ],
     [
@@ -187,7 +224,7 @@ function layRoads(map: WorldMap): void {
     ],
     [
       [p.draynor.x, p.draynor.y],
-      [64, 146],
+      [63, 148],
       [p.portSarim.x, p.portSarim.y],
     ],
     [
@@ -196,27 +233,27 @@ function layRoads(map: WorldMap): void {
     ],
     [
       [p.portSarim.x, p.portSarim.y],
-      [44, 124],
+      [48, 126],
       [p.falador.x, p.falador.y],
     ],
     [
       [p.falador.x, p.falador.y],
-      [48, 86],
+      [57, 90],
       [p.barbarianVillage.x, p.barbarianVillage.y],
     ],
     [
       [p.barbarianVillage.x, p.barbarianVillage.y],
-      [95, 80],
+      [95, 78],
       [p.varrock.x, p.varrock.y],
     ],
     [
       [p.varrock.x, p.varrock.y],
-      [100, 58],
+      [88, 61],
       [p.edgeville.x, p.edgeville.y],
     ],
     [
       [p.edgeville.x, p.edgeville.y],
-      [80, WILDERNESS_EDGE - 1],
+      [PLACES.edgeville.x, WILDERNESS_EDGE - 1],
     ],
     [
       [p.varrock.x, p.varrock.y],
@@ -224,7 +261,7 @@ function layRoads(map: WorldMap): void {
     ],
     [
       [p.varrock.x, p.varrock.y],
-      [135, 60],
+      [142, 61],
       [p.lumberMill.x, p.lumberMill.y],
     ],
     [
@@ -258,8 +295,8 @@ function layRoads(map: WorldMap): void {
   ];
   for (const route of routes) road(map, route);
 
-  bridge(map, 66, 76, 8, 4); // Barbarian Village
-  bridge(map, 122, 150, 12, 5); // the Al Kharid road out of Lumbridge
+  bridge(map, 88, 76, 10, 7); // Barbarian Village
+  bridge(map, 124, 146, 12, 6); // the Al Kharid road out of Lumbridge
 }
 
 function bridge(
@@ -302,6 +339,18 @@ interface Doorstep {
   x: number;
   y: number;
   out: [number, number];
+}
+
+/**
+ * A fence left standing on a road is a fence the road went through, so it gets
+ * a gate. Runs once every town is up, since towns are laid over the roads.
+ */
+function openRoadGates(map: WorldMap): void {
+  for (const object of map.objects) {
+    if (object?.defId !== "fence") continue;
+    if (terrain(map, object.x, object.y) !== TERRAIN.path) continue;
+    place(map, object.x, object.y, "gate");
+  }
 }
 
 /** Doors collected while building, cleared once every town is standing. */
@@ -841,6 +890,7 @@ function layTowns(map: WorldMap): void {
   }
 
   layDoorsteps(map);
+  openRoadGates(map);
 }
 
 /** A ring of city wall with a gate on each side. */

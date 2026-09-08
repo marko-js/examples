@@ -177,8 +177,7 @@ export function building(
 export const ROOF_TILE = "#a0503c";
 export const ROOF_WOOD = "#8a5f33";
 
-/** Fenced enclosure with gates punched through the perimeter. */
-/** Fence around a rect's perimeter, leaving the inside untouched. */
+/** Fence around a rect's perimeter, with a gate in the south side to get in. */
 export function fence(
   map: WorldMap,
   x: number,
@@ -194,6 +193,7 @@ export function fence(
     place(map, x, y + dy, "fence");
     place(map, x + w - 1, y + dy, "fence");
   }
+  place(map, x + (w >> 1), y + h - 1, "gate");
 }
 
 export function field(

@@ -2,8 +2,7 @@
  * Snapshot of everything the interface draws. The engine hands a fresh one to
  * Marko whenever game state changes, so the panels stay a pure view of it.
  */
-import { maxHit } from "./combat";
-import { buyPrice, sellPrice } from "./engine";
+import { buyPrice, playerMaxHit, sellPrice } from "./engine";
 import type { Icon } from "./icons";
 import {
   type Bonus,
@@ -137,12 +136,11 @@ export function buildUi(input: UiInput): UiState {
     maxHitpoints: player.maxHitpoints,
     dead: player.respawnTick !== null,
     combatLevel: combatLevel(levels),
-    maxHit: maxHit(
-      player.skills.current.strength,
-      equipmentBonus(player).power,
-    ),
+    maxHit: playerMaxHit(player),
     totalLevel: SKILL_IDS.reduce((total, id) => total + levels[id], 0),
-    totalXp: SKILL_IDS.reduce((total, id) => total + player.skills.xp[id], 0),
+    totalXp: Math.floor(
+      SKILL_IDS.reduce((total, id) => total + player.skills.xp[id], 0),
+    ),
     skills: SKILL_IDS.map((id) =>
       toSkill(id, player.skills.xp[id], player.skills.current[id]),
     ),
@@ -211,8 +209,9 @@ function toSkill(id: SkillId, xp: number, current: number): UiSkill {
     name: SKILL_NAMES[id],
     level: current,
     base,
-    xp,
-    toNextLevel: base >= MAX_LEVEL ? 0 : xpForLevel(base + 1) - xp,
+    // Experience is paid in fractions; the game only ever shows whole points.
+    xp: Math.floor(xp),
+    toNextLevel: base >= MAX_LEVEL ? 0 : Math.ceil(xpForLevel(base + 1) - xp),
     progress: levelProgress(xp),
   };
 }

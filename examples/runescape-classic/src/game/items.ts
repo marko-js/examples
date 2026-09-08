@@ -120,6 +120,32 @@ export interface Metal {
   shine: string;
 }
 
+/**
+ * Experience for turning ore into a bar at a furnace, and for hammering that
+ * bar into anything on an anvil. Both are per bar, as the game pays them.
+ *
+ * https://oldschool.runescape.wiki/w/Smithing
+ */
+export const SMELT_XP: Record<string, number> = {
+  bronze: 6.2,
+  iron: 12.5,
+  silver: 13.7,
+  steel: 17.5,
+  gold: 22.5,
+  mithril: 30,
+  adamantite: 37.5,
+  rune: 50,
+};
+
+export const SMITH_XP: Record<string, number> = {
+  bronze: 12.5,
+  iron: 25,
+  steel: 37.5,
+  mithril: 50,
+  adamantite: 62.5,
+  rune: 75,
+};
+
 export const METALS: Metal[] = [
   {
     id: "bronze",
@@ -486,7 +512,7 @@ define({
   examine: "These would be worth burying.",
   value: 1,
   icon: bonesIcon(false),
-  buryXp: 15,
+  buryXp: 4.5,
 });
 define({
   id: "big_bones",
@@ -494,7 +520,7 @@ define({
   examine: "Bones from something large.",
   value: 1,
   icon: bonesIcon(true),
-  buryXp: 45,
+  buryXp: 15,
 });
 define({
   id: "feather",
@@ -589,7 +615,7 @@ define({
   examine: "It is a bar of bronze.",
   value: 20,
   icon: barIcon("#a97142", "#cd9560"),
-  smith: { into: "bronze_dagger", level: 1, xp: 12 },
+  smith: { into: "bronze_dagger", level: 1, xp: SMITH_XP.bronze },
 });
 define({
   id: "pot_of_flour",
@@ -645,6 +671,22 @@ define({
   value: 20,
   icon: shieldWoodIcon(),
   equip: { slot: "shield", colour: "#8a6136", bonus: { armour: 3 } },
+});
+define({
+  id: "raw_chicken",
+  name: "Raw chicken",
+  examine: "I need to cook this first.",
+  value: 1,
+  icon: meatIcon(true),
+  cook: { into: "cooked_chicken", level: 1, xp: 30, burnt: "burnt_meat" },
+});
+define({
+  id: "cooked_chicken",
+  name: "Cooked chicken",
+  examine: "It looks tasty.",
+  value: 4,
+  icon: meatIcon(false),
+  heals: 3,
 });
 define({
   id: "raw_rat_meat",

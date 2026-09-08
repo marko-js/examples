@@ -40,7 +40,7 @@ test("equipping a weapon shows up in the snapshot bonuses", () => {
   );
   expect(ui.bonus.aim).toBe(12);
   expect(ui.bonus.power).toBe(12);
-  expect(ui.maxHit).toBe(5);
+  expect(ui.maxHit).toBe(6);
 });
 
 test("gaining experience moves the level and its progress bar", () => {

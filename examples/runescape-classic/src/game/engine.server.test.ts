@@ -10,7 +10,7 @@ import {
   lightFire,
   nearestObject,
 } from "./test-helpers";
-import { objectAt } from "./world";
+import { isWalkable, objectAt } from "./world";
 
 test("walking moves the player to the tile that was clicked", () => {
   const engine = createMainlandEngine();
@@ -51,7 +51,7 @@ test("mining an ore rock trains mining and fills the inventory", () => {
   );
 
   expect(countItem(engine.state.player.inventory, "copper_ore")).toBe(1);
-  expect(engine.state.player.skills.xp.mining).toBe(17);
+  expect(engine.state.player.skills.xp.mining).toBe(17.5);
 });
 
 test("fishing needs the matching tool", () => {
@@ -71,7 +71,7 @@ test("fishing needs the matching tool", () => {
     engine,
     () => countItem(engine.state.player.inventory, "raw_shrimp") > 0,
   );
-  expect(engine.state.player.skills.xp.fishing).toBe(30);
+  expect(engine.state.player.skills.xp.fishing).toBe(10);
 });
 
 test("a tinderbox and logs light a fire that raw fish can be cooked on", () => {
@@ -131,7 +131,7 @@ test("bones can be picked up and buried for prayer experience", () => {
     findSlot(engine.state.player.inventory, "bones"),
     "bury",
   );
-  expect(engine.state.player.skills.xp.prayer).toBe(15);
+  expect(engine.state.player.skills.xp.prayer).toBe(4.5);
   expect(countItem(engine.state.player.inventory, "bones")).toBe(0);
 });
 
@@ -247,7 +247,11 @@ test("menu options describe what is under the pointer", () => {
     "Chop Tree",
     "Examine Tree",
   ]);
-  const empty = { x: tree.x + 3, y: tree.y + 3 };
+  const empty = { x: tree.x, y: tree.y };
+  for (let step = 1; !isWalkable(engine.state.map, empty.x, empty.y); step++) {
+    empty.x = tree.x + step;
+    empty.y = tree.y + step;
+  }
   expect(engine.describeTile(empty.x, empty.y)).toMatchObject({
     verb: "Walk here",
     more: 0,
