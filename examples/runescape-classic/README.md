@@ -1,19 +1,22 @@
 # RuneScape Classic
 
 A RuneScape tribute built with [Marko 6](https://markojs.com) and
-[@marko/run](https://github.com/marko-js/run): RuneScape 2 mechanics wearing
-RuneScape Classic's flat, chunky look.
+[@marko/run](https://github.com/marko-js/run), drawn and played the way
+RuneScape 2 was: a pitched camera over a textured world, carved stone around
+the game, and the numbers the game published.
 
-The whole game runs natively in the browser: the free-to-play Classic world and
+The whole game runs natively in the browser: the free-to-play world and
 Tutorial Island on one 256×256 tile grid, a 600ms tick loop, twenty skills,
-melee, ranged and magic combat, smithing, banking, shops, and a save file in
-`localStorage`. There is no server and no art pipeline — every sprite, item icon
-and tile is drawn from code.
+melee, ranged and magic combat, prayer, run energy, smithing, banking, shops,
+and a save file in `localStorage`. There is no server and no art pipeline —
+every model, item icon and texture is drawn from code.
 
 ## The world
 
-Misthalin and Asgarnia are laid out from the official RuneScape Classic world
-map, with each town placed where that map puts it. Lumbridge sits on the west
+Misthalin and Asgarnia are a scale drawing of the real thing: every landmark is
+written in RuneScape 2 world coordinates and passed through one transform, so
+the bearing and the walking distance between any two places are the ones players
+remember. Lumbridge sits on the west
 bank of the Lum with the bridge east to Al Kharid; the road north runs to
 Varrock, whose walls hold the palace, two banks and the shop row. West of the
 river are Barbarian Village, Falador and the White Knights' castle, Draynor and
@@ -56,11 +59,22 @@ sit over it, and every control works by touch.
   to cook it.
 - Banks are in Varrock, Falador, Draynor, Edgeville and Al Kharid. Shops sell
   what their signs say, and each buys back at its own price.
+- The **run orb** doubles your pace and spends energy; the **prayer orb** shows
+  what the book has left to burn, and an altar fills it back up.
 - The Wilderness runs across the north of the map, past Edgeville.
 
-Trainable skills are Attack, Defense, Strength, Hits, Prayer (bury bones),
-Cooking, Woodcut, Fishing, Firemaking and Mining. Progress saves every fifteen
-seconds and can be wiped from the Options tab.
+Trainable skills are Attack, Strength, Defence, Hitpoints, Ranged, Magic,
+Prayer, Woodcutting, Fishing, Cooking, Firemaking, Mining and Smithing.
+Progress saves every fifteen seconds and can be wiped from the Options tab.
+
+## The numbers
+
+Where the game published a number, this uses it rather than inventing one, and
+`tables.server.test.ts` holds them to it: the experience curve and every skill's
+rate per action, monster levels and bonuses, equipment bonuses per metal, the
+prayer book's levels and drain rates, and the combat maths — effective levels
+with the style's invisible bonuses, an attack roll against a defence roll, and a
+landed blow rolling anywhere from zero to the max hit.
 
 ## How it is put together
 
@@ -81,6 +95,9 @@ re-renders only when the game says something changed.
     every panel renders from.
   - `render/` draws the game view and the minimap onto canvases, sized from
     the surface it is handed so one code path covers a phone and a desktop.
+    `projection.ts` is the pitched camera, `world.ts` paints the ground per
+    pixel out of a small colour field and sorts everything with height back to
+    front, and `actors.ts` and `scenery.ts` build the models out of blocks.
 - `src/tags` — the HUD, overlaid on the canvas. `<game-client>` creates the engine in a
   [`<lifecycle>`](https://markojs.com/docs/reference/core-tag#lifecycle) hook,
   drives `requestAnimationFrame`, and assigns each new snapshot to a
