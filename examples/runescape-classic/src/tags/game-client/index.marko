@@ -52,7 +52,8 @@ static const ZOOM_STEP = 1.12;
 
 <let/ui=initialUi()>
 <let/tab=null as string | null>
-<let/chatOpen=false>
+/** Folded away, showing the last few lines, or open with the box to type in. */
+<let/chatMode="peek" as "hidden" | "peek" | "open">
 <let/hover=null as HoverText | null>
 <let/menu=null as MenuState | null>
 
@@ -397,24 +398,29 @@ static const ZOOM_STEP = 1.12;
     </div>
   </div>
 
-  <div class=[styles.chat, chatOpen && styles.chatOpen]>
-    <chat-box
-      messages=ui.messages
-      open=chatOpen
-      onSay(text) {
-        session.engine?.say(text);
-      }
-    />
-  </div>
+  <show=chatMode !== "hidden">
+    <div class=[styles.chat, chatMode === "open" && styles.chatOpen]>
+      <chat-box
+        messages=ui.messages
+        open=chatMode === "open"
+        onSay(text) {
+          session.engine?.say(text);
+        }
+        onCollapse() {
+          chatMode = "hidden";
+        }
+      />
+    </div>
+  </show>
 
   <nav class=styles.tabs>
     <button
       type="button"
-      class=[styles.tab, chatOpen && styles.tabActive]
+      class=[styles.tab, chatMode === "open" && styles.tabActive]
       title="Chat"
-      aria-pressed=chatOpen && "true"
+      aria-pressed=chatMode === "open" && "true"
       onClick() {
-        chatOpen = !chatOpen;
+        chatMode = chatMode === "open" ? "peek" : "open";
       }
     >
       <item-icon icon=chatIcon() size=22/>

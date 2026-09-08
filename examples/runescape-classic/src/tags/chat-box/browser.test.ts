@@ -17,6 +17,7 @@ test("sends what was typed and clears the box", async () => {
     messages,
     open: true,
     onSay: (text: string) => said.push(text),
+    onCollapse: () => {},
   });
 
   expect(screen.getByText("You get some logs.")).toBeInTheDocument();
@@ -30,9 +31,27 @@ test("sends what was typed and clears the box", async () => {
 });
 
 test("collapsed it shows only the last few lines and no input", async () => {
-  await render(Template, { messages, open: false, onSay: () => {} });
+  await render(Template, {
+    messages,
+    open: false,
+    onSay: () => {},
+    onCollapse: () => {},
+  });
 
   expect(screen.queryByLabelText("Say")).toBeNull();
   expect(screen.queryByText("Welcome to RuneScape Classic.")).toBeNull();
   expect(screen.getByText("Guest: hello world")).toBeInTheDocument();
+});
+
+test("it can be folded away", async () => {
+  let folded = 0;
+  await render(Template, {
+    messages,
+    open: false,
+    onSay: () => {},
+    onCollapse: () => folded++,
+  });
+
+  await fireEvent.click(screen.getByLabelText("Hide the chat"));
+  expect(folded).toBe(1);
 });

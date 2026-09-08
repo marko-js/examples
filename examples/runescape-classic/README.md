@@ -59,6 +59,9 @@ sit over it, and every control works by touch.
 - **Tap** an inventory item to wield, eat or bury it. **Hold** it to use, drop
   or examine it.
 - Tap the **minimap** to travel further, or the **⛶** button for full screen.
+- The chat tab opens the box to type in; the **▾** on its strip folds it away
+  again. Held sideways the controls hug the corner rather than banding across
+  the bottom.
 - Use a **tinderbox on logs** to light a fire, then use **raw fish on the fire**
   to cook it.
 - Banks are in Varrock, Falador, Draynor, Edgeville and Al Kharid. Shops sell

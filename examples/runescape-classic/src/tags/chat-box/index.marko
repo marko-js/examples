@@ -6,6 +6,8 @@ export interface Input {
   /** Collapsed shows the last few lines and lets taps reach the game. */
   open: boolean;
   onSay: (text: string) => void;
+  /** Fold the box away entirely, leaving the tab to bring it back. */
+  onCollapse: () => void;
 }
 
 /** The strip under the chat, filtering the log the way the client's does. */
@@ -77,6 +79,17 @@ static const FILTERS: {
         ${entry.name}
       </button>
     </for>
+    <button
+      type="button"
+      class=[styles.tab, styles.fold]
+      title="Hide the chat"
+      aria-label="Hide the chat"
+      onClick() {
+        input.onCollapse();
+      }
+    >
+      ▾
+    </button>
   </div>
 </div>
 

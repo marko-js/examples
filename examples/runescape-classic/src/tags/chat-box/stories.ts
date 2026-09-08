@@ -15,6 +15,7 @@ export default {
     ],
     open: true,
     onSay() {},
+    onCollapse() {},
   },
 } as Meta<Input>;
 

@@ -326,10 +326,40 @@
 }
 
 /*
- * Wide screens get the client's own layout: a column down the right with the
- * minimap on top, the row of tabs under it, and the panel filling the rest.
+ * A phone held sideways has width to spare and no height at all, so the
+ * controls hug the bottom right corner instead of banding across it.
  */
-@media (min-width: 900px) {
+@media (max-height: 520px) {
+  .tabs {
+    left: auto;
+    gap: 2px;
+    padding: 2px;
+  }
+
+  .tab {
+    flex: 0 0 auto;
+    width: 42px;
+    max-width: none;
+    height: 34px;
+  }
+
+  .chat {
+    bottom: calc(var(--edge-bottom) + 42px);
+    width: min(340px, 46%);
+    height: 68px;
+  }
+
+  .chatOpen {
+    height: min(62vh, 200px);
+  }
+}
+
+/*
+ * A screen with room in both directions gets the client's own layout: a column
+ * down the right with the minimap on top, the row of tabs under it, and the
+ * panel filling the rest.
+ */
+@media (min-width: 900px) and (min-height: 560px) {
   .sidebar {
     position: absolute;
     top: 0;
