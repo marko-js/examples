@@ -19,8 +19,8 @@ test("the server render snapshot describes a brand new character", () => {
   expect(ui.hitpoints).toBe(10);
   expect(ui.totalLevel).toBe(29);
   expect(ui.skills).toHaveLength(20);
-  expect(ui.inventory).toHaveLength(30);
-  expect(ui.freeSlots).toBe(30);
+  expect(ui.inventory).toHaveLength(28);
+  expect(ui.freeSlots).toBe(28);
   expect(ui.coins).toBe(0);
   expect(ui.region).toBe("Tutorial Island");
 });

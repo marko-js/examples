@@ -46,7 +46,7 @@ export const RUN_RECOVER = 1.2;
 /** The world is a square grid of this many tiles per side. */
 export const WORLD_SIZE = 256;
 
-export const INVENTORY_SIZE = 30;
+export const INVENTORY_SIZE = 28;
 export const BANK_SIZE = 48;
 export const MAX_CHAT_MESSAGES = 60;
 

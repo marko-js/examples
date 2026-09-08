@@ -353,4 +353,9 @@
   .panelOpen {
     transform: none;
   }
+
+  /* The column is always showing a tab, so it never needs closing. */
+  .close {
+    display: none;
+  }
 }

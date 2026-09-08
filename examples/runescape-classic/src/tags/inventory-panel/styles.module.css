@@ -1,7 +1,10 @@
 .grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 2px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  /* Four across at the client's slot size, whatever the panel is doing. */
+  max-width: 220px;
+  margin: 0 auto;
 }
 
 .footer {

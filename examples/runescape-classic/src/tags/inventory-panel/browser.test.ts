@@ -28,9 +28,9 @@ test("shows one button per slot and reports which one was used", async () => {
     onMenu: () => {},
   });
 
-  expect(screen.getAllByRole("button")).toHaveLength(30);
+  expect(screen.getAllByRole("button")).toHaveLength(28);
   expect(screen.getByText(`${ui.freeSlots} free slots`)).toBeInTheDocument();
-  expect(ui.freeSlots).toBe(25);
+  expect(ui.freeSlots).toBe(23);
 
   await fireEvent.click(screen.getByTitle(/^Bronze axe/));
   expect(used).toEqual([0]);
@@ -38,13 +38,13 @@ test("shows one button per slot and reports which one was used", async () => {
 
 test("an empty slot cannot be clicked", async () => {
   await render(Template, {
-    items: new Array(30).fill(null),
+    items: new Array(28).fill(null),
     selected: null,
-    freeSlots: 30,
+    freeSlots: 28,
     onActivate: () => {},
     onMenu: () => {},
   });
 
   expect(screen.getAllByTitle("Empty slot")[0]).toBeDisabled();
-  expect(screen.getByText("30 free slots")).toBeInTheDocument();
+  expect(screen.getByText("28 free slots")).toBeInTheDocument();
 });

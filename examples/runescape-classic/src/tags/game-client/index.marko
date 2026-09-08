@@ -49,6 +49,8 @@ static const LONG_PRESS_MS = 420;
   tile: null as Point | null,
   view: viewportFor(1024, 768) as Viewport,
   panelOpen: false,
+  /** True when the panel is a column beside the game rather than over it. */
+  docked: false,
   /** Recomputes `view` from the cached layout and the panel's open state. */
   applyView: null as (() => void) | null,
   press: null as { x: number; y: number; tile: Point; held: boolean } | null,
@@ -303,7 +305,8 @@ static const LONG_PRESS_MS = 420;
         title=entry.name
         aria-pressed=tab === entry.id && "true"
         onClick() {
-          setTab(tab === entry.id ? null : entry.id);
+          // The docked column always shows something, as the client's does.
+          setTab(tab === entry.id && !session.docked ? null : entry.id);
         }
       >
         <item-icon icon=entry.icon size=22/>
@@ -489,6 +492,7 @@ static const LONG_PRESS_MS = 420;
       // The docked column is always there, so the player is always kept clear
       // of it; a panel that slides up over the game only counts while open.
       const docked = box.panelWidth < box.width * 0.7;
+      session.docked = docked;
       const visible = docked
         ? { width: box.panelLeft, height: box.height }
         : session.panelOpen

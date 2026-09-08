@@ -40,5 +40,5 @@ export const Default: Story<Input> = { args: {} };
 export const WithSelection: Story<Input> = { args: { selected: 0 } };
 
 export const Empty: Story<Input> = {
-  args: { items: ui.inventory.map(() => null), freeSlots: 30 },
+  args: { items: ui.inventory.map(() => null), freeSlots: 28 },
 };

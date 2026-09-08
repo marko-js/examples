@@ -8,6 +8,7 @@ import type {
   Player,
   TutorialProgress,
 } from "./state";
+import { createInventory } from "./state";
 
 const KEY = "marko-runescape-classic";
 const VERSION = 1;
@@ -88,7 +89,12 @@ export function applySave(player: Player, data: SaveData): void {
     player.maxHitpoints,
     data.hitpoints || player.maxHitpoints,
   );
-  if (Array.isArray(data.inventory)) player.inventory = data.inventory;
+  if (Array.isArray(data.inventory)) {
+    // A save from another version can be any length; the pack is a fixed size.
+    player.inventory = createInventory().map(
+      (_, slot) => data.inventory[slot] ?? null,
+    );
+  }
   if (data.equipment) player.equipment = data.equipment;
   if (Array.isArray(data.bank)) player.bank = data.bank;
   player.combatStyle = data.combatStyle ?? player.combatStyle;

@@ -4,9 +4,8 @@
   place-items: center;
   aspect-ratio: 1;
   padding: 0;
-  border: 1px solid var(--rs-slot-border);
-  border-radius: 2px;
-  background: var(--rs-slot);
+  border: 1px solid transparent;
+  background: transparent;
   color: var(--rs-text);
   cursor: pointer;
 }
@@ -21,8 +20,7 @@
 }
 
 .slot:not(:disabled):hover {
-  border-color: var(--rs-gold);
-  background: var(--rs-slot-hover);
+  border-color: rgba(255, 212, 42, 0.6);
 }
 
 .selected {
