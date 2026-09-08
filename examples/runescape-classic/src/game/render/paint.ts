@@ -153,21 +153,46 @@ function quad(
     light,
   );
   // Mortar between the blocks, which is what makes a wall read as masonry.
-  for (let i = 1; i < courses; i++) {
-    const z = base + ((top - base) * i) / courses;
-    const line = (top - base) * 0.035;
-    face(
-      ctx,
-      camera,
-      [
-        [from[0], from[1], z],
-        [to[0], to[1], z],
-        [to[0], to[1], z + line],
-        [from[0], from[1], z + line],
-      ],
-      colour,
-      light * 0.74,
-    );
+  // Every other course is offset, so the joints stagger like real brickwork.
+  const along = (t: number): [number, number] => [
+    from[0] + (to[0] - from[0]) * t,
+    from[1] + (to[1] - from[1]) * t,
+  ];
+  const mortar = light * 0.72;
+  const thick = (top - base) * 0.035;
+  for (let i = 0; i < courses; i++) {
+    const low = base + ((top - base) * i) / courses;
+    const high = base + ((top - base) * (i + 1)) / courses;
+    if (i > 0) {
+      face(
+        ctx,
+        camera,
+        [
+          [from[0], from[1], low],
+          [to[0], to[1], low],
+          [to[0], to[1], low + thick],
+          [from[0], from[1], low + thick],
+        ],
+        colour,
+        mortar,
+      );
+    }
+    for (const at of i % 2 ? [0.25, 0.75] : [0.5]) {
+      const left = along(at);
+      const right = along(at + 0.018);
+      face(
+        ctx,
+        camera,
+        [
+          [left[0], left[1], low + thick],
+          [right[0], right[1], low + thick],
+          [right[0], right[1], high],
+          [left[0], left[1], high],
+        ],
+        colour,
+        mortar,
+      );
+    }
   }
 }
 

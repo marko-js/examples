@@ -208,6 +208,7 @@ function sampleGround(
     let green = 0;
     let blue = 0;
     let rough = 0;
+    let surface: TerrainId = TERRAIN.grass;
     let total = 0;
 
     for (const [corner, weight] of across.entries()) {
@@ -220,7 +221,10 @@ function sampleGround(
       red += rgb[0] * light;
       green += rgb[1] * light;
       blue += rgb[2] * light;
-      rough += ROUGHNESS[id] * weight;
+      if (weight > rough) {
+        rough = weight;
+        surface = id;
+      }
       total += weight;
     }
 
@@ -229,7 +233,8 @@ function sampleGround(
     out[at] = (red / total) * (1 + lit * CHANNEL_GAIN[0]);
     out[at + 1] = (green / total) * (1 + lit * CHANNEL_GAIN[1]);
     out[at + 2] = (blue / total) * (1 + lit * CHANNEL_GAIN[2]);
-    out[at + 3] = rough / total;
+    // The fourth channel names the surface, so the pixel pass can texture it.
+    out[at + 3] = surface;
     return;
   }
 }
@@ -239,33 +244,19 @@ function seam(fraction: number): number {
   return Math.min(1, Math.max(0, (fraction - 0.5) * SHARPNESS + 0.5));
 }
 
-/** Water and built floors keep a hard edge; everything else blends. */
+/**
+ * Ground that grows blends into its neighbours; anything laid down — a road,
+ * a floor, the water's edge — is laid tile by tile and keeps that edge.
+ */
 function isSoft(id: TerrainId): boolean {
   return (
-    id !== TERRAIN.water &&
-    id !== TERRAIN.bridge &&
-    id !== TERRAIN.woodFloor &&
-    id !== TERRAIN.stoneFloor
+    id === TERRAIN.grass ||
+    id === TERRAIN.darkGrass ||
+    id === TERRAIN.dirt ||
+    id === TERRAIN.sand ||
+    id === TERRAIN.swamp
   );
 }
-
-/**
- * How coarse each terrain looks close up, on the 0 to 255 scale the field
- * stores it in. Gravel and dirt are grainy, grass and water nearly smooth.
- */
-const ROUGHNESS: Record<TerrainId, number> = {
-  [TERRAIN.grass]: 26,
-  [TERRAIN.darkGrass]: 26,
-  [TERRAIN.dirt]: 44,
-  [TERRAIN.path]: 38,
-  [TERRAIN.sand]: 32,
-  [TERRAIN.water]: 0,
-  [TERRAIN.woodFloor]: 20,
-  [TERRAIN.stoneFloor]: 24,
-  [TERRAIN.bridge]: 20,
-  [TERRAIN.swamp]: 38,
-  [TERRAIN.gravel]: 58,
-};
 
 const TERRAIN_RGB = Object.fromEntries(
   Object.entries(TERRAIN_DEFS).map(([id, def]) => [id, rgbOf(def.colour)]),
@@ -276,7 +267,7 @@ function groundShade(x: number, y: number): number {
   // Stagger the patch grid like brickwork so it does not read as squares.
   const patch = hash2d((x + (y >> 1)) >> 2, y >> 2, 5);
   const grain = hash2d(x, y, 9);
-  return 0.88 + patch * 0.18 + grain * 0.08;
+  return 0.93 + patch * 0.1 + grain * 0.05;
 }
 
 /**
@@ -297,7 +288,7 @@ function slopeLight(x: number, y: number): number {
   const top = hash2d(x0, y0, 17) * (1 - fx) + hash2d(x0 + 1, y0, 17) * fx;
   const bottom =
     hash2d(x0, y0 + 1, 17) * (1 - fx) + hash2d(x0 + 1, y0 + 1, 17) * fx;
-  return 0.76 + (top * (1 - fy) + bottom * fy) * 0.44;
+  return 0.83 + (top * (1 - fy) + bottom * fy) * 0.24;
 }
 
 function smooth(t: number): number {
@@ -308,7 +299,7 @@ function smooth(t: number): number {
  * Light does not fall evenly across the channels: a lit patch of Classic's
  * grass goes yellow rather than simply paler, and a shaded one goes cold.
  */
-const CHANNEL_GAIN = [1.9, 1, 0.55];
+const CHANNEL_GAIN = [1.5, 1, 0.7];
 
 function drawGround(
   ctx: CanvasRenderingContext2D,
@@ -341,17 +332,10 @@ function drawGround(
     let worldX = camera.x + (0.5 - camera.cx) * step;
 
     const worldY = camera.y - forward;
-    const coarseY = Math.floor(worldY * 5);
-    const fineY = Math.floor(worldY * 13);
 
     for (let sx = 0; sx < width; sx++, at += 4, worldX += step) {
       const fx = (worldX - field.x) * SAMPLES_PER_TILE - 0.5;
-      // Two octaves of grain, standing in for Classic's ground textures.
-      const grain =
-        hash2d(Math.floor(worldX * 5), coarseY, 3) * 0.6 +
-        hash2d(Math.floor(worldX * 13), fineY, 7) * 0.4 -
-        0.5;
-      sampleField(field, fx, fy, fog, grain, pixels, at);
+      sampleField(field, fx, fy, fog, worldX, worldY, pixels, at);
       pixels[at + 3] = 255;
     }
   }
@@ -363,7 +347,8 @@ function sampleField(
   fx: number,
   fy: number,
   fog: number,
-  grain: number,
+  worldX: number,
+  worldY: number,
   out: Uint8ClampedArray,
   at: number,
 ): void {
@@ -382,19 +367,79 @@ function sampleField(
   const b = (row + x + 1) * 4;
   const c = (row + field.width + x) * 4;
   const d = (row + field.width + x + 1) * 4;
-  const top = (1 - ry) * fog;
-  const bottom = ry * fog;
-  const blend = (channel: number) =>
-    (field.data[a + channel] * (1 - rx) + field.data[b + channel] * rx) * top +
-    (field.data[c + channel] * (1 - rx) + field.data[d + channel] * rx) *
-      bottom;
+  // The nearest sample names the surface; the texture on it is per pixel.
+  const nearest = (rx < 0.5 ? (ry < 0.5 ? a : c) : ry < 0.5 ? b : d) + 3;
+  const light =
+    fog * surfaceTexture(field.data[nearest] as TerrainId, worldX, worldY);
 
-  // Roughness rides in the fourth channel, and decides how much grain shows.
-  const rough = (blend(3) / 255) * grain;
   for (let channel = 0; channel < 3; channel++) {
-    const value = blend(channel);
-    out[at + channel] = value + value * rough;
+    const blended =
+      (field.data[a + channel] * (1 - rx) + field.data[b + channel] * rx) *
+        (1 - ry) +
+      (field.data[c + channel] * (1 - rx) + field.data[d + channel] * rx) * ry;
+    out[at + channel] = blended * light;
   }
+}
+
+/**
+ * RuneScape 2 textured its ground rather than colouring it flat, and the
+ * cobbled road through a town is the most recognisable thing about it. Each
+ * surface gets its own pattern, returned as a brightness to scale the tile
+ * colour by.
+ */
+function surfaceTexture(id: TerrainId, x: number, y: number): number {
+  switch (id) {
+    case TERRAIN.path:
+    case TERRAIN.gravel:
+      return cobbles(x, y, 2.6, 0.4, 0.3);
+    case TERRAIN.stoneFloor:
+      return cobbles(x, y, 1.5, 0.44, 0.16);
+    case TERRAIN.woodFloor:
+    case TERRAIN.bridge:
+      return planks(x, y);
+    case TERRAIN.water:
+      return 1;
+    case TERRAIN.dirt:
+    case TERRAIN.sand:
+      return 1 + (noise(x, y, 7) - 0.5) * 0.24;
+    default:
+      return 1 + (noise(x, y, 5) - 0.5) * 0.3;
+  }
+}
+
+/** Irregular stones with mortar between them, laid `per` to a tile. */
+function cobbles(
+  x: number,
+  y: number,
+  per: number,
+  edge: number,
+  gap: number,
+): number {
+  const gx = x * per;
+  const gy = y * per;
+  const cx = Math.floor(gx);
+  const cy = Math.floor(gy);
+  const jx = cx + 0.5 + (hash2d(cx, cy, 1) - 0.5) * 0.42;
+  const jy = cy + 0.5 + (hash2d(cx, cy, 2) - 0.5) * 0.42;
+  const away = Math.max(Math.abs(gx - jx), Math.abs(gy - jy));
+  const mortar = away > edge ? -gap : 0;
+  return 1 + mortar + (hash2d(cx, cy, 3) - 0.5) * 0.26;
+}
+
+/** Boards running east to west, three to a tile. */
+function planks(x: number, y: number): number {
+  const along = y * 3;
+  const board = Math.floor(along);
+  const seam = Math.abs(along - board - 0.5) > 0.44 ? -0.22 : 0;
+  return 1 + seam + (hash2d(Math.floor(x), board, 4) - 0.5) * 0.16;
+}
+
+/** Two octaves of value noise, for the surfaces that are simply grainy. */
+function noise(x: number, y: number, seed: number): number {
+  return (
+    hash2d(Math.floor(x * 5), Math.floor(y * 5), seed) * 0.6 +
+    hash2d(Math.floor(x * 13), Math.floor(y * 13), seed + 1) * 0.4
+  );
 }
 
 function terrainId(state: GameState, x: number, y: number): TerrainId {

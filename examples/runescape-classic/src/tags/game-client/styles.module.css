@@ -172,7 +172,7 @@
   bottom: calc(var(--edge-bottom) + 50px);
   left: var(--edge-left);
   width: min(460px, calc(100% - var(--edge-left) - var(--edge-right)));
-  height: 108px;
+  height: 92px;
   pointer-events: none;
 }
 

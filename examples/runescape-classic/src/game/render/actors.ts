@@ -64,54 +64,55 @@ export function drawPerson(
   phase: number,
 ): void {
   const facing = facingOf(direction);
-  const scale = look.height;
-  const swing = Math.sin(phase) * 0.13;
+  // RuneScape 2's people are taller and narrower than Classic's blocks were.
+  const scale = look.height * 1.08;
+  const swing = Math.sin(phase) * 0.15;
   const parts: Part[] = [
     // Legs, swinging opposite each other.
     {
-      right: 0.07,
-      forward: 0.08,
+      right: 0.062,
+      forward: 0.075,
       base: 0,
-      top: 0.62,
+      top: 0.66,
       colour: look.legs,
-      atRight: -0.09,
+      atRight: -0.075,
       atForward: swing,
     },
     {
-      right: 0.07,
-      forward: 0.08,
+      right: 0.062,
+      forward: 0.075,
       base: 0,
-      top: 0.62,
+      top: 0.66,
       colour: look.legs,
-      atRight: 0.09,
+      atRight: 0.075,
       atForward: -swing,
     },
     // Arms, opposite the leg on the same side.
     {
-      right: 0.055,
-      forward: 0.07,
-      base: 0.62,
-      top: 1.12,
+      right: 0.048,
+      forward: 0.06,
+      base: 0.64,
+      top: 1.16,
       colour: look.shirt,
-      atRight: -0.21,
+      atRight: -0.185,
       atForward: -swing,
     },
     {
-      right: 0.055,
-      forward: 0.07,
-      base: 0.62,
-      top: 1.12,
+      right: 0.048,
+      forward: 0.06,
+      base: 0.64,
+      top: 1.16,
       colour: look.shirt,
-      atRight: 0.21,
+      atRight: 0.185,
       atForward: swing,
     },
-    { right: 0.19, forward: 0.12, base: 0.6, top: 1.2, colour: look.shirt },
-    { right: 0.16, forward: 0.14, base: 1.2, top: 1.56, colour: look.skin },
+    { right: 0.16, forward: 0.11, base: 0.62, top: 1.22, colour: look.shirt },
+    { right: 0.115, forward: 0.105, base: 1.22, top: 1.5, colour: look.skin },
     {
-      right: 0.165,
-      forward: 0.145,
-      base: 1.48,
-      top: 1.6,
+      right: 0.125,
+      forward: 0.115,
+      base: 1.46,
+      top: 1.58,
       colour: look.helmet ?? look.hair,
     },
   ];

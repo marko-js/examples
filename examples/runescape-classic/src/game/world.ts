@@ -32,17 +32,17 @@ export interface TerrainDef {
 export const TERRAIN_DEFS: Record<TerrainId, TerrainDef> = {
   [TERRAIN.grass]: {
     name: "grass",
-    colour: "#3d9a30",
-    speckle: "#8cba2c",
+    colour: "#4c8a37",
+    speckle: "#7aa63a",
     walkable: true,
-    minimap: "#3d9a30",
+    minimap: "#4c8a37",
   },
   [TERRAIN.darkGrass]: {
     name: "grass",
-    colour: "#256b22",
-    speckle: "#3d9a30",
+    colour: "#356428",
+    speckle: "#4c8a37",
     walkable: true,
-    minimap: "#256b22",
+    minimap: "#356428",
   },
   [TERRAIN.dirt]: {
     name: "dirt",
@@ -53,7 +53,7 @@ export const TERRAIN_DEFS: Record<TerrainId, TerrainDef> = {
   },
   [TERRAIN.path]: {
     name: "path",
-    colour: "#8f8f8f",
+    colour: "#8a8a86",
     speckle: "#9c9c9c",
     walkable: true,
     minimap: "#8f8f8f",
@@ -81,7 +81,7 @@ export const TERRAIN_DEFS: Record<TerrainId, TerrainDef> = {
   },
   [TERRAIN.stoneFloor]: {
     name: "floor",
-    colour: "#9a9a9a",
+    colour: "#8e8e8c",
     speckle: "#a6a6a6",
     walkable: true,
     minimap: "#9a9a9a",
