@@ -23,6 +23,8 @@ import {
   tileIndex,
   type WorldObject,
 } from "../world";
+import { drawBeast, drawBird, drawPerson } from "./actors";
+import { box, face, fogAt, rgbOf, type Vertex } from "./paint";
 import {
   type Camera,
   cameraAt,
@@ -30,13 +32,8 @@ import {
   groundAt,
   project,
 } from "./projection";
-import {
-  type CharacterLook,
-  drawCharacter,
-  drawItemIcon,
-  drawNpc,
-  drawObjectArt,
-} from "./sprites";
+import { drawScenery } from "./scenery";
+import { type CharacterLook, drawItemIcon, drawObjectArt } from "./sprites";
 
 /** The surface being drawn to, in CSS pixels, and the buffer behind it. */
 export interface Viewport {
@@ -384,6 +381,9 @@ function drawScene(
     for (let x = minX; x < maxX; x++) {
       const object = map.objects[tileIndex(map, x, y)];
       if (object) addObject(ctx, state, camera, object, time, add);
+      if (terrainId(state, x, y) === TERRAIN.water) {
+        addRipples(ctx, camera, x, y, time, add);
+      }
     }
   }
 
@@ -413,6 +413,42 @@ function drawScene(
   for (const drawable of drawables) drawable.draw();
 }
 
+/** Light drifting across the water, which is all the motion Classic gave it. */
+function addRipples(
+  ctx: CanvasRenderingContext2D,
+  camera: Camera,
+  x: number,
+  y: number,
+  time: number,
+  add: Add,
+): void {
+  const spot = project(camera, x + 0.5, y + 0.5, 0);
+  if (spot.depth > 16) return;
+  add(spot.depth - 0.01, () => {
+    for (let i = 0; i < 2; i++) {
+      const drift = (time / 2600 + hash2d(x, y, i)) % 1;
+      const width = 0.25 + hash2d(x, y, i + 8) * 0.45;
+      const left = x + hash2d(x, y, i + 24) * (1 - width);
+      const top = y + drift * 0.92;
+      ctx.fillStyle = i ? "rgba(0,0,0,0.10)" : "rgba(206,230,255,0.22)";
+      ctx.beginPath();
+      const corners = [
+        [left, top],
+        [left + width, top],
+        [left + width, top + 0.08],
+        [left, top + 0.08],
+      ] as const;
+      for (const [index, [cx, cy]] of corners.entries()) {
+        const at = project(camera, cx, cy, 0.01);
+        if (index === 0) ctx.moveTo(at.sx, at.sy);
+        else ctx.lineTo(at.sx, at.sy);
+      }
+      ctx.closePath();
+      ctx.fill();
+    }
+  });
+}
+
 /** Inside, or standing in the doorway, which is where the roof lifts away. */
 function inside(roof: Roof, x: number, y: number): boolean {
   return (
@@ -424,125 +460,6 @@ function inside(roof: Roof, x: number, y: number): boolean {
 }
 
 /* ----------------------------------------------------------------- models */
-
-type Vertex = readonly [number, number, number];
-
-/**
- * A polygon in world space, painted flat the way Classic painted its faces.
- * `light` is the face's own shading; the distance fade is folded in on top so
- * models sink into the void at the same rate the ground does.
- */
-function face(
-  ctx: CanvasRenderingContext2D,
-  camera: Camera,
-  points: readonly Vertex[],
-  colour: string,
-  light: number,
-): void {
-  let nearest = Infinity;
-  ctx.beginPath();
-  for (const [index, [x, y, z]] of points.entries()) {
-    const spot = project(camera, x, y, z);
-    if (spot.depth <= 0.1) return;
-    nearest = Math.min(nearest, spot.depth);
-    if (index === 0) ctx.moveTo(spot.sx, spot.sy);
-    else ctx.lineTo(spot.sx, spot.sy);
-  }
-  ctx.closePath();
-  ctx.fillStyle = shade(colour, light * fogAt(camera, nearest));
-  ctx.fill();
-}
-
-/** How much of a colour survives at a given depth. */
-function fogAt(camera: Camera, depth: number): number {
-  const forward = (depth - camera.z * camera.sin) / camera.cos;
-  return Math.min(1, Math.max(0, (DRAW_DISTANCE - forward) / FOG_TILES));
-}
-
-/** An upright box, with only the sides the camera can see painted. */
-function box(
-  ctx: CanvasRenderingContext2D,
-  camera: Camera,
-  x: number,
-  y: number,
-  w: number,
-  d: number,
-  base: number,
-  top: number,
-  colour: string,
-  sides: readonly boolean[] = [true, true, true, true],
-): void {
-  const x2 = x + w;
-  const y2 = y + d;
-  if (sides[0] && camera.y < y) {
-    face(
-      ctx,
-      camera,
-      [
-        [x, y, base],
-        [x2, y, base],
-        [x2, y, top],
-        [x, y, top],
-      ],
-      colour,
-      0.7,
-    );
-  }
-  if (sides[1] && camera.y > y2) {
-    face(
-      ctx,
-      camera,
-      [
-        [x, y2, base],
-        [x2, y2, base],
-        [x2, y2, top],
-        [x, y2, top],
-      ],
-      colour,
-      0.9,
-    );
-  }
-  if (sides[2] && camera.x < x) {
-    face(
-      ctx,
-      camera,
-      [
-        [x, y, base],
-        [x, y2, base],
-        [x, y2, top],
-        [x, y, top],
-      ],
-      colour,
-      0.8,
-    );
-  }
-  if (sides[3] && camera.x > x2) {
-    face(
-      ctx,
-      camera,
-      [
-        [x2, y, base],
-        [x2, y2, base],
-        [x2, y2, top],
-        [x2, y, top],
-      ],
-      colour,
-      0.8,
-    );
-  }
-  face(
-    ctx,
-    camera,
-    [
-      [x, y, top],
-      [x2, y, top],
-      [x2, y2, top],
-      [x, y2, top],
-    ],
-    colour,
-    1.08,
-  );
-}
 
 function addObject(
   ctx: CanvasRenderingContext2D,
@@ -576,6 +493,8 @@ function addObject(
       return;
     default:
       add(spot.depth, () => {
+        if (drawScenery(ctx, camera, art, object.x, object.y, time)) return;
+        // The few kinds with no model yet stay flat sprites.
         ctx.globalAlpha = fogAt(camera, spot.depth);
         drawObjectArt(
           ctx,
@@ -916,19 +835,29 @@ function drawNpcActor(
   npc: Npc,
   time: number,
 ): void {
-  const def = getNpcDef(npc.defId);
-  const spot = project(camera, npc.fx + 0.5, npc.fy + 0.5, 0);
-  ctx.globalAlpha = fogAt(camera, spot.depth);
-  drawNpc(
-    ctx,
-    spot.sx,
-    spot.sy,
-    camera.focal / spot.depth,
-    def.sprite,
-    npc.facing,
-    walkPhase(npc.path.length > 0, time),
-  );
-  ctx.globalAlpha = 1;
+  const sprite = getNpcDef(npc.defId).sprite;
+  const at = { x: npc.fx + 0.5, y: npc.fy + 0.5 };
+  const phase = walkPhase(npc.path.length > 0, time);
+  if (sprite.kind === "humanoid") {
+    drawPerson(
+      ctx,
+      camera,
+      at,
+      {
+        skin: sprite.skin,
+        hair: sprite.hair,
+        shirt: sprite.shirt,
+        legs: sprite.legs,
+        height: sprite.height,
+      },
+      npc.facing,
+      phase,
+    );
+  } else if (sprite.kind === "beast") {
+    drawBeast(ctx, camera, at, sprite, npc.facing, phase);
+  } else {
+    drawBird(ctx, camera, at, sprite, npc.facing, phase);
+  }
 }
 
 function drawPlayer(
@@ -937,12 +866,10 @@ function drawPlayer(
   player: Player,
   time: number,
 ): void {
-  const spot = project(camera, player.fx + 0.5, player.fy + 0.5, 0);
-  drawCharacter(
+  drawPerson(
     ctx,
-    spot.sx,
-    spot.sy,
-    camera.focal / spot.depth,
+    camera,
+    { x: player.fx + 0.5, y: player.fy + 0.5 },
     playerLook(player),
     player.facing,
     walkPhase(player.path.length > 0, time),
@@ -1150,18 +1077,6 @@ function drawLabel(
 }
 
 /* ---------------------------------------------------------------- helpers */
-
-function rgbOf(hex: string): [number, number, number] {
-  const value = parseInt(hex.slice(1), 16);
-  return [value >> 16, (value >> 8) & 0xff, value & 0xff];
-}
-
-/** Multiply a hex colour, for the lit and shaded faces of a model. */
-function shade(hex: string, factor: number): string {
-  const [red, green, blue] = rgbOf(hex);
-  const part = (value: number) => Math.min(255, Math.round(value * factor));
-  return `rgb(${part(red)},${part(green)},${part(blue)})`;
-}
 
 function walkPhase(moving: boolean, time: number): number {
   return moving ? (time / 90) % (Math.PI * 2) : 0;

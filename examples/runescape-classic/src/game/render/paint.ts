@@ -1,0 +1,198 @@
+/**
+ * The painting primitives the scene is built from: flat shaded faces in world
+ * space, drawn back to front the way Classic drew its polygons.
+ */
+import { DRAW_DISTANCE } from "../config";
+import { type Camera, project } from "./projection";
+
+export type Vertex = readonly [number, number, number];
+
+/** How far into the fade a depth is: 1 in the clear, 0 in the void. */
+export function fogAt(camera: Camera, depth: number): number {
+  const forward = (depth - camera.z * camera.sin) / camera.cos;
+  return Math.min(1, Math.max(0, (DRAW_DISTANCE - forward) / FOG_TILES));
+}
+
+const FOG_TILES = 14;
+
+/**
+ * A polygon in world space. `light` is the face's own shading; the distance
+ * fade is folded in on top so models sink into the void as the ground does.
+ */
+export function face(
+  ctx: CanvasRenderingContext2D,
+  camera: Camera,
+  points: readonly Vertex[],
+  colour: string,
+  light: number,
+): void {
+  let nearest = Infinity;
+  ctx.beginPath();
+  for (const [index, [x, y, z]] of points.entries()) {
+    const spot = project(camera, x, y, z);
+    if (spot.depth <= 0.1) return;
+    nearest = Math.min(nearest, spot.depth);
+    if (index === 0) ctx.moveTo(spot.sx, spot.sy);
+    else ctx.lineTo(spot.sx, spot.sy);
+  }
+  ctx.closePath();
+  ctx.fillStyle = shade(colour, light * fogAt(camera, nearest));
+  ctx.fill();
+}
+
+/** North, south, west and east faces take these shares of the light. */
+const SIDE_LIGHT = [0.78, 0.94, 0.86, 0.86];
+const TOP_LIGHT = 1.08;
+
+/** An axis aligned box, with only the sides the camera can see painted. */
+export function box(
+  ctx: CanvasRenderingContext2D,
+  camera: Camera,
+  x: number,
+  y: number,
+  w: number,
+  d: number,
+  base: number,
+  top: number,
+  colour: string,
+  sides: readonly boolean[] = [true, true, true, true],
+): void {
+  const x2 = x + w;
+  const y2 = y + d;
+  if (sides[0] && camera.y < y) {
+    quad(ctx, camera, [x, y], [x2, y], base, top, colour, SIDE_LIGHT[0]);
+  }
+  if (sides[1] && camera.y > y2) {
+    quad(ctx, camera, [x, y2], [x2, y2], base, top, colour, SIDE_LIGHT[1]);
+  }
+  if (sides[2] && camera.x < x) {
+    quad(ctx, camera, [x, y], [x, y2], base, top, colour, SIDE_LIGHT[2]);
+  }
+  if (sides[3] && camera.x > x2) {
+    quad(ctx, camera, [x2, y], [x2, y2], base, top, colour, SIDE_LIGHT[3]);
+  }
+  face(
+    ctx,
+    camera,
+    [
+      [x, y, top],
+      [x2, y, top],
+      [x2, y2, top],
+      [x, y2, top],
+    ],
+    colour,
+    TOP_LIGHT,
+  );
+}
+
+function quad(
+  ctx: CanvasRenderingContext2D,
+  camera: Camera,
+  from: readonly [number, number],
+  to: readonly [number, number],
+  base: number,
+  top: number,
+  colour: string,
+  light: number,
+): void {
+  face(
+    ctx,
+    camera,
+    [
+      [from[0], from[1], base],
+      [to[0], to[1], base],
+      [to[0], to[1], top],
+      [from[0], from[1], top],
+    ],
+    colour,
+    light,
+  );
+}
+
+/** A basis for a model that has been turned to face a direction. */
+export interface Facing {
+  /** Unit vector to the model's right, and the one it looks along. */
+  rx: number;
+  ry: number;
+  fx: number;
+  fy: number;
+}
+
+/** Direction 0 is north, and they run clockwise from there. */
+export function facingOf(direction: number): Facing {
+  const angle = (direction * Math.PI) / 4;
+  const sin = Math.sin(angle);
+  const cos = Math.cos(angle);
+  return { rx: cos, ry: sin, fx: sin, fy: -cos };
+}
+
+/**
+ * A box turned to face a direction. Its faces are painted back to front, which
+ * is all the sorting a convex shape needs.
+ */
+export function prism(
+  ctx: CanvasRenderingContext2D,
+  camera: Camera,
+  at: { x: number; y: number },
+  facing: Facing,
+  size: { right: number; forward: number; base: number; top: number },
+  offset: { right: number; forward: number },
+  colour: string,
+): void {
+  const corner = (right: number, forward: number): [number, number] => [
+    at.x +
+      (offset.right + right) * facing.rx +
+      (offset.forward + forward) * facing.fx,
+    at.y +
+      (offset.right + right) * facing.ry +
+      (offset.forward + forward) * facing.fy,
+  ];
+  const corners = [
+    corner(-size.right, -size.forward),
+    corner(size.right, -size.forward),
+    corner(size.right, size.forward),
+    corner(-size.right, size.forward),
+  ];
+
+  // The camera looks north, so the further north a side is the sooner it goes
+  // down and the near sides cover it.
+  const walls = corners
+    .map((from, index) => ({
+      from,
+      to: corners[(index + 1) % 4],
+      light: SIDE_LIGHT[index],
+    }))
+    .sort((a, b) => a.from[1] + a.to[1] - (b.from[1] + b.to[1]));
+
+  for (const wall of walls) {
+    quad(
+      ctx,
+      camera,
+      wall.from,
+      wall.to,
+      size.base,
+      size.top,
+      colour,
+      wall.light,
+    );
+  }
+  face(
+    ctx,
+    camera,
+    corners.map(([x, y]) => [x, y, size.top] as Vertex),
+    colour,
+    TOP_LIGHT,
+  );
+}
+
+export function rgbOf(hex: string): [number, number, number] {
+  const value = parseInt(hex.slice(1), 16);
+  return [value >> 16, (value >> 8) & 0xff, value & 0xff];
+}
+
+/** Multiply a hex colour, for the lit and shaded faces of a model. */
+export function shade(hex: string, factor: number): string {
+  const [red, green, blue] = rgbOf(hex);
+  const part = (value: number) => Math.min(255, Math.round(value * factor));
+  return `rgb(${part(red)},${part(green)},${part(blue)})`;
+}

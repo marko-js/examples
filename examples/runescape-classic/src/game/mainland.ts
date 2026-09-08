@@ -356,12 +356,21 @@ function openRoadGates(map: WorldMap): void {
 /** Doors collected while building, cleared once every town is standing. */
 const doorsteps: Doorstep[] = [];
 
+/**
+ * Classic roofed almost everything in the same red clay tile, with the odd
+ * darker one in the row. Picking from the building's own corner keeps a street
+ * varied without making it a patchwork.
+ */
+function roofFor(x: number, y: number): string {
+  return (x * 7 + y * 13) % 4 === 0 ? ROOF_WOOD : ROOF_TILE;
+}
+
 function house(map: WorldMap, at: { x: number; y: number }, room: Room): void {
   const x = at.x + room.dx;
   const y = at.y + room.dy;
   building(map, x, y, room.w, room.h, {
     wall: room.wall ?? "wall_stone",
-    roof: (room.wall ?? "wall_stone") === "wall_wood" ? ROOF_WOOD : ROOF_TILE,
+    roof: roofFor(x, y),
     floor:
       room.floor ??
       ((room.wall ?? "wall_stone") === "wall_stone"
