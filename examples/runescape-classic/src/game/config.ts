@@ -1,30 +1,31 @@
 /** Tuning constants for the world, the render surfaces, and the tick loop. */
 
 /**
- * The game view fills its element, so tiles are sized from the surface rather
- * than fixed. Aiming for roughly this many tiles across the shorter axis keeps
- * a phone and a desktop showing a comparable slice of the world.
+ * The camera. Classic looked at the world down a fixed bearing from above and
+ * behind the player, near enough to half way between level and straight down.
  */
-export const TILES_ACROSS_SHORT_AXIS = 12;
-export const MIN_TILE_SIZE = 26;
-export const MAX_TILE_SIZE = 56;
+export const CAMERA_PITCH = 56;
+/** How high the camera floats, and how far back it stands, in tiles. */
+export const CAMERA_HEIGHT = 9;
+export const CAMERA_BACK = 7;
+/**
+ * Focal length as a share of the buffer's shorter side, which sets the field
+ * of view. Measuring off the short side keeps a phone held upright from
+ * squeezing the view down to a corridor.
+ */
+export const FOCAL_TILES = 0.9;
+/** How far the world is drawn before it fades into the void, in tiles. */
+export const DRAW_DISTANCE = 40;
 
 /**
- * The camera looks down at an angle rather than straight down, so a tile is
- * drawn wider than it is tall and anything with height leans up the screen.
+ * Classic ran in a 512 by 346 window. Drawing into a buffer of about that size
+ * and blowing it up keeps the soft, chunky pixels, and keeps the per-pixel
+ * ground affordable on a phone.
  */
-export const FLATTEN = 0.58;
-export const RISE = 0.82;
+export const BUFFER_LONG_AXIS = 460;
 
 /** How many tiles tall a wall stands. */
-export const WALL_HEIGHT = 1.15;
-
-/** World pixels per tile for a surface of the given size. */
-export function tileSizeFor(width: number, height: number): number {
-  // Foreshortening means the vertical axis fits more tiles, so size from width.
-  const target = Math.min(width / TILES_ACROSS_SHORT_AXIS, height / 11);
-  return Math.round(Math.min(MAX_TILE_SIZE, Math.max(MIN_TILE_SIZE, target)));
-}
+export const WALL_HEIGHT = 1.7;
 
 /** How many world tiles the minimap spans, whatever size it is drawn at. */
 export const MINIMAP_TILES = 52;

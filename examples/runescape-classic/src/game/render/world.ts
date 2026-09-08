@@ -1,5 +1,13 @@
-/** Draws the game view: terrain, scenery, actors, and the overlays above them. */
-import { FLATTEN, RISE, tileSizeFor, WALL_HEIGHT } from "../config";
+/**
+ * Draws the game view the way Classic did: a pitched camera looking north over
+ * a gouraud shaded ground, with everything that has height standing up out of
+ * it as flat shaded faces and fading into the void at the draw distance.
+ *
+ * The world goes into a small buffer, about the size of Classic's own window,
+ * and is blown up to fill the surface. Text goes on over the top at full
+ * resolution so names and hitsplats stay readable.
+ */
+import { BUFFER_LONG_AXIS, DRAW_DISTANCE, WALL_HEIGHT } from "../config";
 import { getItem } from "../items";
 import { getNpcDef } from "../npcs";
 import type { Point } from "../pathfinding";
@@ -7,12 +15,21 @@ import { hash2d } from "../rng";
 import type { GameState, GroundItem, Npc, Player } from "../state";
 import {
   getObjectDef,
+  type ObjectArt,
+  type Roof,
   TERRAIN,
   TERRAIN_DEFS,
   type TerrainId,
   tileIndex,
   type WorldObject,
 } from "../world";
+import {
+  type Camera,
+  cameraAt,
+  depthAtRow,
+  groundAt,
+  project,
+} from "./projection";
 import {
   type CharacterLook,
   drawCharacter,
@@ -21,75 +38,45 @@ import {
   drawObjectArt,
 } from "./sprites";
 
-/** Top left corner of the view, in tile units. */
-export interface Camera {
-  x: number;
-  y: number;
-}
-
-/** The surface being drawn to, in CSS pixels, and the tile size it implies. */
+/** The surface being drawn to, in CSS pixels, and the buffer behind it. */
 export interface Viewport {
   width: number;
   height: number;
-  tile: number;
-  /** Height of a tile on screen, foreshortened by the camera's pitch. */
-  row: number;
+  /** Buffer pixels per CSS pixel. */
+  scale: number;
   /** Surface point the player is kept at, so panels can shift them clear. */
   focus: Point;
 }
 
-interface Bounds {
-  minX: number;
-  minY: number;
-  maxX: number;
-  maxY: number;
-}
+/** Past the draw distance there is nothing, the way Classic showed it. */
+const VOID = 0;
+const FOG_TILES = 14;
 
-const EDGES = [
-  [0, -1],
-  [1, 0],
-  [0, 1],
-  [-1, 0],
-] as const;
-
-/**
- * `visible` is the part of the surface no panel is covering. Tiles stay sized
- * from the whole surface so opening a panel never changes the zoom.
- */
 export function viewportFor(
   width: number,
   height: number,
   visible?: { width: number; height: number },
 ): Viewport {
-  const tile = tileSizeFor(width, height);
   return {
     width,
     height,
-    tile,
-    row: tile * FLATTEN,
+    scale: Math.min(1, BUFFER_LONG_AXIS / Math.max(width, height)),
     focus: {
       x: (visible?.width ?? width) / 2,
-      y: (visible?.height ?? height) / 2,
+      // The player sits below centre so most of the view is the way ahead.
+      y: (visible?.height ?? height) * 0.62,
     },
   };
 }
 
 export function cameraFor(state: GameState, view: Viewport): Camera {
-  const { player, map } = state;
-  const acrossX = view.width / view.tile;
-  const acrossY = view.height / view.row;
-  return {
-    x: clamp(
-      player.fx + 0.5 - view.focus.x / view.tile,
-      0,
-      Math.max(0, map.size - acrossX),
-    ),
-    y: clamp(
-      player.fy + 0.5 - view.focus.y / view.row,
-      0,
-      Math.max(0, map.size - acrossY),
-    ),
-  };
+  const { player } = state;
+  return cameraAt(
+    { x: player.fx + 0.5, y: player.fy + 0.5 },
+    { x: view.focus.x * view.scale, y: view.focus.y * view.scale },
+    Math.max(1, Math.round(view.width * view.scale)),
+    Math.max(1, Math.round(view.height * view.scale)),
+  );
 }
 
 export function tileAtScreen(
@@ -98,10 +85,22 @@ export function tileAtScreen(
   screenX: number,
   screenY: number,
 ): Point {
-  return {
-    x: Math.floor(camera.x + screenX / view.tile),
-    y: Math.floor(camera.y + screenY / view.row),
-  };
+  const ground = groundAt(camera, screenX * view.scale, screenY * view.scale);
+  const at = ground ?? { x: camera.x, y: camera.y - DRAW_DISTANCE };
+  return { x: Math.floor(at.x), y: Math.floor(at.y) };
+}
+
+/* ---------------------------------------------------------------- surface */
+
+let buffer: HTMLCanvasElement | null = null;
+
+function bufferFor(width: number, height: number): CanvasRenderingContext2D {
+  const canvas = (buffer ??= document.createElement("canvas"));
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
+  }
+  return canvas.getContext("2d")!;
 }
 
 export function renderWorld(
@@ -111,119 +110,87 @@ export function renderWorld(
   time: number,
   hover: Point | null,
 ): void {
+  const width = Math.max(1, Math.round(view.width * view.scale));
+  const height = Math.max(1, Math.round(view.height * view.scale));
+  const scene = bufferFor(width, height);
   const camera = cameraFor(state, view);
+
+  drawGround(scene, state, camera, width, height);
+  drawScene(scene, state, camera, time, hover);
+
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, view.width, view.height);
-
-  const bounds: Bounds = {
-    minX: Math.floor(camera.x) - 1,
-    minY: Math.floor(camera.y) - 1,
-    maxX: Math.ceil(camera.x + view.width / view.tile) + 1,
-    maxY: Math.ceil(camera.y + view.height / view.row) + 4,
-  };
-
-  drawTerrain(ctx, state, camera, view, time, bounds);
-  drawFlatObjects(ctx, state, camera, view, time, bounds);
-  drawDestination(ctx, state, camera, view, time);
-  if (hover) drawHover(ctx, camera, view, hover);
-  drawSortedLayer(ctx, state, camera, view, time, bounds);
-  drawRoofs(ctx, state, camera, view);
-  drawSplats(ctx, state, camera, view, time);
+  ctx.drawImage(scene.canvas, 0, 0, view.width, view.height);
+  drawLabels(ctx, state, camera, view, time);
 }
 
-/* -------------------------------------------------------------- terrain */
-
-function drawTerrain(
-  ctx: CanvasRenderingContext2D,
-  state: GameState,
-  camera: Camera,
-  view: Viewport,
-  time: number,
-  bounds: Bounds,
-): void {
-  drawGround(ctx, state, camera, view, bounds);
-
-  const { tile, row } = view;
-  for (let y = bounds.minY; y < bounds.maxY; y++) {
-    for (let x = bounds.minX; x < bounds.maxX; x++) {
-      const id = terrainId(state, x, y);
-      if (isSoft(id)) continue;
-
-      const sx = Math.round((x - camera.x) * tile);
-      const sy = Math.round((y - camera.y) * row);
-      ctx.fillStyle =
-        id === TERRAIN.water
-          ? TERRAIN_DEFS[id].colour
-          : shade(TERRAIN_DEFS[id].colour, groundShade(x, y));
-      ctx.fillRect(sx, sy, tile + 1, row + 1);
-
-      if (id === TERRAIN.water) {
-        drawWater(ctx, sx, sy, x, y, tile, row, time);
-        drawSurf(ctx, state, x, y, sx, sy, tile, row);
-      } else if (id === TERRAIN.stoneFloor) {
-        drawFlagstones(ctx, sx, sy, tile, row);
-      } else {
-        drawPlanks(ctx, sx, sy, tile, row);
-      }
-    }
-  }
-}
+/* ----------------------------------------------------------------- ground */
 
 /**
- * Classic shades the ground per vertex and lets the hardware interpolate, so
- * grass slides into path with no grid to see. Painting a small colour field
- * and scaling it up smoothly gets the same look for a few thousand pixels a
- * frame. `SHARPNESS` keeps the blend inside the seam: a tile is its own colour
- * across the middle, and only gives way near its edges.
+ * Classic shaded the ground per vertex and let the hardware interpolate. The
+ * colours are baked into a small field first, then every pixel below the
+ * horizon reads its ground point out of that field, which gets the
+ * perspective and the smooth shading in one pass.
  */
-const SAMPLES_PER_TILE = 3;
+const SAMPLES_PER_TILE = 6;
 const SHARPNESS = 2.2;
 
-function drawGround(
-  ctx: CanvasRenderingContext2D,
-  state: GameState,
-  camera: Camera,
-  view: Viewport,
-  bounds: Bounds,
-): void {
-  const width = (bounds.maxX - bounds.minX) * SAMPLES_PER_TILE;
-  const height = (bounds.maxY - bounds.minY) * SAMPLES_PER_TILE;
-  const canvas = (groundCanvas ??= document.createElement("canvas"));
-  if (canvas.width !== width || canvas.height !== height) {
-    canvas.width = width;
-    canvas.height = height;
-  }
-  const off = canvas.getContext("2d");
-  if (!off) return;
-
-  const image = off.createImageData(width, height);
-  for (let j = 0; j < height; j++) {
-    const worldY = bounds.minY + (j + 0.5) / SAMPLES_PER_TILE;
-    for (let i = 0; i < width; i++) {
-      const worldX = bounds.minX + (i + 0.5) / SAMPLES_PER_TILE;
-      const at = (j * width + i) * 4;
-      sampleGround(state, worldX, worldY, image.data, at);
-      image.data[at + 3] = 255;
-    }
-  }
-  off.putImageData(image, 0, 0);
-
-  ctx.imageSmoothingEnabled = true;
-  ctx.drawImage(
-    canvas,
-    (bounds.minX - camera.x) * view.tile,
-    (bounds.minY - camera.y) * view.row,
-    (bounds.maxX - bounds.minX) * view.tile,
-    (bounds.maxY - bounds.minY) * view.row,
-  );
-  ctx.imageSmoothingEnabled = false;
+interface Field {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  data: Uint8ClampedArray;
 }
 
-let groundCanvas: HTMLCanvasElement | null = null;
+/** Half the width of the ground the camera can see, in tiles. */
+function reachHalf(camera: Camera): number {
+  return (
+    (camera.cx * (DRAW_DISTANCE * camera.cos + camera.z * camera.sin)) /
+      camera.focal +
+    3
+  );
+}
 
 /**
- * Blend the four tiles nearest a point. Water and built floors are painted
- * flat on top, so they are left out unless every tile around the point is one.
+ * Terrain does not change while you play and the field only shifts when the
+ * player crosses a tile, so it is worth keeping between frames.
+ */
+let cached: (Field & { map: unknown }) | null = null;
+
+function buildField(state: GameState, camera: Camera): Field {
+  const half = Math.ceil(reachHalf(camera));
+  const x = Math.floor(camera.x) - half;
+  const y = Math.floor(camera.y) - DRAW_DISTANCE - 2;
+  const width = (half * 2 + 1) * SAMPLES_PER_TILE;
+  const height = (DRAW_DISTANCE + 5) * SAMPLES_PER_TILE;
+  if (
+    cached &&
+    cached.map === state.map &&
+    cached.x === x &&
+    cached.y === y &&
+    cached.width === width &&
+    cached.height === height
+  ) {
+    return cached;
+  }
+  const data = new Uint8ClampedArray(width * height * 3);
+
+  for (let j = 0; j < height; j++) {
+    const worldY = y + (j + 0.5) / SAMPLES_PER_TILE;
+    for (let i = 0; i < width; i++) {
+      const worldX = x + (i + 0.5) / SAMPLES_PER_TILE;
+      sampleGround(state, worldX, worldY, data, (j * width + i) * 3);
+    }
+  }
+  cached = { x, y, width, height, data, map: state.map };
+  return cached;
+}
+
+/**
+ * Blend the four tiles nearest a point, with the blend squeezed into the seam
+ * so a tile still reads as its own colour across the middle. Water and built
+ * floors keep hard edges, so they win outright wherever they touch.
  */
 function sampleGround(
   state: GameState,
@@ -257,7 +224,6 @@ function sampleGround(
       total += weight;
     }
 
-    // Only fall back to the hard tiles when no soft one is in reach.
     if (!total) continue;
     out[at] = red / total;
     out[at + 1] = green / total;
@@ -282,16 +248,10 @@ function isSoft(id: TerrainId): boolean {
 }
 
 const TERRAIN_RGB = Object.fromEntries(
-  Object.entries(TERRAIN_DEFS).map(([id, def]) => {
-    const value = parseInt(def.colour.slice(1), 16);
-    return [id, [value >> 16, (value >> 8) & 0xff, value & 0xff]];
-  }),
+  Object.entries(TERRAIN_DEFS).map(([id, def]) => [id, rgbOf(def.colour)]),
 ) as Record<TerrainId, [number, number, number]>;
 
-/**
- * Classic's ground is flat shaded: each vertex takes one colour, varied at two
- * scales so the land reads as broad patches rather than noise.
- */
+/** Ground brightness, varied at two scales so the land reads as patches. */
 function groundShade(x: number, y: number): number {
   // Stagger the patch grid like brickwork so it does not read as squares.
   const patch = hash2d((x + (y >> 1)) >> 2, y >> 2, 5);
@@ -299,87 +259,87 @@ function groundShade(x: number, y: number): number {
   return 0.86 + patch * 0.22 + grain * 0.1;
 }
 
-function drawWater(
-  ctx: CanvasRenderingContext2D,
-  sx: number,
-  sy: number,
-  x: number,
-  y: number,
-  tile: number,
-  row: number,
-  time: number,
-): void {
-  for (let i = 0; i < 2; i++) {
-    const drift = (time / 2600 + hash2d(x, y, i)) % 1;
-    const width = tile * (0.25 + hash2d(x, y, i + 8) * 0.45);
-    ctx.fillStyle = i ? "rgba(0,0,0,0.10)" : "rgba(200,228,255,0.14)";
-    ctx.fillRect(
-      sx + hash2d(x, y, i + 24) * (tile - width),
-      sy + Math.round(drift * row),
-      width,
-      Math.max(1, row * 0.08),
-    );
-  }
-}
-
-/** A line of surf wherever water meets the shore. */
-function drawSurf(
+function drawGround(
   ctx: CanvasRenderingContext2D,
   state: GameState,
-  x: number,
-  y: number,
-  sx: number,
-  sy: number,
-  tile: number,
-  row: number,
+  camera: Camera,
+  width: number,
+  height: number,
 ): void {
-  ctx.fillStyle = "rgba(206,230,255,0.32)";
-  for (const [dx, dy] of EDGES) {
-    if (terrainId(state, x + dx, y + dy) === TERRAIN.water) continue;
-    fillEdge(ctx, sx, sy, tile, row, dx, dy, Math.max(2, row * 0.12));
+  const field = buildField(state, camera);
+  const image = ctx.createImageData(width, height);
+  const pixels = image.data;
+
+  for (let sy = 0; sy < height; sy++) {
+    let at = sy * width * 4;
+    const depth = depthAtRow(camera, sy + 0.5);
+    const forward = (depth - camera.z * camera.sin) / camera.cos;
+    if (!Number.isFinite(depth) || forward > DRAW_DISTANCE) {
+      for (let sx = 0; sx < width; sx++, at += 4) {
+        pixels[at] = VOID;
+        pixels[at + 1] = VOID;
+        pixels[at + 2] = VOID;
+        pixels[at + 3] = 255;
+      }
+      continue;
+    }
+
+    const fog = Math.min(1, (DRAW_DISTANCE - forward) / FOG_TILES);
+    const fy = (camera.y - forward - field.y) * SAMPLES_PER_TILE - 0.5;
+    const step = depth / camera.focal;
+    let worldX = camera.x + (0.5 - camera.cx) * step;
+
+    for (let sx = 0; sx < width; sx++, at += 4, worldX += step) {
+      const fx = (worldX - field.x) * SAMPLES_PER_TILE - 0.5;
+      // A fine grain over the top, standing in for Classic's ground texture.
+      const grain =
+        0.93 +
+        hash2d(
+          Math.floor(worldX * 5),
+          Math.floor((camera.y - forward) * 5),
+          3,
+        ) *
+          0.14;
+      sampleField(field, fx, fy, fog * grain, pixels, at);
+      pixels[at + 3] = 255;
+    }
   }
+  ctx.putImageData(image, 0, 0);
 }
 
-function drawPlanks(
-  ctx: CanvasRenderingContext2D,
-  sx: number,
-  sy: number,
-  tile: number,
-  row: number,
+function sampleField(
+  field: Field,
+  fx: number,
+  fy: number,
+  fog: number,
+  out: Uint8ClampedArray,
+  at: number,
 ): void {
-  ctx.fillStyle = "rgba(0,0,0,0.2)";
-  const gap = row / 3;
-  for (let i = gap / 2; i < row; i += gap) {
-    ctx.fillRect(sx, sy + Math.round(i), tile, 1);
+  const x = Math.floor(fx);
+  const y = Math.floor(fy);
+  if (x < 0 || y < 0 || x >= field.width - 1 || y >= field.height - 1) {
+    out[at] = VOID;
+    out[at + 1] = VOID;
+    out[at + 2] = VOID;
+    return;
   }
-}
+  const rx = fx - x;
+  const ry = fy - y;
+  const row = y * field.width;
+  const a = (row + x) * 3;
+  const b = (row + x + 1) * 3;
+  const c = (row + field.width + x) * 3;
+  const d = (row + field.width + x + 1) * 3;
+  const top = (1 - ry) * fog;
+  const bottom = ry * fog;
 
-function drawFlagstones(
-  ctx: CanvasRenderingContext2D,
-  sx: number,
-  sy: number,
-  tile: number,
-  row: number,
-): void {
-  ctx.fillStyle = "rgba(0,0,0,0.12)";
-  ctx.fillRect(sx, sy, tile, 1);
-  ctx.fillRect(sx, sy, 1, row);
-}
-
-function fillEdge(
-  ctx: CanvasRenderingContext2D,
-  sx: number,
-  sy: number,
-  tile: number,
-  row: number,
-  dx: number,
-  dy: number,
-  depth: number,
-): void {
-  if (dy === -1) ctx.fillRect(sx, sy, tile, depth);
-  else if (dy === 1) ctx.fillRect(sx, sy + row - depth, tile, depth);
-  else if (dx === -1) ctx.fillRect(sx, sy, depth, row);
-  else ctx.fillRect(sx + tile - depth, sy, depth, row);
+  for (let channel = 0; channel < 3; channel++) {
+    out[at + channel] =
+      (field.data[a + channel] * (1 - rx) + field.data[b + channel] * rx) *
+        top +
+      (field.data[c + channel] * (1 - rx) + field.data[d + channel] * rx) *
+        bottom;
+  }
 }
 
 function terrainId(state: GameState, x: number, y: number): TerrainId {
@@ -388,147 +348,605 @@ function terrainId(state: GameState, x: number, y: number): TerrainId {
   return map.terrain[tileIndex(map, x, y)] as TerrainId;
 }
 
-/* -------------------------------------------------------- object layers */
-
-function drawFlatObjects(
-  ctx: CanvasRenderingContext2D,
-  state: GameState,
-  camera: Camera,
-  view: Viewport,
-  time: number,
-  bounds: Bounds,
-): void {
-  forEachObject(state, bounds, (object) => {
-    const def = getObjectDef(object.defId);
-    if (!def.flat) return;
-    const { sx, sy } = project(camera, view, object.x, object.y);
-    drawObjectArt(ctx, def.art, sx, sy, view.tile, time, object.index);
-  });
-}
+/* ------------------------------------------------------------------ scene */
 
 interface Drawable {
-  sort: number;
+  depth: number;
   draw: () => void;
 }
 
-function drawSortedLayer(
+type Add = (depth: number, draw: () => void) => void;
+
+function drawScene(
   ctx: CanvasRenderingContext2D,
   state: GameState,
   camera: Camera,
-  view: Viewport,
   time: number,
-  bounds: Bounds,
+  hover: Point | null,
 ): void {
+  const { map, player } = state;
   const drawables: Drawable[] = [];
+  const half = Math.ceil(reachHalf(camera));
+  const add: Add = (depth, draw) => {
+    if (depth > 0.3 && fogAt(camera, depth) > 0) {
+      drawables.push({ depth, draw });
+    }
+  };
 
-  forEachObject(state, bounds, (object) => {
-    const def = getObjectDef(object.defId);
-    if (def.flat) return;
-    const { sx, sy } = project(camera, view, object.x, object.y);
-    drawables.push({
-      sort: object.y,
-      draw: () =>
-        drawObjectArt(ctx, def.art, sx, sy, view.tile, time, object.index),
-    });
-  });
+  if (hover) addHover(ctx, camera, hover, add);
+  addMarker(ctx, state, camera, time, add);
+
+  const minY = Math.max(0, Math.floor(camera.y) - DRAW_DISTANCE);
+  const maxY = Math.min(map.size, Math.ceil(camera.y) + 2);
+  const minX = Math.max(0, Math.floor(camera.x) - half);
+  const maxX = Math.min(map.size, Math.ceil(camera.x) + half);
+  for (let y = minY; y < maxY; y++) {
+    for (let x = minX; x < maxX; x++) {
+      const object = map.objects[tileIndex(map, x, y)];
+      if (object) addObject(ctx, state, camera, object, time, add);
+    }
+  }
+
+  for (const roof of map.roofs) {
+    if (inside(roof, player.x, player.y)) continue;
+    const spot = project(camera, roof.x + roof.w / 2, roof.y + roof.h / 2, 0);
+    add(spot.depth, () => drawRoof(ctx, camera, roof));
+  }
 
   for (const item of state.groundItems) {
-    if (!inBounds(bounds, item.x, item.y)) continue;
-    drawables.push({
-      sort: item.y - 0.4,
-      draw: () => drawGroundItem(ctx, camera, view, item),
-    });
+    const spot = project(camera, item.x + 0.5, item.y + 0.5, 0);
+    add(spot.depth, () => drawGroundItem(ctx, camera, item));
   }
 
   for (const npc of state.npcs) {
-    if (npc.respawnTick !== null || !inBounds(bounds, npc.x, npc.y)) continue;
-    drawables.push({
-      sort: npc.fy,
-      draw: () => drawNpcActor(ctx, camera, view, npc, time),
-    });
+    if (npc.respawnTick !== null) continue;
+    const spot = project(camera, npc.fx + 0.5, npc.fy + 0.5, 0);
+    add(spot.depth, () => drawNpcActor(ctx, camera, npc, time));
   }
 
-  if (state.player.respawnTick === null) {
-    drawables.push({
-      sort: state.player.fy,
-      draw: () => drawPlayer(ctx, camera, view, state.player, time),
-    });
+  if (player.respawnTick === null) {
+    const spot = project(camera, player.fx + 0.5, player.fy + 0.5, 0);
+    add(spot.depth, () => drawPlayer(ctx, camera, player, time));
   }
 
-  drawables.sort((a, b) => a.sort - b.sort);
+  drawables.sort((a, b) => b.depth - a.depth);
   for (const drawable of drawables) drawable.draw();
 }
+
+/** Inside, or standing in the doorway, which is where the roof lifts away. */
+function inside(roof: Roof, x: number, y: number): boolean {
+  return (
+    x >= roof.x - 1 &&
+    y >= roof.y - 1 &&
+    x < roof.x + roof.w + 1 &&
+    y < roof.y + roof.h + 1
+  );
+}
+
+/* ----------------------------------------------------------------- models */
+
+type Vertex = readonly [number, number, number];
+
+/**
+ * A polygon in world space, painted flat the way Classic painted its faces.
+ * `light` is the face's own shading; the distance fade is folded in on top so
+ * models sink into the void at the same rate the ground does.
+ */
+function face(
+  ctx: CanvasRenderingContext2D,
+  camera: Camera,
+  points: readonly Vertex[],
+  colour: string,
+  light: number,
+): void {
+  let nearest = Infinity;
+  ctx.beginPath();
+  for (const [index, [x, y, z]] of points.entries()) {
+    const spot = project(camera, x, y, z);
+    if (spot.depth <= 0.1) return;
+    nearest = Math.min(nearest, spot.depth);
+    if (index === 0) ctx.moveTo(spot.sx, spot.sy);
+    else ctx.lineTo(spot.sx, spot.sy);
+  }
+  ctx.closePath();
+  ctx.fillStyle = shade(colour, light * fogAt(camera, nearest));
+  ctx.fill();
+}
+
+/** How much of a colour survives at a given depth. */
+function fogAt(camera: Camera, depth: number): number {
+  const forward = (depth - camera.z * camera.sin) / camera.cos;
+  return Math.min(1, Math.max(0, (DRAW_DISTANCE - forward) / FOG_TILES));
+}
+
+/** An upright box, with only the sides the camera can see painted. */
+function box(
+  ctx: CanvasRenderingContext2D,
+  camera: Camera,
+  x: number,
+  y: number,
+  w: number,
+  d: number,
+  base: number,
+  top: number,
+  colour: string,
+  sides: readonly boolean[] = [true, true, true, true],
+): void {
+  const x2 = x + w;
+  const y2 = y + d;
+  if (sides[0] && camera.y < y) {
+    face(
+      ctx,
+      camera,
+      [
+        [x, y, base],
+        [x2, y, base],
+        [x2, y, top],
+        [x, y, top],
+      ],
+      colour,
+      0.7,
+    );
+  }
+  if (sides[1] && camera.y > y2) {
+    face(
+      ctx,
+      camera,
+      [
+        [x, y2, base],
+        [x2, y2, base],
+        [x2, y2, top],
+        [x, y2, top],
+      ],
+      colour,
+      0.9,
+    );
+  }
+  if (sides[2] && camera.x < x) {
+    face(
+      ctx,
+      camera,
+      [
+        [x, y, base],
+        [x, y2, base],
+        [x, y2, top],
+        [x, y, top],
+      ],
+      colour,
+      0.8,
+    );
+  }
+  if (sides[3] && camera.x > x2) {
+    face(
+      ctx,
+      camera,
+      [
+        [x2, y, base],
+        [x2, y2, base],
+        [x2, y2, top],
+        [x2, y, top],
+      ],
+      colour,
+      0.8,
+    );
+  }
+  face(
+    ctx,
+    camera,
+    [
+      [x, y, top],
+      [x2, y, top],
+      [x2, y2, top],
+      [x, y2, top],
+    ],
+    colour,
+    1.08,
+  );
+}
+
+function addObject(
+  ctx: CanvasRenderingContext2D,
+  state: GameState,
+  camera: Camera,
+  object: WorldObject,
+  time: number,
+  add: Add,
+): void {
+  const art = getObjectDef(object.defId).art;
+  const spot = project(camera, object.x + 0.5, object.y + 0.5, 0);
+
+  switch (art.kind) {
+    case "wall":
+      add(spot.depth, () => drawWall(ctx, state, camera, object, art));
+      return;
+    case "tree":
+      add(spot.depth, () => drawTree(ctx, camera, object, art, time));
+      return;
+    case "fence":
+    case "gate":
+      add(spot.depth, () => drawFence(ctx, camera, object, art.kind));
+      return;
+    case "rock":
+      add(spot.depth, () => drawRock(ctx, camera, object, art.vein));
+      return;
+    case "table":
+    case "counter":
+    case "chest":
+      add(spot.depth, () => drawFurniture(ctx, camera, object, art));
+      return;
+    default:
+      add(spot.depth, () => {
+        ctx.globalAlpha = fogAt(camera, spot.depth);
+        drawObjectArt(
+          ctx,
+          art,
+          spot.sx,
+          spot.sy,
+          camera.focal / spot.depth,
+          time,
+          object.index,
+        );
+        ctx.globalAlpha = 1;
+      });
+  }
+}
+
+/**
+ * Classic's walls stand on the edges between tiles, not across them, so a wall
+ * is drawn as a thin slab running the way its neighbours run. A tile with
+ * neighbours both ways gets both slabs, which turns the corner.
+ */
+const WALL_THICKNESS = 0.34;
+
+function drawWall(
+  ctx: CanvasRenderingContext2D,
+  state: GameState,
+  camera: Camera,
+  object: WorldObject,
+  art: Extract<ObjectArt, { kind: "wall" }>,
+): void {
+  const { x, y } = object;
+  const joined = (dx: number, dy: number) => {
+    const at = state.map.objects[tileIndex(state.map, x + dx, y + dy)];
+    if (!at) return false;
+    const kind = getObjectDef(at.defId).art.kind;
+    return kind === "wall" || kind === "gate";
+  };
+  const inset = (1 - WALL_THICKNESS) / 2;
+  const eastWest = joined(-1, 0) || joined(1, 0);
+  const northSouth = joined(0, -1) || joined(0, 1);
+
+  // Ends butt into the next block of the run, so they are left unpainted.
+  if (eastWest || !northSouth) {
+    box(
+      ctx,
+      camera,
+      x,
+      y + inset,
+      1,
+      WALL_THICKNESS,
+      0,
+      WALL_HEIGHT,
+      art.face,
+      [true, true, !joined(-1, 0), !joined(1, 0)],
+    );
+    window(ctx, camera, object, x, y + inset, 1, WALL_THICKNESS, true);
+  }
+  if (northSouth) {
+    box(
+      ctx,
+      camera,
+      x + inset,
+      y,
+      WALL_THICKNESS,
+      1,
+      0,
+      WALL_HEIGHT,
+      art.face,
+      [!joined(0, -1), !joined(0, 1), true, true],
+    );
+    window(ctx, camera, object, x + inset, y, WALL_THICKNESS, 1, false);
+  }
+}
+
+/** A shuttered window on roughly every fourth block of a run. */
+function window(
+  ctx: CanvasRenderingContext2D,
+  camera: Camera,
+  object: WorldObject,
+  x: number,
+  y: number,
+  w: number,
+  d: number,
+  alongX: boolean,
+): void {
+  if (object.index % 4 !== 1) return;
+  const low = WALL_HEIGHT * 0.42;
+  const high = WALL_HEIGHT * 0.74;
+  const nudge = 0.02;
+
+  if (alongX) {
+    const wall = camera.y > y + d ? y + d + nudge : y - nudge;
+    face(
+      ctx,
+      camera,
+      [
+        [x + 0.32, wall, low],
+        [x + w - 0.32, wall, low],
+        [x + w - 0.32, wall, high],
+        [x + 0.32, wall, high],
+      ],
+      "#4a7ab0",
+      1,
+    );
+    return;
+  }
+  const wall = camera.x > x + w ? x + w + nudge : x - nudge;
+  face(
+    ctx,
+    camera,
+    [
+      [wall, y + 0.32, low],
+      [wall, y + d - 0.32, low],
+      [wall, y + d - 0.32, high],
+      [wall, y + 0.32, high],
+    ],
+    "#4a7ab0",
+    1,
+  );
+}
+
+/**
+ * A hipped roof: the eaves overhang the walls a little and the ridge runs
+ * along whichever way the building is longer.
+ */
+function drawRoof(
+  ctx: CanvasRenderingContext2D,
+  camera: Camera,
+  roof: Roof,
+): void {
+  const eave = 0.14;
+  const x1 = roof.x - eave;
+  const x2 = roof.x + roof.w + eave;
+  const y1 = roof.y - eave;
+  const y2 = roof.y + roof.h + eave;
+  const low = WALL_HEIGHT;
+  const high = low + Math.min(2.2, Math.min(roof.w, roof.h) * 0.42 + 0.5);
+  const inset = Math.min(roof.w, roof.h) / 2;
+  const alongX = roof.w >= roof.h;
+  const ridge: [Point, Point] = alongX
+    ? [
+        { x: x1 + inset, y: (y1 + y2) / 2 },
+        { x: x2 - inset, y: (y1 + y2) / 2 },
+      ]
+    : [
+        { x: (x1 + x2) / 2, y: y1 + inset },
+        { x: (x1 + x2) / 2, y: y2 - inset },
+      ];
+
+  const slopes: [readonly Vertex[], number][] = [
+    [
+      [
+        [x1, y1, low],
+        [x2, y1, low],
+        [ridge[1].x, ridge[1].y, high],
+        [ridge[0].x, ridge[0].y, high],
+      ],
+      1.14,
+    ],
+    [
+      [
+        [x1, y2, low],
+        [x2, y2, low],
+        [ridge[1].x, ridge[1].y, high],
+        [ridge[0].x, ridge[0].y, high],
+      ],
+      0.72,
+    ],
+    [
+      [
+        [x1, y1, low],
+        [x1, y2, low],
+        [ridge[0].x, ridge[0].y, high],
+      ],
+      0.88,
+    ],
+    [
+      [
+        [x2, y1, low],
+        [x2, y2, low],
+        [ridge[1].x, ridge[1].y, high],
+      ],
+      0.98,
+    ],
+  ];
+  // A touch of variation per building, so a street of roofs is not one slab.
+  const tint = 0.92 + hash2d(roof.x, roof.y, 11) * 0.18;
+  for (const [points, light] of slopes) {
+    face(ctx, camera, points, roof.colour, light * tint);
+  }
+}
+
+/**
+ * Classic's trees are a broad round crown on a short trunk, not a spike, so
+ * the crown is built as stacked rings that bulge in the middle. Rings are
+ * painted from the far side of the trunk forwards, which is all the sorting a
+ * convex shape needs.
+ */
+const CROWN_BLADES = 6;
+const CROWN_RINGS = [
+  { radius: 0.5, height: 0.75 },
+  { radius: 1, height: 1.35 },
+  { radius: 0.78, height: 1.95 },
+] as const;
+
+function drawTree(
+  ctx: CanvasRenderingContext2D,
+  camera: Camera,
+  object: WorldObject,
+  art: Extract<ObjectArt, { kind: "tree" }>,
+  time: number,
+): void {
+  const cx = object.x + 0.5;
+  const cy = object.y + 0.5;
+  const size = art.size;
+  const sway = Math.sin(time / 1100 + object.index) * 0.04;
+  const spread = 0.85 * size;
+
+  box(ctx, camera, cx - 0.12, cy - 0.12, 0.24, 0.24, 0, 1 * size, art.trunk);
+
+  const blades = Array.from({ length: CROWN_BLADES }, (_, i) => {
+    const from = (i / CROWN_BLADES) * Math.PI * 2;
+    const to = ((i + 1) / CROWN_BLADES) * Math.PI * 2;
+    return { from, to, near: Math.sin(from) + Math.sin(to) };
+  }).sort((a, b) => a.near - b.near);
+
+  const at = (angle: number, ring: number, lift: number) =>
+    [
+      cx + Math.cos(angle) * CROWN_RINGS[ring].radius * spread + sway,
+      cy + Math.sin(angle) * CROWN_RINGS[ring].radius * spread + sway,
+      CROWN_RINGS[ring].height * size + lift,
+    ] as const;
+
+  for (const [ring, blade] of blades.flatMap((blade) =>
+    [0, 1].map((ring) => [ring, blade] as const),
+  )) {
+    const light = 0.74 + ((Math.sin(blade.from) + 1) / 2) * 0.34;
+    face(
+      ctx,
+      camera,
+      [
+        at(blade.from, ring, 0),
+        at(blade.to, ring, 0),
+        at(blade.to, ring + 1, 0),
+        at(blade.from, ring + 1, 0),
+      ],
+      ring === 0 ? art.canopyShade : art.canopy,
+      light,
+    );
+  }
+  for (const blade of blades) {
+    face(
+      ctx,
+      camera,
+      [
+        at(blade.from, 2, 0),
+        at(blade.to, 2, 0),
+        [cx + sway, cy + sway, 2.35 * size],
+      ],
+      art.canopy,
+      0.8 + ((Math.sin(blade.from) + 1) / 2) * 0.3,
+    );
+  }
+}
+
+function drawFence(
+  ctx: CanvasRenderingContext2D,
+  camera: Camera,
+  object: WorldObject,
+  kind: "fence" | "gate",
+): void {
+  const { x, y } = object;
+  const colour = kind === "gate" ? "#6b4526" : "#7a5230";
+  for (const at of [0.08, 0.82]) {
+    box(ctx, camera, x + at, y + 0.44, 0.1, 0.1, 0, 0.8, colour);
+  }
+  if (kind === "gate") return;
+  for (const height of [0.32, 0.58]) {
+    box(ctx, camera, x, y + 0.46, 1, 0.06, height, height + 0.11, "#96683d");
+  }
+}
+
+function drawRock(
+  ctx: CanvasRenderingContext2D,
+  camera: Camera,
+  object: WorldObject,
+  vein: string | null,
+): void {
+  const cx = object.x + 0.5;
+  const cy = object.y + 0.5;
+  const faces = 6;
+  for (let i = 0; i < faces; i++) {
+    const a = (i / faces) * Math.PI * 2;
+    const b = ((i + 1) / faces) * Math.PI * 2;
+    const ra = 0.32 + hash2d(object.x, object.y, i) * 0.12;
+    const rb = 0.32 + hash2d(object.x, object.y, i + 1) * 0.12;
+    face(
+      ctx,
+      camera,
+      [
+        [cx + Math.cos(a) * ra, cy + Math.sin(a) * ra, 0],
+        [cx + Math.cos(b) * rb, cy + Math.sin(b) * rb, 0],
+        [cx, cy, 0.66],
+      ],
+      vein && i % 3 === 0 ? vein : "#8d857c",
+      0.76 + (i % 3) * 0.15,
+    );
+  }
+}
+
+function drawFurniture(
+  ctx: CanvasRenderingContext2D,
+  camera: Camera,
+  object: WorldObject,
+  art: Extract<ObjectArt, { kind: "table" | "counter" | "chest" }>,
+): void {
+  const colour = art.kind === "table" ? "#8a6136" : art.colour;
+  const top = art.kind === "chest" ? 0.6 : 0.72;
+  box(ctx, camera, object.x + 0.1, object.y + 0.1, 0.8, 0.8, 0, top, colour);
+}
+
+/* ------------------------------------------------------------- billboards */
 
 function drawGroundItem(
   ctx: CanvasRenderingContext2D,
   camera: Camera,
-  view: Viewport,
   item: GroundItem,
 ): void {
-  const { sx, sy } = project(camera, view, item.x, item.y);
-  const size = view.tile * 0.56;
-  drawItemIcon(ctx, item.id, sx - size / 2, sy - size * 1.1, size);
+  const spot = project(camera, item.x + 0.5, item.y + 0.5, 0);
+  const size = (camera.focal / spot.depth) * 0.56;
+  ctx.globalAlpha = fogAt(camera, spot.depth);
+  drawItemIcon(ctx, item.id, spot.sx - size / 2, spot.sy - size, size);
+  ctx.globalAlpha = 1;
 }
 
 function drawNpcActor(
   ctx: CanvasRenderingContext2D,
   camera: Camera,
-  view: Viewport,
   npc: Npc,
   time: number,
 ): void {
   const def = getNpcDef(npc.defId);
-  const { sx, sy } = projectFloat(camera, view, npc.fx, npc.fy);
+  const spot = project(camera, npc.fx + 0.5, npc.fy + 0.5, 0);
+  ctx.globalAlpha = fogAt(camera, spot.depth);
   drawNpc(
     ctx,
-    sx,
-    sy,
-    view.tile,
+    spot.sx,
+    spot.sy,
+    camera.focal / spot.depth,
     def.sprite,
     npc.facing,
     walkPhase(npc.path.length > 0, time),
   );
-  if (npc.hitpoints < npc.maxHitpoints) {
-    drawHealthBar(
-      ctx,
-      sx,
-      sy - view.tile * 1.3,
-      view.tile,
-      npc.hitpoints / npc.maxHitpoints,
-    );
-  }
-  if (npc.targetPlayer) {
-    drawLabel(ctx, sx, sy - view.tile * 1.55, view.tile, def.name, "#ff9a3c");
-  }
+  ctx.globalAlpha = 1;
 }
 
 function drawPlayer(
   ctx: CanvasRenderingContext2D,
   camera: Camera,
-  view: Viewport,
   player: Player,
   time: number,
 ): void {
-  const { sx, sy } = projectFloat(camera, view, player.fx, player.fy);
+  const spot = project(camera, player.fx + 0.5, player.fy + 0.5, 0);
   drawCharacter(
     ctx,
-    sx,
-    sy,
-    view.tile,
+    spot.sx,
+    spot.sy,
+    camera.focal / spot.depth,
     playerLook(player),
     player.facing,
     walkPhase(player.path.length > 0, time),
   );
-  drawLabel(ctx, sx, sy - view.tile * 1.5, view.tile, player.name, "#ffffff");
-  if (player.hitpoints < player.maxHitpoints) {
-    drawHealthBar(
-      ctx,
-      sx,
-      sy - view.tile * 1.32,
-      view.tile,
-      player.hitpoints / player.maxHitpoints,
-    );
-  }
 }
 
 export function playerLook(player: Player): CharacterLook {
@@ -547,164 +965,154 @@ export function playerLook(player: Player): CharacterLook {
   };
 }
 
-/* ----------------------------------------------------------------- roofs */
+/* --------------------------------------------------------------- overlays */
 
-/**
- * Classic's buildings wear a tiled roof that lifts away once you step inside,
- * which is most of what makes a town read as a town from outside.
- */
-function drawRoofs(
+function addHover(
   ctx: CanvasRenderingContext2D,
-  state: GameState,
   camera: Camera,
-  view: Viewport,
+  hover: Point,
+  add: Add,
 ): void {
-  const { player } = state;
-  const lift = view.tile * WALL_HEIGHT * RISE;
-  const eave = view.tile * 0.35;
-
-  for (const roof of state.map.roofs) {
-    if (
-      player.x >= roof.x &&
-      player.y >= roof.y &&
-      player.x < roof.x + roof.w &&
-      player.y < roof.y + roof.h
-    ) {
-      continue;
-    }
-    const left = (roof.x - camera.x) * view.tile - eave;
-    const right = (roof.x + roof.w - camera.x) * view.tile + eave;
-    const top = (roof.y - camera.y) * view.row - lift - eave * FLATTEN;
-    const bottom =
-      (roof.y + roof.h - camera.y) * view.row - lift + eave * FLATTEN;
-    if (right < -40 || left > view.width + 40) continue;
-    if (bottom < -40 || top > view.height + 40) continue;
-
-    const ridge = (top + bottom) / 2;
-    ctx.fillStyle = shade(roof.colour, 0.78);
+  const spot = project(camera, hover.x + 0.5, hover.y + 0.5, 0);
+  add(spot.depth, () => {
+    ctx.strokeStyle = "rgba(255,255,255,0.45)";
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(left, bottom);
-    ctx.lineTo(left + eave * 1.6, ridge);
-    ctx.lineTo(right - eave * 1.6, ridge);
-    ctx.lineTo(right, bottom);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = shade(roof.colour, 1.12);
-    ctx.beginPath();
-    ctx.moveTo(left, top);
-    ctx.lineTo(left + eave * 1.6, ridge);
-    ctx.lineTo(right - eave * 1.6, ridge);
-    ctx.lineTo(right, top);
-    ctx.closePath();
-    ctx.fill();
-
-    // Courses of tiles down the front slope, then the ridge beam.
-    ctx.fillStyle = "rgba(0,0,0,0.12)";
-    const courses = Math.max(
-      2,
-      Math.round((bottom - ridge) / (view.row * 0.5)),
-    );
-    for (let i = 1; i < courses; i++) {
-      const t = i / courses;
-      const y = ridge + (bottom - ridge) * t;
-      const inset = eave * 1.6 * (1 - t);
-      ctx.fillRect(left + inset, y, right - left - inset * 2, 1);
+    const corners = [
+      [0, 0],
+      [1, 0],
+      [1, 1],
+      [0, 1],
+    ] as const;
+    for (const [index, [dx, dy]] of corners.entries()) {
+      const at = project(camera, hover.x + dx, hover.y + dy, 0.02);
+      if (index === 0) ctx.moveTo(at.sx, at.sy);
+      else ctx.lineTo(at.sx, at.sy);
     }
-    ctx.fillStyle = shade(roof.colour, 0.6);
-    ctx.fillRect(left + eave * 1.6, ridge - 1, right - left - eave * 3.2, 2);
-  }
+    ctx.closePath();
+    ctx.stroke();
+  });
 }
 
-/** Multiply a hex colour, for the lit and shaded halves of a roof. */
-function shade(hex: string, factor: number): string {
-  const value = parseInt(hex.slice(1), 16);
-  const part = (shift: number) =>
-    Math.min(255, Math.round(((value >> shift) & 0xff) * factor));
-  return `rgb(${part(16)},${part(8)},${part(0)})`;
-}
-
-/* -------------------------------------------------------------- overlays */
-
-/**
- * The click marker: a yellow cross at the tile you asked for, which flares as
- * it lands and holds while you walk, the way the client draws it.
- */
-function drawDestination(
+/** The click marker: the yellow cross the client drops where you asked to go. */
+function addMarker(
   ctx: CanvasRenderingContext2D,
   state: GameState,
   camera: Camera,
-  view: Viewport,
   time: number,
+  add: Add,
 ): void {
   const marker = state.marker;
   if (!marker || !state.player.path.length) return;
-  const { sx, sy } = project(camera, view, marker.x, marker.y);
+  const spot = project(camera, marker.x + 0.5, marker.y + 0.5, 0.02);
+  const tile = camera.focal / spot.depth;
   const age = Math.min(1, (time - marker.bornAt) / 220);
-  const arm = view.tile * (0.3 - 0.12 * age) + Math.sin(time / 150) * 0.6;
-  const cy = sy - view.row / 2;
+  const arm = tile * (0.3 - 0.12 * age);
 
-  ctx.lineCap = "round";
-  for (const [colour, width] of [
-    ["rgba(0,0,0,0.7)", Math.max(4, view.tile / 7)],
-    ["#ffe14a", Math.max(2, view.tile / 12)],
-  ] as const) {
-    ctx.strokeStyle = colour;
-    ctx.lineWidth = width;
-    ctx.beginPath();
-    ctx.moveTo(sx - arm, cy - arm);
-    ctx.lineTo(sx + arm, cy + arm);
-    ctx.moveTo(sx + arm, cy - arm);
-    ctx.lineTo(sx - arm, cy + arm);
-    ctx.stroke();
-  }
-  ctx.lineCap = "butt";
+  add(spot.depth, () => {
+    ctx.lineCap = "round";
+    for (const [colour, width] of [
+      ["rgba(0,0,0,0.7)", Math.max(3, tile / 7)],
+      ["#ffe14a", Math.max(1.5, tile / 12)],
+    ] as const) {
+      ctx.strokeStyle = colour;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      ctx.moveTo(spot.sx - arm, spot.sy - arm);
+      ctx.lineTo(spot.sx + arm, spot.sy + arm);
+      ctx.moveTo(spot.sx + arm, spot.sy - arm);
+      ctx.lineTo(spot.sx - arm, spot.sy + arm);
+      ctx.stroke();
+    }
+    ctx.lineCap = "butt";
+  });
 }
 
-function drawHover(
-  ctx: CanvasRenderingContext2D,
-  camera: Camera,
-  view: Viewport,
-  hover: Point,
-): void {
-  const sx = Math.round((hover.x - camera.x) * view.tile);
-  const sy = Math.round((hover.y - camera.y) * view.row);
-  ctx.strokeStyle = "rgba(255,255,255,0.5)";
-  ctx.lineWidth = 1;
-  ctx.strokeRect(sx + 0.5, sy + 0.5, view.tile - 1, view.row - 1);
-}
-
-function drawSplats(
+/**
+ * Names, health bars and hitsplats go on at full resolution, so they stay
+ * sharp over the chunky world behind them.
+ */
+function drawLabels(
   ctx: CanvasRenderingContext2D,
   state: GameState,
   camera: Camera,
   view: Viewport,
   time: number,
 ): void {
-  const scale = Math.max(1, view.tile / 32);
+  const { player } = state;
+  const place = (x: number, y: number) => {
+    const spot = project(camera, x, y, 0);
+    return {
+      sx: spot.sx / view.scale,
+      sy: spot.sy / view.scale,
+      tile: camera.focal / spot.depth / view.scale,
+      depth: spot.depth,
+    };
+  };
+
+  for (const npc of state.npcs) {
+    if (npc.respawnTick !== null) continue;
+    const at = place(npc.fx + 0.5, npc.fy + 0.5);
+    if (at.depth <= 0.5 || at.depth > DRAW_DISTANCE) continue;
+    if (npc.hitpoints < npc.maxHitpoints) {
+      drawHealthBar(
+        ctx,
+        at.sx,
+        at.sy - at.tile * 1.35,
+        at.tile,
+        npc.hitpoints / npc.maxHitpoints,
+      );
+    }
+    if (npc.targetPlayer) {
+      drawLabel(
+        ctx,
+        at.sx,
+        at.sy - at.tile * 1.6,
+        getNpcDef(npc.defId).name,
+        "#ff9a3c",
+      );
+    }
+  }
+
+  if (player.respawnTick === null) {
+    const at = place(player.fx + 0.5, player.fy + 0.5);
+    drawLabel(ctx, at.sx, at.sy - at.tile * 1.55, player.name, "#ffffff");
+    if (player.hitpoints < player.maxHitpoints) {
+      drawHealthBar(
+        ctx,
+        at.sx,
+        at.sy - at.tile * 1.38,
+        at.tile,
+        player.hitpoints / player.maxHitpoints,
+      );
+    }
+  }
+
   ctx.textAlign = "center";
   for (const splat of state.splats) {
     const age = (time - splat.bornAt) / 1200;
     if (age < 0 || age > 1) continue;
-    const { sx, sy } = projectFloat(camera, view, splat.x, splat.y);
-    const y = sy - view.tile * 0.9 - age * 18 * scale;
+    const at = place(splat.x + 0.5, splat.y + 0.5);
+    if (at.depth <= 0.5) continue;
+    const scale = Math.max(0.8, at.tile / 34);
+    const y = at.sy - at.tile * 0.95 - age * 18 * scale;
     ctx.globalAlpha = 1 - age * age;
 
     if (splat.tone === "damage" || splat.tone === "block") {
       ctx.fillStyle = splat.tone === "damage" ? "#c02020" : "#2f4f8f";
       ctx.beginPath();
-      ctx.arc(sx, y, 9 * scale, 0, Math.PI * 2);
+      ctx.arc(at.sx, y, 9 * scale, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = "#ffffff";
       ctx.font = `bold ${Math.round(11 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
-      ctx.fillText(splat.text, sx, y + 4 * scale);
+      ctx.fillText(splat.text, at.sx, y + 4 * scale);
     } else {
       ctx.fillStyle = splat.tone === "level" ? "#ffe14a" : "#8ce87a";
       ctx.font = `bold ${Math.round(12 * scale)}px 'Helvetica Neue', Arial, sans-serif`;
       ctx.strokeStyle = "rgba(0,0,0,0.7)";
       ctx.lineWidth = 3 * scale;
-      ctx.strokeText(splat.text, sx, y);
-      ctx.fillText(splat.text, sx, y);
+      ctx.strokeText(splat.text, at.sx, y);
+      ctx.fillText(splat.text, at.sx, y);
     }
   }
   ctx.globalAlpha = 1;
@@ -717,8 +1125,8 @@ function drawHealthBar(
   tile: number,
   fraction: number,
 ): void {
-  const width = tile * 0.88;
-  const height = Math.max(3, tile / 8);
+  const width = Math.max(18, tile * 0.88);
+  const height = Math.max(3, width / 8);
   ctx.fillStyle = "#7a1414";
   ctx.fillRect(x - width / 2, y, width, height);
   ctx.fillStyle = "#3fbf3f";
@@ -729,79 +1137,32 @@ function drawLabel(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
-  tile: number,
   text: string,
   colour: string,
 ): void {
-  const size = Math.max(10, Math.round(tile / 3));
-  ctx.font = `${size}px 'Helvetica Neue', Arial, sans-serif`;
+  ctx.font = "13px 'Helvetica Neue', Arial, sans-serif";
   ctx.textAlign = "center";
   ctx.strokeStyle = "rgba(0,0,0,0.75)";
-  ctx.lineWidth = Math.max(3, size / 3);
+  ctx.lineWidth = 4;
   ctx.strokeText(text, x, y);
   ctx.fillStyle = colour;
   ctx.fillText(text, x, y);
 }
 
-/* --------------------------------------------------------------- helpers */
+/* ---------------------------------------------------------------- helpers */
 
-function inBounds(bounds: Bounds, x: number, y: number): boolean {
-  return (
-    x >= bounds.minX && x <= bounds.maxX && y >= bounds.minY && y <= bounds.maxY
-  );
+function rgbOf(hex: string): [number, number, number] {
+  const value = parseInt(hex.slice(1), 16);
+  return [value >> 16, (value >> 8) & 0xff, value & 0xff];
 }
 
-function forEachObject(
-  state: GameState,
-  bounds: Bounds,
-  visit: (object: WorldObject) => void,
-): void {
-  const { map } = state;
-  for (
-    let y = Math.max(0, bounds.minY);
-    y < Math.min(map.size, bounds.maxY);
-    y++
-  ) {
-    for (
-      let x = Math.max(0, bounds.minX);
-      x < Math.min(map.size, bounds.maxX);
-      x++
-    ) {
-      const object = map.objects[tileIndex(map, x, y)];
-      if (object) visit(object);
-    }
-  }
-}
-
-/** Screen position of the bottom centre of a tile. */
-function project(
-  camera: Camera,
-  view: Viewport,
-  x: number,
-  y: number,
-): { sx: number; sy: number } {
-  return {
-    sx: Math.round((x - camera.x) * view.tile + view.tile / 2),
-    sy: Math.round((y - camera.y) * view.row + view.row),
-  };
-}
-
-function projectFloat(
-  camera: Camera,
-  view: Viewport,
-  x: number,
-  y: number,
-): { sx: number; sy: number } {
-  return {
-    sx: (x - camera.x) * view.tile + view.tile / 2,
-    sy: (y - camera.y) * view.row + view.row,
-  };
+/** Multiply a hex colour, for the lit and shaded faces of a model. */
+function shade(hex: string, factor: number): string {
+  const [red, green, blue] = rgbOf(hex);
+  const part = (value: number) => Math.min(255, Math.round(value * factor));
+  return `rgb(${part(red)},${part(green)},${part(blue)})`;
 }
 
 function walkPhase(moving: boolean, time: number): number {
   return moving ? (time / 90) % (Math.PI * 2) : 0;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
 }
