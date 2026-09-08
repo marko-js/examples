@@ -44,7 +44,10 @@ export function face(
 const SIDE_LIGHT = [0.78, 0.94, 0.86, 0.86];
 const TOP_LIGHT = 1.08;
 
-/** An axis aligned box, with only the sides the camera can see painted. */
+/**
+ * An axis aligned box, with only the sides the camera can see painted.
+ * `courses` rules that many block courses across each side.
+ */
 export function box(
   ctx: CanvasRenderingContext2D,
   camera: Camera,
@@ -56,20 +59,61 @@ export function box(
   top: number,
   colour: string,
   sides: readonly boolean[] = [true, true, true, true],
+  courses = 0,
 ): void {
   const x2 = x + w;
   const y2 = y + d;
   if (sides[0] && camera.y < y) {
-    quad(ctx, camera, [x, y], [x2, y], base, top, colour, SIDE_LIGHT[0]);
+    quad(
+      ctx,
+      camera,
+      [x, y],
+      [x2, y],
+      base,
+      top,
+      colour,
+      SIDE_LIGHT[0],
+      courses,
+    );
   }
   if (sides[1] && camera.y > y2) {
-    quad(ctx, camera, [x, y2], [x2, y2], base, top, colour, SIDE_LIGHT[1]);
+    quad(
+      ctx,
+      camera,
+      [x, y2],
+      [x2, y2],
+      base,
+      top,
+      colour,
+      SIDE_LIGHT[1],
+      courses,
+    );
   }
   if (sides[2] && camera.x < x) {
-    quad(ctx, camera, [x, y], [x, y2], base, top, colour, SIDE_LIGHT[2]);
+    quad(
+      ctx,
+      camera,
+      [x, y],
+      [x, y2],
+      base,
+      top,
+      colour,
+      SIDE_LIGHT[2],
+      courses,
+    );
   }
   if (sides[3] && camera.x > x2) {
-    quad(ctx, camera, [x2, y], [x2, y2], base, top, colour, SIDE_LIGHT[3]);
+    quad(
+      ctx,
+      camera,
+      [x2, y],
+      [x2, y2],
+      base,
+      top,
+      colour,
+      SIDE_LIGHT[3],
+      courses,
+    );
   }
   face(
     ctx,
@@ -94,6 +138,7 @@ function quad(
   top: number,
   colour: string,
   light: number,
+  courses = 0,
 ): void {
   face(
     ctx,
@@ -107,6 +152,23 @@ function quad(
     colour,
     light,
   );
+  // Mortar between the blocks, which is what makes a wall read as masonry.
+  for (let i = 1; i < courses; i++) {
+    const z = base + ((top - base) * i) / courses;
+    const line = (top - base) * 0.035;
+    face(
+      ctx,
+      camera,
+      [
+        [from[0], from[1], z],
+        [to[0], to[1], z],
+        [to[0], to[1], z + line],
+        [from[0], from[1], z + line],
+      ],
+      colour,
+      light * 0.74,
+    );
+  }
 }
 
 /** A basis for a model that has been turned to face a direction. */
@@ -183,6 +245,43 @@ export function prism(
     colour,
     TOP_LIGHT,
   );
+}
+
+/**
+ * Courses of tile up a roof slope, drawn as thin darker bands between the eave
+ * and the ridge. `eave` and `ridge` are the two edges, each given as a pair of
+ * points, and the bands interpolate between them.
+ */
+export function shingles(
+  ctx: CanvasRenderingContext2D,
+  camera: Camera,
+  eave: readonly [Vertex, Vertex],
+  ridge: readonly [Vertex, Vertex],
+  colour: string,
+  light: number,
+  courses: number,
+): void {
+  const between = (from: Vertex, to: Vertex, t: number): Vertex => [
+    from[0] + (to[0] - from[0]) * t,
+    from[1] + (to[1] - from[1]) * t,
+    from[2] + (to[2] - from[2]) * t,
+  ];
+  const width = 0.35 / courses;
+  for (let i = 1; i < courses; i++) {
+    const t = i / courses;
+    face(
+      ctx,
+      camera,
+      [
+        between(eave[0], ridge[0], t),
+        between(eave[1], ridge[1], t),
+        between(eave[1], ridge[1], t + width),
+        between(eave[0], ridge[0], t + width),
+      ],
+      colour,
+      light * 0.82,
+    );
+  }
 }
 
 export function rgbOf(hex: string): [number, number, number] {

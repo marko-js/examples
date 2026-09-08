@@ -24,7 +24,7 @@ import {
   type WorldObject,
 } from "../world";
 import { drawBeast, drawBird, drawPerson } from "./actors";
-import { box, face, fogAt, rgbOf, type Vertex } from "./paint";
+import { box, face, fogAt, rgbOf, shingles, type Vertex } from "./paint";
 import {
   type Camera,
   cameraAt,
@@ -225,9 +225,10 @@ function sampleGround(
     }
 
     if (!total) continue;
-    out[at] = red / total;
-    out[at + 1] = green / total;
-    out[at + 2] = blue / total;
+    const lit = slopeLight(worldX, worldY) - 1;
+    out[at] = (red / total) * (1 + lit * CHANNEL_GAIN[0]);
+    out[at + 1] = (green / total) * (1 + lit * CHANNEL_GAIN[1]);
+    out[at + 2] = (blue / total) * (1 + lit * CHANNEL_GAIN[2]);
     out[at + 3] = rough / total;
     return;
   }
@@ -270,13 +271,44 @@ const TERRAIN_RGB = Object.fromEntries(
   Object.entries(TERRAIN_DEFS).map(([id, def]) => [id, rgbOf(def.colour)]),
 ) as Record<TerrainId, [number, number, number]>;
 
-/** Ground brightness, varied at two scales so the land reads as patches. */
+/** Ground brightness per tile: broad patches with a little grain on top. */
 function groundShade(x: number, y: number): number {
   // Stagger the patch grid like brickwork so it does not read as squares.
   const patch = hash2d((x + (y >> 1)) >> 2, y >> 2, 5);
   const grain = hash2d(x, y, 9);
-  return 0.86 + patch * 0.22 + grain * 0.1;
+  return 0.88 + patch * 0.18 + grain * 0.08;
 }
+
+/**
+ * The slow sweep of light across the land. Classic's ground rises and falls,
+ * and the light on it runs from nearly yellow on a lit slope to nearly black
+ * in a hollow; the ground here is flat, so the light carries that on its own.
+ * It is smooth noise rather than per tile, or the hillsides would be squares.
+ */
+const SLOPE_TILES = 11;
+
+function slopeLight(x: number, y: number): number {
+  const gx = x / SLOPE_TILES;
+  const gy = y / SLOPE_TILES;
+  const x0 = Math.floor(gx);
+  const y0 = Math.floor(gy);
+  const fx = smooth(gx - x0);
+  const fy = smooth(gy - y0);
+  const top = hash2d(x0, y0, 17) * (1 - fx) + hash2d(x0 + 1, y0, 17) * fx;
+  const bottom =
+    hash2d(x0, y0 + 1, 17) * (1 - fx) + hash2d(x0 + 1, y0 + 1, 17) * fx;
+  return 0.76 + (top * (1 - fy) + bottom * fy) * 0.44;
+}
+
+function smooth(t: number): number {
+  return t * t * (3 - 2 * t);
+}
+
+/**
+ * Light does not fall evenly across the channels: a lit patch of Classic's
+ * grass goes yellow rather than simply paler, and a shaded one goes cold.
+ */
+const CHANNEL_GAIN = [1.9, 1, 0.55];
 
 function drawGround(
   ctx: CanvasRenderingContext2D,
@@ -574,6 +606,7 @@ function drawWall(
       WALL_HEIGHT,
       art.face,
       [true, true, !joined(-1, 0), !joined(1, 0)],
+      4,
     );
     window(ctx, camera, object, x, y + inset, 1, WALL_THICKNESS, true);
   }
@@ -589,6 +622,7 @@ function drawWall(
       WALL_HEIGHT,
       art.face,
       [!joined(0, -1), !joined(0, 1), true, true],
+      4,
     );
     window(ctx, camera, object, x + inset, y, WALL_THICKNESS, 1, false);
   }
@@ -650,7 +684,7 @@ function drawRoof(
   camera: Camera,
   roof: Roof,
 ): void {
-  const eave = 0.14;
+  const eave = 0.38;
   const x1 = roof.x - eave;
   const x2 = roof.x + roof.w + eave;
   const y1 = roof.y - eave;
@@ -710,6 +744,19 @@ function drawRoof(
   for (const [points, light] of slopes) {
     face(ctx, camera, points, roof.colour, light * tint);
   }
+  // Courses of tile up the two long slopes.
+  const courses = Math.max(3, Math.round((high - low) * 4));
+  for (const [points, light] of slopes.slice(0, 2)) {
+    shingles(
+      ctx,
+      camera,
+      [points[0], points[1]],
+      [points[3], points[2]],
+      roof.colour,
+      light * tint,
+      courses,
+    );
+  }
 }
 
 /**
@@ -720,9 +767,9 @@ function drawRoof(
  */
 const CROWN_BLADES = 6;
 const CROWN_RINGS = [
-  { radius: 0.5, height: 0.75 },
-  { radius: 1, height: 1.35 },
-  { radius: 0.78, height: 1.95 },
+  { radius: 0.5, height: 0.6 },
+  { radius: 1, height: 1 },
+  { radius: 0.78, height: 1.4 },
 ] as const;
 
 function drawTree(
@@ -736,9 +783,9 @@ function drawTree(
   const cy = object.y + 0.5;
   const size = art.size;
   const sway = Math.sin(time / 1100 + object.index) * 0.04;
-  const spread = 0.85 * size;
+  const spread = 0.52 * size;
 
-  box(ctx, camera, cx - 0.12, cy - 0.12, 0.24, 0.24, 0, 1 * size, art.trunk);
+  box(ctx, camera, cx - 0.09, cy - 0.09, 0.18, 0.18, 0, 0.7 * size, art.trunk);
 
   const blades = Array.from({ length: CROWN_BLADES }, (_, i) => {
     const from = (i / CROWN_BLADES) * Math.PI * 2;
@@ -777,7 +824,7 @@ function drawTree(
       [
         at(blade.from, 2, 0),
         at(blade.to, 2, 0),
-        [cx + sway, cy + sway, 2.35 * size],
+        [cx + sway, cy + sway, 1.68 * size],
       ],
       art.canopy,
       0.8 + ((Math.sin(blade.from) + 1) / 2) * 0.3,
