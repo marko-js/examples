@@ -215,7 +215,8 @@ export function facingOf(direction: number): Facing {
 
 /**
  * A box turned to face a direction. Its faces are painted back to front, which
- * is all the sorting a convex shape needs.
+ * is all the sorting a convex shape needs. `tilt` leans the top away from the
+ * base, which is how a limb swings: the shoulder stays put and the hand moves.
  */
 export function prism(
   ctx: CanvasRenderingContext2D,
@@ -225,48 +226,58 @@ export function prism(
   size: { right: number; forward: number; base: number; top: number },
   offset: { right: number; forward: number },
   colour: string,
+  tilt: { right: number; forward: number } = { right: 0, forward: 0 },
 ): void {
-  const corner = (right: number, forward: number): [number, number] => [
+  const place = (
+    right: number,
+    forward: number,
+    lean: number,
+  ): [number, number] => [
     at.x +
-      (offset.right + right) * facing.rx +
-      (offset.forward + forward) * facing.fx,
+      (offset.right + right + tilt.right * lean) * facing.rx +
+      (offset.forward + forward + tilt.forward * lean) * facing.fx,
     at.y +
-      (offset.right + right) * facing.ry +
-      (offset.forward + forward) * facing.fy,
+      (offset.right + right + tilt.right * lean) * facing.ry +
+      (offset.forward + forward + tilt.forward * lean) * facing.fy,
   ];
-  const corners = [
-    corner(-size.right, -size.forward),
-    corner(size.right, -size.forward),
-    corner(size.right, size.forward),
-    corner(-size.right, size.forward),
+  const at4 = (lean: number) => [
+    place(-size.right, -size.forward, lean),
+    place(size.right, -size.forward, lean),
+    place(size.right, size.forward, lean),
+    place(-size.right, size.forward, lean),
   ];
+  const corners = at4(0);
+  const tops = at4(1);
 
   // Furthest side down first, so the near ones cover it, whichever way the
   // camera is turned.
-  const away = (
-    from: readonly [number, number],
-    to: readonly [number, number],
-  ) =>
+  const away = (from: readonly number[], to: readonly number[]) =>
     Math.hypot(
       (from[0] + to[0]) / 2 - camera.x,
       (from[1] + to[1]) / 2 - camera.y,
     );
   const walls = corners
     .map((from, index) => ({
-      from,
-      to: corners[(index + 1) % 4],
+      from: [...from, index] as [number, number, number],
+      to: [...corners[(index + 1) % 4], (index + 1) % 4] as [
+        number,
+        number,
+        number,
+      ],
       light: SIDE_LIGHT[index],
     }))
     .sort((a, b) => away(b.from, b.to) - away(a.from, a.to));
 
   for (const wall of walls) {
-    quad(
+    face(
       ctx,
       camera,
-      wall.from,
-      wall.to,
-      size.base,
-      size.top,
+      [
+        [wall.from[0], wall.from[1], size.base],
+        [wall.to[0], wall.to[1], size.base],
+        [tops[wall.to[2]][0], tops[wall.to[2]][1], size.top],
+        [tops[wall.from[2]][0], tops[wall.from[2]][1], size.top],
+      ],
       colour,
       wall.light,
     );
@@ -274,7 +285,7 @@ export function prism(
   face(
     ctx,
     camera,
-    corners.map(([x, y]) => [x, y, size.top] as Vertex),
+    tops.map(([x, y]) => [x, y, size.top] as Vertex),
     colour,
     TOP_LIGHT,
   );

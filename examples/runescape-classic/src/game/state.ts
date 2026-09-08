@@ -63,6 +63,58 @@ export type Target =
   | { kind: "npc"; uid: number }
   | { kind: "ground"; uid: number };
 
+/**
+ * What a character is visibly doing. Skilling loops for as long as the job
+ * lasts; the rest play once and lapse.
+ *
+ * https://oldschool.runescape.wiki/w/Animation
+ */
+export type Motion =
+  | "chop"
+  | "mine"
+  | "fish"
+  | "swing"
+  | "shoot"
+  | "cast"
+  | "smith"
+  | "cook"
+  | "crouch"
+  | "eat"
+  | "flinch"
+  | "death";
+
+export const MOTIONS: Record<Motion, { ms: number; loop?: boolean }> = {
+  chop: { ms: 1200, loop: true },
+  mine: { ms: 1200, loop: true },
+  fish: { ms: 1600, loop: true },
+  swing: { ms: 600 },
+  shoot: { ms: 500 },
+  cast: { ms: 700 },
+  smith: { ms: 900 },
+  cook: { ms: 700 },
+  crouch: { ms: 900 },
+  eat: { ms: 600 },
+  flinch: { ms: 320 },
+  death: { ms: 1100 },
+};
+
+export interface Animation {
+  kind: Motion;
+  bornAt: number;
+}
+
+/** Something in the air between two tiles: an arrow, or a spell. */
+export interface Projectile {
+  uid: number;
+  kind: "arrow" | "spell";
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
+  bornAt: number;
+  ms: number;
+}
+
 export type Activity =
   { kind: "gather"; objectIndex: number } | { kind: "combat"; npcUid: number };
 
@@ -96,6 +148,8 @@ export interface Player extends Actor {
   prayers: string[];
   tutorial: TutorialProgress;
   activity: Activity | null;
+  /** What they are visibly doing, over and above walking. */
+  anim: Animation | null;
   pending: PendingAction | null;
   /** Tick the next combat round may resolve on. */
   nextRoundTick: number;
@@ -119,6 +173,8 @@ export interface Npc extends Actor {
   targetPlayer: boolean;
   nextRoundTick: number;
   nextWanderTick: number;
+  /** What it is visibly doing, over and above walking. */
+  anim: Animation | null;
 }
 
 export interface GroundItem {
@@ -178,6 +234,8 @@ export interface GameState {
   groundItems: GroundItem[];
   messages: ChatMessage[];
   splats: Splat[];
+  /** Arrows and spells in the air. */
+  projectiles: Projectile[];
   overlay: Overlay;
   dialogue: DialogueState | null;
   /**
@@ -228,6 +286,7 @@ export function createPlayer(): Player {
     prayers: [],
     tutorial: { stage: 0, done: false, flags: {} },
     activity: null,
+    anim: null,
     pending: null,
     nextRoundTick: 0,
     nextGatherTick: 0,

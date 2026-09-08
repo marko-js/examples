@@ -14,6 +14,31 @@ import {
 } from "../world";
 
 /** World tile under a point on a minimap of the given size, in CSS pixels. */
+/**
+ * Where a world point lands on the turned map, in minimap pixels. The click
+ * handler runs this backwards, so the two are kept next to each other.
+ */
+export function minimapPointAt(
+  state: GameState,
+  size: number,
+  x: number,
+  y: number,
+  yaw = 0,
+): { x: number; y: number } {
+  const scale = size / MINIMAP_TILES;
+  const sin = Math.sin(yaw);
+  const cos = Math.cos(yaw);
+  // Centred on the middle of the tile the player is standing on, which is
+  // where their dot is drawn, so the two cannot drift half a tile apart.
+  const across = (x - state.player.fx - 0.5) * scale;
+  const down = (y - state.player.fy - 0.5) * scale;
+  return {
+    x: size / 2 + across * cos + down * sin,
+    y: size / 2 - across * sin + down * cos,
+  };
+}
+
+/** The tile under a point on the minimap: `minimapPointAt` run backwards. */
 export function minimapTileAt(
   state: GameState,
   size: number,
@@ -27,8 +52,8 @@ export function minimapTileAt(
   const across = (x - size / 2) / scale;
   const down = (y - size / 2) / scale;
   return {
-    x: Math.floor(state.player.fx + across * cos - down * sin),
-    y: Math.floor(state.player.fy + across * sin + down * cos),
+    x: Math.floor(state.player.fx + 0.5 + across * cos - down * sin),
+    y: Math.floor(state.player.fy + 0.5 + across * sin + down * cos),
   };
 }
 
@@ -46,19 +71,9 @@ export function renderMinimap(
   const { map, player } = state;
   const scale = size / MINIMAP_TILES;
   const radius = size / 2;
-  const originX = player.fx - MINIMAP_TILES / 2;
-  const originY = player.fy - MINIMAP_TILES / 2;
-  const sin = Math.sin(yaw);
-  const cos = Math.cos(yaw);
-  /** A world point on the turned map, in minimap pixels. */
-  const at = (x: number, y: number) => {
-    const dx = (x - player.fx) * scale;
-    const dy = (y - player.fy) * scale;
-    return {
-      x: radius + dx * cos + dy * sin,
-      y: radius - dx * sin + dy * cos,
-    };
-  };
+  const originX = player.fx + 0.5 - MINIMAP_TILES / 2;
+  const originY = player.fy + 0.5 - MINIMAP_TILES / 2;
+  const at = (x: number, y: number) => minimapPointAt(state, size, x, y, yaw);
 
   ctx.clearRect(0, 0, size, size);
   ctx.save();

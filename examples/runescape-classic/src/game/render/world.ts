@@ -12,7 +12,15 @@ import { getItem } from "../items";
 import { getNpcDef } from "../npcs";
 import type { Point } from "../pathfinding";
 import { hash2d } from "../rng";
-import type { GameState, GroundItem, Npc, Player } from "../state";
+import {
+  type GameState,
+  type GroundItem,
+  type Motion,
+  MOTIONS,
+  type Npc,
+  type Player,
+  type Projectile,
+} from "../state";
 import {
   getObjectDef,
   type ObjectArt,
@@ -23,7 +31,7 @@ import {
   tileIndex,
   type WorldObject,
 } from "../world";
-import { drawBeast, drawBird, drawPerson } from "./actors";
+import { drawBeast, drawBird, drawPerson, type Pose, poseFor } from "./actors";
 import { box, face, fogAt, rgbOf, type Vertex } from "./paint";
 import {
   type Camera,
@@ -637,14 +645,22 @@ function drawScene(
   }
 
   for (const npc of state.npcs) {
-    if (npc.respawnTick !== null) continue;
+    if (npc.respawnTick !== null && !falling(npc, time)) continue;
     const spot = project(camera, npc.fx + 0.5, npc.fy + 0.5, 0);
-    add(spot, () => drawNpcActor(ctx, camera, npc, time));
+    add(spot, () => drawNpcActor(ctx, camera, state, npc, time));
   }
 
-  if (player.respawnTick === null) {
+  if (player.respawnTick === null || falling(player, time)) {
     const spot = project(camera, player.fx + 0.5, player.fy + 0.5, 0);
-    add(spot, () => drawPlayer(ctx, camera, player, time));
+    add(spot, () => drawPlayer(ctx, camera, state, time));
+  }
+
+  for (const shot of state.projectiles) {
+    const flight = (time - shot.bornAt) / shot.ms;
+    if (flight < 0 || flight > 1) continue;
+    const at = flightPath(shot, flight);
+    const spot = project(camera, at.x, at.y, at.z);
+    add(spot, () => drawProjectile(ctx, camera, shot, at));
   }
 
   drawables.sort((a, b) => b.depth - a.depth);
@@ -742,7 +758,7 @@ function addObject(
       return;
     case "fence":
     case "gate":
-      add(spot, () => drawFence(ctx, camera, object, art.kind));
+      add(spot, () => drawFence(ctx, camera, object, art.kind, time));
       return;
     case "rock":
       add(spot, () => drawRock(ctx, camera, object, art.vein));
@@ -1039,18 +1055,42 @@ function drawTree(
   }
 }
 
+const DOOR_SWING_MS = 450;
+
 function drawFence(
   ctx: CanvasRenderingContext2D,
   camera: Camera,
   object: WorldObject,
   kind: "fence" | "gate",
+  time: number,
 ): void {
   const { x, y } = object;
   const colour = kind === "gate" ? "#6b4526" : "#7a5230";
   for (const at of [0.08, 0.82]) {
     box(ctx, camera, x + at, y + 0.44, 0.1, 0.1, 0, 0.8, colour);
   }
-  if (kind === "gate") return;
+  if (kind === "gate") {
+    // A door that has just been unbarred swings back on its hinge.
+    if (object.openedAt === undefined) return;
+    const swung = Math.min(1, (time - object.openedAt) / DOOR_SWING_MS);
+    if (swung >= 1) return;
+    const angle = (swung * Math.PI) / 2;
+    const reach = 0.84 * Math.cos(angle);
+    const out = 0.84 * Math.sin(angle);
+    face(
+      ctx,
+      camera,
+      [
+        [x + 0.13, y + 0.49, 0],
+        [x + 0.13 + reach, y + 0.49 + out, 0],
+        [x + 0.13 + reach, y + 0.49 + out, 1.5],
+        [x + 0.13, y + 0.49, 1.5],
+      ],
+      "#7a5230",
+      0.95,
+    );
+    return;
+  }
   for (const height of [0.32, 0.58]) {
     box(ctx, camera, x, y + 0.46, 1, 0.06, height, height + 0.11, "#96683d");
   }
@@ -1095,6 +1135,67 @@ function drawFurniture(
   box(ctx, camera, object.x + 0.1, object.y + 0.1, 0.8, 0.8, 0, top, colour);
 }
 
+/**
+ * Where a shot has got to. Arrows and spells both arc, which is what stops
+ * them reading as a line drawn between two tiles.
+ */
+function flightPath(
+  shot: Projectile,
+  flight: number,
+): { x: number; y: number; z: number } {
+  const span = Math.hypot(shot.toX - shot.fromX, shot.toY - shot.fromY);
+  return {
+    x: shot.fromX + (shot.toX - shot.fromX) * flight + 0.5,
+    y: shot.fromY + (shot.toY - shot.fromY) * flight + 0.5,
+    z: 1.05 + Math.sin(flight * Math.PI) * Math.min(0.9, 0.18 + span * 0.08),
+  };
+}
+
+function drawProjectile(
+  ctx: CanvasRenderingContext2D,
+  camera: Camera,
+  shot: Projectile,
+  at: { x: number; y: number; z: number },
+): void {
+  if (shot.kind === "arrow") {
+    // A short shaft laid along the way it is going.
+    const span = Math.hypot(shot.toX - shot.fromX, shot.toY - shot.fromY) || 1;
+    const dx = ((shot.toX - shot.fromX) / span) * 0.18;
+    const dy = ((shot.toY - shot.fromY) / span) * 0.18;
+    face(
+      ctx,
+      camera,
+      [
+        [at.x - dx, at.y - dy, at.z],
+        [at.x + dx, at.y + dy, at.z],
+        [at.x + dx, at.y + dy, at.z + 0.05],
+        [at.x - dx, at.y - dy, at.z + 0.05],
+      ],
+      "#8a6136",
+      1.1,
+    );
+    return;
+  }
+  // A rune spell travels as a knot of blue fire.
+  for (const [size, colour] of [
+    [0.17, "#4a7ab0"],
+    [0.1, "#bcd8ff"],
+  ] as const) {
+    box(
+      ctx,
+      camera,
+      at.x - size / 2,
+      at.y - size / 2,
+      size,
+      size,
+      at.z,
+      at.z + size,
+      colour,
+      [true, true, true, true],
+    );
+  }
+}
+
 /* ------------------------------------------------------------- billboards */
 
 function drawGroundItem(
@@ -1109,15 +1210,60 @@ function drawGroundItem(
   ctx.globalAlpha = 1;
 }
 
+/** Still going down, so it is worth drawing even though it is dead. */
+function falling(actor: Player | Npc, time: number): boolean {
+  return (
+    actor.anim?.kind === "death" && time - actor.anim.bornAt < MOTIONS.death.ms
+  );
+}
+
+/**
+ * What an actor is visibly doing this frame. A one-shot lapses when its time is
+ * up, except a death, which stays down until whatever died comes back.
+ */
+function poseOf(state: GameState, actor: Player | Npc, time: number): Pose {
+  const walking = walkPhase(actor.path.length > 0, time);
+  const anim = actor.anim;
+  if (anim) {
+    const spec = MOTIONS[anim.kind];
+    const t = (time - anim.bornAt) / spec.ms;
+    if (spec.loop) return poseFor(anim.kind, t % 1, walking);
+    if (t < 1) return poseFor(anim.kind, t, walking);
+    if (anim.kind === "death") return poseFor("death", 1, walking);
+  }
+  // Skilling runs for as long as the job does, so it comes from the activity.
+  const job = actor === state.player ? skillingMotion(state) : null;
+  if (job) return poseFor(job, (time / MOTIONS[job].ms) % 1, walking);
+  return poseFor(null, 0, walking);
+}
+
+/** The looping animation for whatever the player is working at. */
+function skillingMotion(state: GameState): Motion | null {
+  const activity = state.player.activity;
+  if (activity?.kind !== "gather") return null;
+  const object = state.map.objects[activity.objectIndex];
+  switch (object && getObjectDef(object.defId).gather?.skill) {
+    case "woodcutting":
+      return "chop";
+    case "mining":
+      return "mine";
+    case "fishing":
+      return "fish";
+    default:
+      return null;
+  }
+}
+
 function drawNpcActor(
   ctx: CanvasRenderingContext2D,
   camera: Camera,
+  state: GameState,
   npc: Npc,
   time: number,
 ): void {
   const sprite = getNpcDef(npc.defId).sprite;
   const at = { x: npc.fx + 0.5, y: npc.fy + 0.5 };
-  const phase = walkPhase(npc.path.length > 0, time);
+  const pose = poseOf(state, npc, time);
   if (sprite.kind === "humanoid") {
     drawPerson(
       ctx,
@@ -1131,28 +1277,29 @@ function drawNpcActor(
         height: sprite.height,
       },
       npc.facing,
-      phase,
+      pose,
     );
   } else if (sprite.kind === "beast") {
-    drawBeast(ctx, camera, at, sprite, npc.facing, phase);
+    drawBeast(ctx, camera, at, sprite, npc.facing, pose);
   } else {
-    drawBird(ctx, camera, at, sprite, npc.facing, phase);
+    drawBird(ctx, camera, at, sprite, npc.facing, pose);
   }
 }
 
 function drawPlayer(
   ctx: CanvasRenderingContext2D,
   camera: Camera,
-  player: Player,
+  state: GameState,
   time: number,
 ): void {
+  const { player } = state;
   drawPerson(
     ctx,
     camera,
     { x: player.fx + 0.5, y: player.fy + 0.5 },
     playerLook(player),
     player.facing,
-    walkPhase(player.path.length > 0, time),
+    poseOf(state, player, time),
   );
 }
 

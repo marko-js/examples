@@ -70,6 +70,7 @@ import {
   type GroundItem,
   type ItemStack,
   type MessageTone,
+  type Motion,
   type Npc,
   npcByUid,
   type Player,
@@ -147,6 +148,7 @@ export class Engine {
       groundItems: [],
       messages: [],
       splats: [],
+      projectiles: [],
       overlay: { kind: "none" },
       dialogue: null,
       marker: null,
@@ -212,6 +214,9 @@ export class Engine {
       if (!npc.respawnTick) this.step(npc, seconds);
     this.state.splats = this.state.splats.filter(
       (splat) => now - splat.bornAt < 1200,
+    );
+    this.state.projectiles = this.state.projectiles.filter(
+      (shot) => now - shot.bornAt < shot.ms,
     );
 
     if (this.uiDirty) {
@@ -456,9 +461,11 @@ export class Engine {
         this.equip(slot);
         break;
       case "eat":
+        this.animate(player, "eat");
         this.eat(slot, def);
         break;
       case "bury":
+        this.animate(player, "crouch");
         this.bury(slot, def);
         break;
       case "select":
@@ -678,8 +685,11 @@ export class Engine {
     }
 
     player.facing = directionTo(player, npc);
+    this.animate(player, "cast");
+    this.launch("spell", player, npc, 320);
     const damage = rollSpellDamage(magic, spell, this.random);
     npc.hitpoints = Math.max(0, npc.hitpoints - damage);
+    this.animate(npc, damage ? "flinch" : "swing");
     this.splat(npc, damage);
     this.addXp("magic", damage ? spell.xp : Math.ceil(spell.xp / 2));
     this.setFlag("spellCast");
@@ -870,6 +880,7 @@ export class Engine {
     for (const object of this.state.map.objects) {
       if (object?.defId === "tut_door" && object.stage === stage) {
         object.defId = "gate";
+        object.openedAt = this.now;
       }
     }
   }
@@ -943,19 +954,38 @@ export class Engine {
   }
 
   private tryPending(): void {
-    const { player } = this.state;
+    const { state } = this;
+    const { player } = state;
     const pending = player.pending;
     if (!pending) return;
 
     const tile = this.targetTile(pending.target);
     if (!tile) {
       player.pending = null;
+      state.action = null;
       return;
     }
-    if (pending.target.kind === "ground") {
-      if (player.x !== tile.x || player.y !== tile.y) return;
-    } else if (!isAdjacent(player, tile)) {
-      if (!player.path.length) this.repathTo(tile);
+
+    const onTop = pending.target.kind === "ground";
+    const arrived = onTop
+      ? player.x === tile.x && player.y === tile.y
+      : isAdjacent(player, tile);
+
+    if (!arrived) {
+      // Still walking. Otherwise work out a way there, and say so when there
+      // is none, rather than standing still and never explaining why.
+      if (player.path.length) return;
+      const stand = onTop ? tile : adjacentTile(state.map, player, tile);
+      const path = stand ? findPath(state.map, player, stand) : [];
+      if (path.length) {
+        player.path = path;
+        return;
+      }
+      player.pending = null;
+      state.action = null;
+      state.marker = null;
+      this.message("game", "I can't reach that!");
+      this.invalidate();
       return;
     }
 
@@ -1070,7 +1100,13 @@ export class Engine {
 
     const def = getNpcDef(npc.defId);
     const shooting = range > 1;
-    if (shooting) removeItem(player.inventory, "bronze_arrows");
+    if (shooting) {
+      removeItem(player.inventory, "bronze_arrows");
+      this.animate(player, "shoot");
+      this.launch("arrow", player, npc, 260);
+    } else {
+      this.animate(player, "swing");
+    }
     const damage = rollDamage(
       this.playerFighter(shooting),
       npcFighter(def),
@@ -1084,11 +1120,14 @@ export class Engine {
       this.killNpc(npc, def);
       return;
     }
+    this.animate(npc, damage ? "flinch" : "swing");
 
     // Everything here swings a blade, so one overhead turns it all aside.
     const back = this.protectedFrom("melee")
       ? 0
       : rollDamage(npcFighter(def), this.playerFighter(), this.random);
+    if (!this.protectedFrom("melee")) this.animate(npc, "swing");
+    if (back) this.animate(player, "flinch");
     this.damagePlayer(back);
     this.invalidate();
   }
@@ -1126,6 +1165,7 @@ export class Engine {
       );
     }
     state.player.activity = null;
+    this.animate(npc, "death");
     npc.respawnTick = state.tick + Math.max(10, def.respawnTicks);
     npc.targetPlayer = false;
     npc.path = [];
@@ -1155,6 +1195,7 @@ export class Engine {
     state.player.pending = null;
     state.player.path = [];
     state.player.respawnTick = state.tick + 3;
+    this.animate(state.player, "death");
     for (const npc of state.npcs) npc.targetPlayer = false;
     this.message("combat", "Oh dear, you are dead!");
     this.splatText(state.player, "Dead", "level");
@@ -1163,6 +1204,7 @@ export class Engine {
   private respawnPlayer(): void {
     const { player } = this.state;
     player.respawnTick = null;
+    player.anim = null;
     player.x = RESPAWN_TILE.x;
     player.y = RESPAWN_TILE.y;
     player.fx = RESPAWN_TILE.x;
@@ -1366,6 +1408,7 @@ export class Engine {
       y: player.y,
       readyAt: this.state.tick + FIRE_TICKS,
     };
+    this.animate(this.state.player, "crouch");
     this.addXp("firemaking", logs.burnXp ?? 40);
     this.message("skill", "The fire catches and the logs begin to burn.");
     return true;
@@ -1385,6 +1428,7 @@ export class Engine {
     removeItem(player.inventory, "tin_ore");
     addItem(player.inventory, "bronze_bar");
     this.setFlag("barSmelted");
+    this.animate(player, "smith");
     this.addXp("smithing", SMELT_XP.bronze);
     this.message("skill", "You smelt the ore into a bronze bar.");
   }
@@ -1411,6 +1455,7 @@ export class Engine {
     removeAt(player.inventory, slot, 1);
     addItem(player.inventory, recipe.into);
     if (recipe.into === "bronze_dagger") this.setFlag("daggerSmithed");
+    this.animate(player, "smith");
     this.addXp("smithing", recipe.xp);
     this.message(
       "skill",
@@ -1446,6 +1491,7 @@ export class Engine {
     addItem(player.inventory, cook.into);
     if (cook.into === "shrimp") this.setFlag("shrimpCooked");
     if (cook.into === "bread") this.setFlag("breadBaked");
+    this.animate(player, "cook");
     this.addXp("cooking", cook.xp);
     this.message(
       "skill",
@@ -1505,6 +1551,7 @@ export class Engine {
     const stack = player.inventory[slot];
     if (!stack) return;
     const count = removeAt(player.inventory, slot, stack.count);
+    this.animate(player, "crouch");
     this.dropOnGround(stack.id, count, player.x, player.y);
     this.message("game", `You drop the ${itemName(stack.id).toLowerCase()}.`);
   }
@@ -1518,6 +1565,7 @@ export class Engine {
       this.message("game", "Your inventory is full.");
       return;
     }
+    this.animate(state.player, "crouch");
     state.groundItems = state.groundItems.filter(
       (entry) => entry.uid !== item.uid,
     );
@@ -1594,11 +1642,11 @@ export class Engine {
     const { player } = state;
     npc.nextRoundTick = state.tick + TICKS_PER_ROUND;
     npc.facing = directionTo(npc, player);
-    const damage = rollDamage(
-      npcFighter(def),
-      this.playerFighter(),
-      this.random,
-    );
+    this.animate(npc, "swing");
+    const damage = this.protectedFrom("melee")
+      ? 0
+      : rollDamage(npcFighter(def), this.playerFighter(), this.random);
+    if (damage) this.animate(player, "flinch");
     this.damagePlayer(damage);
     this.invalidate();
   }
@@ -1615,6 +1663,7 @@ export class Engine {
   private reviveNpc(npc: Npc): void {
     const def = getNpcDef(npc.defId);
     npc.respawnTick = null;
+    npc.anim = null;
     npc.hitpoints = def.levels.hitpoints;
     npc.maxHitpoints = def.levels.hitpoints;
     npc.x = npc.home.x;
@@ -1720,6 +1769,32 @@ export class Engine {
     if (Math.floor(energy) !== Math.floor(player.runEnergy)) {
       this.uiDirty = true;
     }
+  }
+
+  /* ----------------------------------------------------------- animation */
+
+  /** Play a one-shot animation on an actor, from this frame. */
+  private animate(actor: Player | Npc, kind: Motion): void {
+    actor.anim = { kind, bornAt: this.now };
+  }
+
+  /** Put something in the air between two tiles. */
+  private launch(
+    kind: "arrow" | "spell",
+    from: Point,
+    to: Point,
+    ms: number,
+  ): void {
+    this.state.projectiles.push({
+      uid: this.state.nextUid++,
+      kind,
+      fromX: from.x,
+      fromY: from.y,
+      toX: to.x,
+      toY: to.y,
+      bornAt: this.now,
+      ms,
+    });
   }
 
   /* --------------------------------------------------------------- prayer */
@@ -1933,6 +2008,7 @@ export class Engine {
           targetPlayer: false,
           nextRoundTick: 0,
           nextWanderTick: 0,
+          anim: null,
         });
       }
     }

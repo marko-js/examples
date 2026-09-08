@@ -79,3 +79,19 @@ test("the shop snapshot names the counter's own shop and prices its stock", () =
   expect(bread.count).toBe(20);
   expect(ui.coins).toBe(countItem(engine.state.player.inventory, "coins"));
 });
+
+test("a snapshot is a copy, so a new message reads as a change", () => {
+  const engine = createMainlandEngine();
+  const before = snapshot(engine);
+  expect(before.messages).not.toBe(engine.state.messages);
+
+  engine.message("game", "You need Mining level 40 to do that.");
+  const after = snapshot(engine);
+  expect(after.messages).not.toBe(before.messages);
+  expect(after.messages.at(-1)?.text).toBe(
+    "You need Mining level 40 to do that.",
+  );
+  expect(before.messages.at(-1)?.text).not.toBe(
+    "You need Mining level 40 to do that.",
+  );
+});

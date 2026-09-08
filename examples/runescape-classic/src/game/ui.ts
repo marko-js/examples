@@ -184,7 +184,9 @@ export function buildUi(input: UiInput): UiState {
     })),
     bonus: equipmentBonus(player),
     coins: countItem(player.inventory, "coins"),
-    messages: input.messages,
+    // A copy: the engine pushes into its own list, and a snapshot that shared
+    // it would never look different to the interface watching it.
+    messages: [...input.messages],
     selectedSlot: player.selectedSlot,
     overlay: input.overlay.kind,
     bank: player.bank.map((stack, slot) => toItem(stack, slot)!),

@@ -59,6 +59,9 @@ sit over it, and every control works by touch.
 - **Tap** an inventory item to wield, eat or bury it. **Hold** it to use, drop
   or examine it.
 - Tap the **minimap** to travel further, or the **⛶** button for full screen.
+- Everything you do is animated: chopping and mining swing, fishing hauls,
+  praying and lighting a fire crouch, blows land and are flinched at, arrows
+  and spells fly, and what dies falls over.
 - The chat tab opens the box to type in; the **▾** on its strip folds it away
   again. Held sideways the controls hug the corner rather than banding across
   the bottom.

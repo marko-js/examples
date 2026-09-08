@@ -640,6 +640,8 @@ export interface WorldObject {
   stage?: number;
   /** For a shop counter: which shop it opens. */
   shopId?: string;
+  /** When a door was opened, so it can be drawn swinging back. */
+  openedAt?: number;
 }
 
 export interface NpcSpawn {
