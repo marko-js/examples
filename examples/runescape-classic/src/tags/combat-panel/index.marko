@@ -1,0 +1,42 @@
+import { COMBAT_STYLES, type CombatStyle } from "../../game/state";
+import styles from "./styles.module.css";
+
+export interface Input {
+  /** What is being swung, or nothing when fighting bare handed. */
+  weapon: string;
+  combatLevel: number;
+  maxHit: number;
+  combatStyle: CombatStyle;
+  onCombatStyle: (style: CombatStyle) => void;
+}
+
+<h3 class=styles.weapon>${input.weapon}</h3>
+
+<ul class=styles.styles>
+  <for|style| of=COMBAT_STYLES by="id">
+    <li>
+      <button
+        type="button"
+        class=[styles.style, input.combatStyle === style.id && styles.on]
+        aria-pressed=input.combatStyle === style.id && "true"
+        onClick() {
+          input.onCombatStyle(style.id);
+        }
+      >
+        <span class=styles.styleName>${style.name}</span>
+        <span class=styles.blurb>${style.blurb}</span>
+      </button>
+    </li>
+  </for>
+</ul>
+
+<dl class=styles.totals>
+  <div>
+    <dt>Combat level</dt>
+    <dd>${input.combatLevel}</dd>
+  </div>
+  <div>
+    <dt>Max hit</dt>
+    <dd>${input.maxHit}</dd>
+  </div>
+</dl>

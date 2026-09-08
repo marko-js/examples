@@ -1,7 +1,8 @@
+/* The client's skills tab: three columns of boxes, levels in yellow. */
 .list {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -9,24 +10,28 @@
 
 .skill {
   position: relative;
-  display: flex;
-  justify-content: space-between;
-  gap: 4px;
+  display: grid;
+  gap: 1px;
   overflow: hidden;
   border: 1px solid var(--rs-slot-border);
-  border-radius: 2px;
   background: var(--rs-slot);
-  padding: 2px 4px 4px;
+  padding: 3px 4px 5px;
   font-size: 10px;
   line-height: 1.2;
 }
 
 .name {
+  overflow: hidden;
   color: var(--rs-text-dim);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .level {
   color: var(--rs-gold);
+  font-size: 12px;
+  font-weight: bold;
+  text-align: right;
 }
 
 .altered {
@@ -45,15 +50,18 @@
 }
 
 .totals {
+  display: grid;
+  gap: 2px;
   margin: 8px 0 0;
-  font-size: 11px;
   color: var(--rs-text-dim);
+  font-size: 11px;
 }
 
 .totals > div {
   display: flex;
   justify-content: space-between;
-  padding: 1px 2px;
+  border-top: 1px solid var(--rs-slot-border);
+  padding: 3px 2px 0;
 }
 
 .totals dt,
@@ -62,5 +70,5 @@
 }
 
 .totals dd {
-  color: var(--rs-text);
+  color: var(--rs-gold);
 }

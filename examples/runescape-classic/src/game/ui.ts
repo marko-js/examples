@@ -10,6 +10,7 @@ import {
   EQUIP_SLOTS,
   type EquipSlot,
   getItem,
+  itemName,
 } from "./items";
 import {
   baseLevels,
@@ -107,6 +108,8 @@ export interface UiState {
   shopName: string;
   shop: UiShopEntry[];
   combatStyle: CombatStyle;
+  /** What the player is fighting with, for the combat tab. */
+  weapon: string;
   running: boolean;
   /** Run energy left, 0 to 100. */
   runEnergy: number;
@@ -179,6 +182,9 @@ export function buildUi(input: UiInput): UiState {
         price: buyPrice(getItem(stock.id)),
       })),
     combatStyle: player.combatStyle,
+    weapon: player.equipment.weapon
+      ? itemName(player.equipment.weapon)
+      : "Unarmed",
     running: player.running,
     runEnergy: Math.round(player.runEnergy),
     dialogue: input.dialogue ?? null,

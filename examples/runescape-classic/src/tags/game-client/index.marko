@@ -6,6 +6,7 @@ import {
   gearIcon,
   spellbookIcon,
   statsIcon,
+  swordIcon,
 } from "../../game/icons";
 import type { EquipSlot } from "../../game/items";
 import type { MenuEntry, MenuState } from "../../game/menu";
@@ -24,6 +25,7 @@ import { buildUi, initialUi } from "../../game/ui";
 import styles from "./styles.module.css";
 
 static const TABS = [
+  { id: "combat", name: "Combat", icon: swordIcon("#a97142", "#cd9560") },
   { id: "inventory", name: "Inventory", icon: bagIcon() },
   { id: "equipment", name: "Worn", icon: gearIcon() },
   { id: "magic", name: "Magic", icon: spellbookIcon() },
@@ -335,6 +337,18 @@ static const LONG_PRESS_MS = 420;
     </header>
 
     <div class=styles.panelBody>
+      <show=tab === "combat">
+        <combat-panel
+          weapon=ui.weapon
+          combatLevel=ui.combatLevel
+          maxHit=ui.maxHit
+          combatStyle=ui.combatStyle
+          onCombatStyle(style: CombatStyle) {
+            session.engine?.setCombatStyle(style);
+          }
+        />
+      </show>
+
       <show=tab === "inventory">
         <inventory-panel
           items=ui.inventory
@@ -388,12 +402,8 @@ static const LONG_PRESS_MS = 420;
       <show=tab === "settings">
         <settings-panel
           name=ui.name
-          combatStyle=ui.combatStyle
           onName(value) {
             session.engine?.setName(value);
-          }
-          onCombatStyle(style: CombatStyle) {
-            session.engine?.setCombatStyle(style);
           }
           onReset() {
             clearSave();

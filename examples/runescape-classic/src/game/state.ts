@@ -15,19 +15,20 @@ import type { WorldMap } from "./world";
 export type CombatStyle =
   "controlled" | "aggressive" | "accurate" | "defensive";
 
+/** In the order the client lists them under a blade: chop, slash, lunge, block. */
 export const COMBAT_STYLES: { id: CombatStyle; name: string; blurb: string }[] =
   [
-    {
-      id: "controlled",
-      name: "Controlled",
-      blurb: "Shared attack, strength and defence",
-    },
+    { id: "accurate", name: "Accurate", blurb: "All experience into attack" },
     {
       id: "aggressive",
       name: "Aggressive",
       blurb: "All experience into strength",
     },
-    { id: "accurate", name: "Accurate", blurb: "All experience into attack" },
+    {
+      id: "controlled",
+      name: "Controlled",
+      blurb: "Shared attack, strength and defence",
+    },
     {
       id: "defensive",
       name: "Defensive",

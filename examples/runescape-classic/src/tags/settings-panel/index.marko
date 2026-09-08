@@ -1,11 +1,8 @@
-import { COMBAT_STYLES, type CombatStyle } from "../../game/state";
 import styles from "./styles.module.css";
 
 export interface Input {
   name: string;
-  combatStyle: CombatStyle;
   onName: (name: string) => void;
-  onCombatStyle: (style: CombatStyle) => void;
   onReset: () => void;
 }
 
@@ -22,27 +19,6 @@ export interface Input {
       input.onName(draft);
     }
   >
-</section>
-
-<section class=styles.section>
-  <h3 class=styles.heading>Combat style</h3>
-  <for|style| of=COMBAT_STYLES by="id">
-    <label class=[
-      styles.option,
-      input.combatStyle === style.id && styles.active,
-    ]>
-      <input
-        type="radio"
-        name="combat-style"
-        value=style.id
-        checkedValue=input.combatStyle
-        onChange() {
-          input.onCombatStyle(style.id);
-        }
-      >
-      <span><strong>${style.name}</strong><small>${style.blurb}</small></span>
-    </label>
-  </for>
 </section>
 
 <section class=styles.section>

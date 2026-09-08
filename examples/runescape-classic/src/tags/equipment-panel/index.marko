@@ -2,6 +2,22 @@ import type { Bonus, EquipSlot } from "../../game/items";
 import type { UiEquipSlot } from "../../game/ui";
 import styles from "./styles.module.css";
 
+/** The client hangs the worn gear on a figure; empty cells are the gaps. */
+static const LAYOUT: (EquipSlot | null)[] = [
+  null,
+  "helmet",
+  null,
+  "cape",
+  "amulet",
+  "ammo",
+  "weapon",
+  "body",
+  "shield",
+  null,
+  "legs",
+  null,
+];
+
 export interface Input {
   slots: UiEquipSlot[];
   bonus: Bonus;
@@ -9,16 +25,27 @@ export interface Input {
   onRemove: (slot: EquipSlot) => void;
 }
 
-<div class=styles.grid>
-  <for|entry| of=input.slots by="slot">
-    <item-slot
-      item=entry.item
-      caption=entry.item ? undefined : entry.name
-      title=entry.item ? `${entry.item.name} — click to remove` : entry.name
-      onSelect() {
-        if (entry.item) input.onRemove(entry.slot);
-      }
-    />
+<div class=styles.doll>
+  <for|slot| of=LAYOUT by=(slot) => slot ?? "gap">
+    <if=slot>
+      <const/entry=input.slots.find((found) => found.slot === slot)>
+      <div class=styles.cell>
+        <if=entry>
+          <item-slot
+            item=entry.item
+            title=(
+              entry.item ? `${entry.item.name} — click to remove` : entry.name
+            )
+            onSelect() {
+              if (entry.item) input.onRemove(entry.slot);
+            }
+          />
+        </if>
+      </div>
+    </if>
+    <else>
+      <div/>
+    </else>
   </for>
 </div>
 

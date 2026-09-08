@@ -1,7 +1,16 @@
-.grid {
+.doll {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 2px;
+  grid-auto-rows: 46px;
+  grid-template-columns: repeat(3, 46px);
+  gap: 4px;
+  justify-content: center;
+  padding: 6px 0 2px;
+}
+
+.cell {
+  display: grid;
+  border: 1px solid var(--rs-slot-border);
+  background: var(--rs-slot);
 }
 
 .stats {
