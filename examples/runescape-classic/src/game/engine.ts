@@ -150,6 +150,7 @@ export class Engine {
       overlay: { kind: "none" },
       dialogue: null,
       marker: null,
+      action: null,
       shopStock: createStock(),
       nextUid: 1,
       nextMessageId: 1,
@@ -345,7 +346,8 @@ export class Engine {
 
   /** Run a menu option, walking to the target first when it is out of reach. */
   choose(option: MenuOption): void {
-    const { player } = this.state;
+    const { state } = this;
+    const { player } = state;
     if (option.action === "examine") {
       this.message("game", this.examine(option.target));
       this.invalidate();
@@ -356,10 +358,14 @@ export class Engine {
     player.pending = null;
 
     if (option.action === "walk" && option.target.kind === "tile") {
+      state.action = null;
       this.walkTo(option.target);
       this.invalidate();
       return;
     }
+
+    // The client names what you are on your way to do until it is done.
+    state.action = option.label;
 
     const pending = {
       target: option.target,
@@ -372,12 +378,15 @@ export class Engine {
     const tile = this.targetTile(option.target);
     if (!tile) {
       player.pending = null;
-    } else if (option.target.kind === "ground") {
-      this.walkTo(tile);
-    } else if (!isAdjacent(player, tile)) {
-      const stand = adjacentTile(this.state.map, player, tile);
-      if (stand) player.path = findPath(this.state.map, player, stand);
-      this.mark(tile);
+      state.action = null;
+    } else {
+      this.mark(tile, "action");
+      if (option.target.kind === "ground") {
+        player.path = findPath(this.state.map, player, tile);
+      } else if (!isAdjacent(player, tile)) {
+        const stand = adjacentTile(this.state.map, player, tile);
+        if (stand) player.path = findPath(this.state.map, player, stand);
+      }
     }
     this.tryPending();
     this.invalidate();
@@ -390,8 +399,8 @@ export class Engine {
   }
 
   /** Drop the click marker the client draws while you walk. */
-  private mark(tile: Point): void {
-    this.state.marker = { x: tile.x, y: tile.y, bornAt: this.now };
+  private mark(tile: Point, kind: "walk" | "action" = "walk"): void {
+    this.state.marker = { x: tile.x, y: tile.y, bornAt: this.now, kind };
   }
 
   /** What the pointer is over, split so the interface can colour it. */
@@ -921,6 +930,11 @@ export class Engine {
 
     this.tryPending();
     this.runActivity();
+    // The label over the view stands only while there is something to do.
+    if (!state.player.pending && !state.player.activity && state.action) {
+      state.action = null;
+      this.uiDirty = true;
+    }
     this.runNpcs();
     this.expireObjects();
     this.expireGroundItems();

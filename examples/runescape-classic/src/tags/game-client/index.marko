@@ -108,6 +108,7 @@ static const ZOOM_STEP = 1.12;
     region: game.region,
     dialogue: game.dialogueView,
     spells: game.spellbook,
+    action: game.state.action,
     objective: game.tutorialObjective,
   });
 }>
@@ -309,6 +310,7 @@ static const ZOOM_STEP = 1.12;
         <span class=styles.more>/ ${hover.more} more options</span>
       </if>
     </if>
+    <else-if=ui.action><span class=styles.verb>${ui.action}</span></else-if>
   </p>
 
   <div class=styles.sidebar aria-hidden="true"/>

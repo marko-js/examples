@@ -307,3 +307,36 @@ test("renaming trims, caps at twelve characters, and ignores blanks", () => {
   engine.setName("   ");
   expect(engine.state.player.name).toBe("Duke Horacio");
 });
+
+test("the click marker and the label say what the click was for", () => {
+  const engine = createMainlandEngine();
+  const { state } = engine;
+  const tree = nearestObject(engine, (object) => object.defId === "tree");
+
+  const empty = { x: state.player.x, y: state.player.y };
+  for (let step = 1; !isWalkable(state.map, empty.x, empty.y); step++) {
+    empty.x = state.player.x + step;
+  }
+  engine.choose({
+    label: "Walk here",
+    verb: "Walk here",
+    action: "walk",
+    target: { kind: "tile", ...empty },
+  });
+  expect(state.marker?.kind).toBe("walk");
+  expect(state.action).toBeNull();
+
+  const chop = engine.optionsAt(tree.x, tree.y)[0];
+  expect(chop.label).toBe("Chop Tree");
+  engine.choose(chop);
+  expect(state.marker).toMatchObject({ x: tree.x, y: tree.y, kind: "action" });
+  expect(state.action).toBe("Chop Tree");
+
+  // It stands while there is something to do, and goes once there is not.
+  advanceUntil(
+    engine,
+    () => countItem(engine.state.player.inventory, "logs") > 0,
+  );
+  advance(engine, 1200);
+  expect(state.action).toBeNull();
+});

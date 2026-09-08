@@ -52,7 +52,8 @@ sit over it, and every control works by touch.
 
 - **Tap** the world to walk, or to run the first action on whatever is under
   your finger — a tap on someone's chest reaches them, not the ground behind.
-  **Hold** (or right click) anything for the full menu.
+  A walk drops a yellow cross, something to do drops a red one and names itself
+  over the view. **Hold** (or right click) anything for the full menu.
 - **Drag** to swing the camera round and tilt it, **pinch** or scroll to zoom,
   and tap the **compass** to face north again. The arrow keys do the same.
 - **Tap** an inventory item to wield, eat or bury it. **Hold** it to use, drop

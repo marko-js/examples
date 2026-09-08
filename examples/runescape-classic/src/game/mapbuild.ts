@@ -173,9 +173,10 @@ export function building(
   }
 }
 
-/** The red clay roof Classic put on almost everything. */
-export const ROOF_TILE = "#a0503c";
-export const ROOF_WOOD = "#8a5f33";
+/** The red clay tile on almost every roof, with slate on the odd one. */
+export const ROOF_TILE = "#a8503c";
+export const ROOF_SLATE = "#6f6b73";
+export const ROOF_WOOD = "#7d5730";
 
 /** Fence around a rect's perimeter, with a gate in the south side to get in. */
 export function fence(

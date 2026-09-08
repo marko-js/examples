@@ -129,6 +129,8 @@ export interface UiState {
   runEnergy: number;
   dialogue: UiDialogue | null;
   spells: UiSpell[];
+  /** What the player is on their way to do, or null when they are idle. */
+  action: string | null;
   /** Current Tutorial Island objective, or null once it is finished. */
   objective: string | null;
 }
@@ -142,6 +144,7 @@ export interface UiInput {
   region: string;
   dialogue?: UiDialogue | null;
   spells?: { id: string; name: string; level: number; ready: boolean }[];
+  action?: string | null;
   objective?: string | null;
 }
 
@@ -216,6 +219,7 @@ export function buildUi(input: UiInput): UiState {
       ...spell,
       selected: player.selectedSpell === spell.id,
     })),
+    action: input.action ?? null,
     objective: input.objective ?? null,
   };
 }

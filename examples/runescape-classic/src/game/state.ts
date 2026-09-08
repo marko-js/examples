@@ -180,8 +180,18 @@ export interface GameState {
   splats: Splat[];
   overlay: Overlay;
   dialogue: DialogueState | null;
-  /** Where the player last asked to go, drawn as the click marker. */
-  marker: { x: number; y: number; bornAt: number } | null;
+  /**
+   * Where the player last asked to go, drawn as the click marker: yellow for a
+   * walk, red for something to do when they get there.
+   */
+  marker: {
+    x: number;
+    y: number;
+    bornAt: number;
+    kind: "walk" | "action";
+  } | null;
+  /** What the player is on their way to do, shown over the view. */
+  action: string | null;
   /** Stock per shop, keyed by shop id. */
   shopStock: Record<string, ItemStack[]>;
   nextUid: number;

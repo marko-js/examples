@@ -24,7 +24,7 @@ import {
   type WorldObject,
 } from "../world";
 import { drawBeast, drawBird, drawPerson } from "./actors";
-import { box, face, fogAt, rgbOf, shingles, type Vertex } from "./paint";
+import { box, face, fogAt, rgbOf, type Vertex } from "./paint";
 import {
   type Camera,
   cameraAt,
@@ -50,7 +50,7 @@ export interface Viewport {
 
 /** Past the draw distance there is nothing, the way Classic showed it. */
 const VOID = 0;
-const FOG_TILES = 14;
+const FOG_TILES = 8;
 
 export function viewportFor(
   width: number,
@@ -627,9 +627,8 @@ function drawScene(
   }
 
   for (const roof of map.roofs) {
-    if (inside(roof, player.x, player.y)) continue;
-    const spot = project(camera, roof.x + roof.w / 2, roof.y + roof.h / 2, 0);
-    add(spot, () => drawRoof(ctx, camera, roof, near(spot)));
+    if (blocks(roof, camera, player)) continue;
+    addRoof(ctx, camera, roof, add);
   }
 
   for (const item of state.groundItems) {
@@ -688,14 +687,37 @@ function addRipples(
   });
 }
 
-/** Inside, or standing in the doorway, which is where the roof lifts away. */
-function inside(roof: Roof, x: number, y: number): boolean {
-  return (
-    x >= roof.x - 1 &&
-    y >= roof.y - 1 &&
-    x < roof.x + roof.w + 1 &&
-    y < roof.y + roof.h + 1
-  );
+/**
+ * A roof lifts away when it stands between the camera and the player, which
+ * covers being inside it, standing in its doorway, and being behind it — you
+ * can always see yourself and the street you are on.
+ */
+function blocks(
+  roof: Roof,
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+): boolean {
+  const edge = ROOF_EAVE + 0.5;
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  let near = 0;
+  let far = 1;
+
+  for (const [along, low, high] of [
+    [dx, roof.x - edge - from.x, roof.x + roof.w + edge - from.x],
+    [dy, roof.y - edge - from.y, roof.y + roof.h + edge - from.y],
+  ] as const) {
+    if (Math.abs(along) < 1e-9) {
+      if (low > 0 || high < 0) return false;
+      continue;
+    }
+    const a = low / along;
+    const b = high / along;
+    near = Math.max(near, Math.min(a, b));
+    far = Math.min(far, Math.max(a, b));
+    if (near > far) return false;
+  }
+  return true;
 }
 
 /* ----------------------------------------------------------------- models */
@@ -865,89 +887,81 @@ function window(
 }
 
 /**
- * A hipped roof: the eaves overhang the walls a little and the ridge runs
- * along whichever way the building is longer.
+ * A hipped roof, cut into cells no bigger than a tile. One plate for the whole
+ * roof cannot be sorted against the walls and people around it — it either
+ * swallowed them or hid behind them — so each cell is sorted on its own depth,
+ * which also gives the roof its courses of tile for nothing.
  */
-function drawRoof(
+const ROOF_EAVE = 0.25;
+
+/** How high the roof stands over a point on it, given its footprint. */
+function roofHeight(roof: Roof, x: number, y: number): number {
+  const low = WALL_HEIGHT;
+  const rise = Math.min(2.4, Math.min(roof.w, roof.h) * 0.45 + 0.4);
+  const run = Math.min(roof.w, roof.h) / 2 + ROOF_EAVE;
+  const inX = Math.min(
+    x - (roof.x - ROOF_EAVE),
+    roof.x + roof.w + ROOF_EAVE - x,
+  );
+  const inY = Math.min(
+    y - (roof.y - ROOF_EAVE),
+    roof.y + roof.h + ROOF_EAVE - y,
+  );
+  return low + rise * Math.min(1, Math.max(0, Math.min(inX, inY) / run));
+}
+
+function addRoof(
   ctx: CanvasRenderingContext2D,
   camera: Camera,
   roof: Roof,
-  detail: boolean,
+  add: Add,
 ): void {
-  const eave = 0.38;
-  const x1 = roof.x - eave;
-  const x2 = roof.x + roof.w + eave;
-  const y1 = roof.y - eave;
-  const y2 = roof.y + roof.h + eave;
-  const low = WALL_HEIGHT;
-  const high = low + Math.min(2.2, Math.min(roof.w, roof.h) * 0.42 + 0.5);
-  const inset = Math.min(roof.w, roof.h) / 2;
-  const alongX = roof.w >= roof.h;
-  const ridge: [Point, Point] = alongX
-    ? [
-        { x: x1 + inset, y: (y1 + y2) / 2 },
-        { x: x2 - inset, y: (y1 + y2) / 2 },
-      ]
-    : [
-        { x: (x1 + x2) / 2, y: y1 + inset },
-        { x: (x1 + x2) / 2, y: y2 - inset },
-      ];
-
-  const slopes: [readonly Vertex[], number][] = [
-    [
-      [
-        [x1, y1, low],
-        [x2, y1, low],
-        [ridge[1].x, ridge[1].y, high],
-        [ridge[0].x, ridge[0].y, high],
-      ],
-      1.14,
-    ],
-    [
-      [
-        [x1, y2, low],
-        [x2, y2, low],
-        [ridge[1].x, ridge[1].y, high],
-        [ridge[0].x, ridge[0].y, high],
-      ],
-      0.72,
-    ],
-    [
-      [
-        [x1, y1, low],
-        [x1, y2, low],
-        [ridge[0].x, ridge[0].y, high],
-      ],
-      0.88,
-    ],
-    [
-      [
-        [x2, y1, low],
-        [x2, y2, low],
-        [ridge[1].x, ridge[1].y, high],
-      ],
-      0.98,
-    ],
-  ];
+  const x1 = roof.x - ROOF_EAVE;
+  const x2 = roof.x + roof.w + ROOF_EAVE;
+  const y1 = roof.y - ROOF_EAVE;
+  const y2 = roof.y + roof.h + ROOF_EAVE;
+  // Close up, halve the cells so the ridges and hips stop looking sawn.
+  const centre = project(camera, roof.x + roof.w / 2, roof.y + roof.h / 2, 0);
+  const per = centre.depth < DETAIL_TILES * 0.6 ? 2 : 1;
+  const cols = Math.ceil((x2 - x1) * per);
+  const rows = Math.ceil((y2 - y1) * per);
+  const stepX = (x2 - x1) / cols;
+  const stepY = (y2 - y1) / rows;
   // A touch of variation per building, so a street of roofs is not one slab.
-  const tint = 0.92 + hash2d(roof.x, roof.y, 11) * 0.18;
-  for (const [points, light] of slopes) {
-    face(ctx, camera, points, roof.colour, light * tint);
+  const tint = 0.92 + hash2d(roof.x, roof.y, 11) * 0.16;
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const ax = x1 + col * stepX;
+      const bx = ax + stepX;
+      const ay = y1 + row * stepY;
+      const by = ay + stepY;
+      const corners: Vertex[] = [
+        [ax, ay, roofHeight(roof, ax, ay)],
+        [bx, ay, roofHeight(roof, bx, ay)],
+        [bx, by, roofHeight(roof, bx, by)],
+        [ax, by, roofHeight(roof, ax, by)],
+      ];
+      const spot = project(camera, (ax + bx) / 2, (ay + by) / 2, corners[0][2]);
+      add(spot, () => {
+        face(ctx, camera, corners, roof.colour, tint * slopeLightOf(corners));
+      });
+    }
   }
-  // Courses of tile up the two long slopes.
-  if (!detail) return;
-  const courses = Math.max(3, Math.round((high - low) * 4));
-  for (const [points, light] of slopes.slice(0, 2)) {
-    shingles(
-      ctx,
-      camera,
-      [points[0], points[1]],
-      [points[3], points[2]],
-      roof.colour,
-      light * tint,
-      courses,
-    );
-  }
+}
+
+/** Shade a roof cell from the way it slopes, so ridges and hips show up. */
+function slopeLightOf(corners: readonly Vertex[]): number {
+  const [a, b, c, d] = corners;
+  const fall = (a[2] + b[2] - c[2] - d[2]) / 2;
+  const side = (a[2] + d[2] - b[2] - c[2]) / 2;
+  // The light comes from the north west and above, as it does on the ground.
+  return (
+    0.78 +
+    fall * 0.5 +
+    side * 0.28 +
+    (1 - Math.abs(fall) - Math.abs(side)) * 0.18
+  );
 }
 
 /**
@@ -1187,7 +1201,10 @@ function addHover(
   });
 }
 
-/** The click marker: the yellow cross the client drops where you asked to go. */
+/**
+ * The click marker the client drops where you asked to go: yellow for a walk,
+ * red when there is something to do when you get there.
+ */
 function addMarker(
   ctx: CanvasRenderingContext2D,
   state: GameState,
@@ -1196,17 +1213,22 @@ function addMarker(
   add: Add,
 ): void {
   const marker = state.marker;
-  if (!marker || !state.player.path.length) return;
+  if (!marker) return;
+  // It holds while you walk, and flashes even when you were already there.
+  const alive = time - marker.bornAt;
+  if (!state.player.path.length && alive > 700) return;
   const spot = project(camera, marker.x + 0.5, marker.y + 0.5, 0.02);
   const tile = camera.focal / spot.depth;
-  const age = Math.min(1, (time - marker.bornAt) / 220);
+  const age = Math.min(1, alive / 220);
   const arm = tile * (0.3 - 0.12 * age);
+
+  const ink = marker.kind === "action" ? "#e02020" : "#ffe14a";
 
   add(spot, () => {
     ctx.lineCap = "round";
     for (const [colour, width] of [
       ["rgba(0,0,0,0.7)", Math.max(3, tile / 7)],
-      ["#ffe14a", Math.max(1.5, tile / 12)],
+      [ink, Math.max(1.5, tile / 12)],
     ] as const) {
       ctx.strokeStyle = colour;
       ctx.lineWidth = width;

@@ -13,7 +13,7 @@ export function fogAt(camera: Camera, depth: number): number {
   return Math.min(1, Math.max(0, (DRAW_DISTANCE - forward) / FOG_TILES));
 }
 
-const FOG_TILES = 14;
+const FOG_TILES = 8;
 
 /**
  * A polygon in world space. `light` is the face's own shading; the distance
@@ -278,43 +278,6 @@ export function prism(
     colour,
     TOP_LIGHT,
   );
-}
-
-/**
- * Courses of tile up a roof slope, drawn as thin darker bands between the eave
- * and the ridge. `eave` and `ridge` are the two edges, each given as a pair of
- * points, and the bands interpolate between them.
- */
-export function shingles(
-  ctx: CanvasRenderingContext2D,
-  camera: Camera,
-  eave: readonly [Vertex, Vertex],
-  ridge: readonly [Vertex, Vertex],
-  colour: string,
-  light: number,
-  courses: number,
-): void {
-  const between = (from: Vertex, to: Vertex, t: number): Vertex => [
-    from[0] + (to[0] - from[0]) * t,
-    from[1] + (to[1] - from[1]) * t,
-    from[2] + (to[2] - from[2]) * t,
-  ];
-  const width = 0.35 / courses;
-  for (let i = 1; i < courses; i++) {
-    const t = i / courses;
-    face(
-      ctx,
-      camera,
-      [
-        between(eave[0], ridge[0], t),
-        between(eave[1], ridge[1], t),
-        between(eave[1], ridge[1], t + width),
-        between(eave[0], ridge[0], t + width),
-      ],
-      colour,
-      light * 0.82,
-    );
-  }
 }
 
 export function rgbOf(hex: string): [number, number, number] {
