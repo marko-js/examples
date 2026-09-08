@@ -466,6 +466,10 @@ export function playerLook(player: Player): CharacterLook {
 
 /* -------------------------------------------------------------- overlays */
 
+/**
+ * The click marker: a yellow cross at the tile you asked for, which flares as
+ * it lands and holds while you walk, the way the client draws it.
+ */
 function drawDestination(
   ctx: CanvasRenderingContext2D,
   state: GameState,
@@ -473,19 +477,28 @@ function drawDestination(
   view: Viewport,
   time: number,
 ): void {
-  const path = state.player.path;
-  if (!path.length) return;
-  const goal = path[path.length - 1];
-  const { sx, sy } = project(camera, view, goal.x, goal.y);
-  const pulse = view.tile * (0.16 + Math.sin(time / 120) * 0.04);
-  ctx.strokeStyle = "#ffe14a";
-  ctx.lineWidth = Math.max(2, view.tile / 16);
-  ctx.beginPath();
-  ctx.moveTo(sx - pulse, sy - view.tile / 2 - pulse);
-  ctx.lineTo(sx + pulse, sy - view.tile / 2 + pulse);
-  ctx.moveTo(sx + pulse, sy - view.tile / 2 - pulse);
-  ctx.lineTo(sx - pulse, sy - view.tile / 2 + pulse);
-  ctx.stroke();
+  const marker = state.marker;
+  if (!marker || !state.player.path.length) return;
+  const { sx, sy } = project(camera, view, marker.x, marker.y);
+  const age = Math.min(1, (time - marker.bornAt) / 220);
+  const arm = view.tile * (0.34 - 0.14 * age) + Math.sin(time / 150) * 0.6;
+  const cy = sy - view.tile / 2;
+
+  ctx.lineCap = "round";
+  for (const [colour, width] of [
+    ["rgba(0,0,0,0.7)", Math.max(4, view.tile / 7)],
+    ["#ffe14a", Math.max(2, view.tile / 12)],
+  ] as const) {
+    ctx.strokeStyle = colour;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    ctx.moveTo(sx - arm, cy - arm);
+    ctx.lineTo(sx + arm, cy + arm);
+    ctx.moveTo(sx + arm, cy - arm);
+    ctx.lineTo(sx - arm, cy + arm);
+    ctx.stroke();
+  }
+  ctx.lineCap = "butt";
 }
 
 function drawHover(

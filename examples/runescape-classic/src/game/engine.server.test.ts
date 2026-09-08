@@ -248,7 +248,15 @@ test("menu options describe what is under the pointer", () => {
     "Examine Tree",
   ]);
   const empty = { x: tree.x + 3, y: tree.y + 3 };
-  expect(engine.describeTile(empty.x, empty.y)).toBe("Walk here");
+  expect(engine.describeTile(empty.x, empty.y)).toMatchObject({
+    verb: "Walk here",
+    more: 0,
+  });
+  expect(engine.describeTile(tree.x, tree.y)).toMatchObject({
+    verb: "Chop",
+    name: "Tree",
+    more: 1,
+  });
 });
 
 test("a save that points at an unwalkable tile falls back to the spawn", () => {

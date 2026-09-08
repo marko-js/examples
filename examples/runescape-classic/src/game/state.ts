@@ -173,6 +173,8 @@ export interface GameState {
   splats: Splat[];
   overlay: Overlay;
   dialogue: DialogueState | null;
+  /** Where the player last asked to go, drawn as the click marker. */
+  marker: { x: number; y: number; bornAt: number } | null;
   /** Stock per shop, keyed by shop id. */
   shopStock: Record<string, ItemStack[]>;
   nextUid: number;

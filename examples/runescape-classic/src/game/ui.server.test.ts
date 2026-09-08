@@ -64,6 +64,7 @@ test("the shop snapshot names the counter's own shop and prices its stock", () =
   )!;
   engine.choose({
     label: "",
+    verb: "Trade at",
     action: "shop",
     target: { kind: "object", index: counter.index },
   });

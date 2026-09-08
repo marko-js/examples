@@ -7,35 +7,40 @@
   cursor: default;
 }
 
+/* The client's menu: a flat black box with a bordered header. */
 .menu {
   position: absolute;
   z-index: 6;
-  min-width: 140px;
-  max-width: 240px;
+  min-width: 150px;
+  max-width: 260px;
   margin: 0;
-  border: 1px solid var(--rs-gold);
-  background: rgba(20, 18, 12, 0.96);
+  border: 1px solid #000;
+  background: #5d5447;
   padding: 0;
   list-style: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
 }
 
 .title {
-  border-bottom: 1px solid var(--rs-slot-border);
+  border-bottom: 1px solid #2b261f;
+  background: #5d5447;
   padding: 3px 6px;
-  color: var(--rs-gold);
-  font-size: 11px;
+  color: #ffffff;
+  font-size: 13px;
+  text-shadow: 1px 1px 0 #000;
 }
 
 .entry {
   display: block;
   width: 100%;
   border: 0;
-  background: transparent;
-  padding: 3px 6px;
-  color: #fff;
+  background: #2b261f;
+  padding: 5px 6px;
+  color: #ffffff;
   font: inherit;
-  font-size: 12px;
+  font-size: 14px;
   text-align: left;
+  text-shadow: 1px 1px 0 #000;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -43,6 +48,6 @@
 .entry:hover,
 .entry:focus-visible {
   outline: none;
-  background: var(--rs-gold);
-  color: #1a1408;
+  background: #6f6455;
+  color: #ffff00;
 }

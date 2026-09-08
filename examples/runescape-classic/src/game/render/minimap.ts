@@ -1,4 +1,7 @@
-/** Draws the round minimap: terrain colours, scenery, items, and NPC dots. */
+/**
+ * The minimap: terrain, dots for anything that moves, and the little circular
+ * icons the Classic world map used to mark banks, shops, mines and altars.
+ */
 import { MINIMAP_TILES } from "../config";
 import { getNpcDef } from "../npcs";
 import type { GameState } from "../state";
@@ -7,6 +10,7 @@ import {
   TERRAIN_DEFS,
   type TerrainId,
   tileIndex,
+  type WorldObject,
 } from "../world";
 
 /** World tile under a point on a minimap of the given size, in CSS pixels. */
@@ -33,6 +37,10 @@ export function renderMinimap(
   const radius = size / 2;
   const originX = player.fx - MINIMAP_TILES / 2;
   const originY = player.fy - MINIMAP_TILES / 2;
+  const at = (x: number, y: number) => ({
+    x: (x - originX) * scale,
+    y: (y - originY) * scale,
+  });
 
   ctx.clearRect(0, 0, size, size);
   ctx.save();
@@ -44,74 +52,347 @@ export function renderMinimap(
     for (let x = 0; x <= MINIMAP_TILES; x++) {
       const tx = Math.floor(originX) + x;
       const ty = Math.floor(originY) + y;
-      const sx = (tx - originX) * scale;
-      const sy = (ty - originY) * scale;
+      const spot = at(tx, ty);
       if (tx < 0 || ty < 0 || tx >= map.size || ty >= map.size) {
         ctx.fillStyle = "#16324f";
-        ctx.fillRect(sx, sy, scale + 1, scale + 1);
+        ctx.fillRect(spot.x, spot.y, scale + 1, scale + 1);
         continue;
       }
       const index = tileIndex(map, tx, ty);
       ctx.fillStyle = TERRAIN_DEFS[map.terrain[index] as TerrainId].minimap;
-      ctx.fillRect(sx, sy, scale + 1, scale + 1);
+      ctx.fillRect(spot.x, spot.y, scale + 1, scale + 1);
 
       const object = map.objects[index];
       const colour = object && objectColour(object.defId);
       if (colour) {
         ctx.fillStyle = colour;
-        ctx.fillRect(sx, sy, scale + 1, scale + 1);
+        ctx.fillRect(spot.x, spot.y, scale + 1, scale + 1);
       }
     }
   }
 
+  drawIcons(ctx, state, originX, originY, scale);
+
+  if (state.marker && player.path.length) {
+    const spot = at(state.marker.x + 0.5, state.marker.y + 0.5);
+    cross(ctx, spot.x, spot.y, Math.max(3, scale * 1.4));
+  }
+
   const dotSize = Math.max(2, scale * 0.9);
   for (const item of state.groundItems) {
-    dot(ctx, originX, originY, scale, item.x, item.y, dotSize, "#e03c3c");
+    dot(ctx, at(item.x + 0.5, item.y + 0.5), dotSize, "#e03c3c");
   }
   for (const npc of state.npcs) {
     if (npc.respawnTick !== null) continue;
     const def = getNpcDef(npc.defId);
     const colour = def.attackable ? "#e8d24a" : "#4ad2e8";
-    dot(ctx, originX, originY, scale, npc.fx, npc.fy, dotSize, colour);
+    dot(ctx, at(npc.fx + 0.5, npc.fy + 0.5), dotSize, colour);
   }
-  dot(
-    ctx,
-    originX,
-    originY,
-    scale,
-    player.fx,
-    player.fy,
-    dotSize * 1.2,
-    "#ffffff",
-  );
+  dot(ctx, at(player.fx + 0.5, player.fy + 0.5), dotSize * 1.2, "#ffffff");
 
   ctx.restore();
 
-  ctx.fillStyle = "#e8d24a";
-  ctx.font = `bold ${Math.round(size / 13)}px 'Helvetica Neue', Arial, sans-serif`;
-  ctx.textAlign = "center";
-  ctx.fillText("N", radius, size / 9);
+  drawFrame(ctx, size);
+  drawCompass(ctx, size * 0.16, size * 0.16, size * 0.12);
+}
+
+/* ---------------------------------------------------------------- icons */
+
+interface IconSpec {
+  /** Disc colour, following the Classic map key. */
+  fill: string;
+  glyph: string;
+  ink: string;
+}
+
+const SHOP_ICONS: Record<string, IconSpec> = {
+  general: { fill: "#d8d8d0", glyph: "shop", ink: "#3a3a3a" },
+  axes: { fill: "#d8d8d0", glyph: "axe", ink: "#7a5230" },
+  swords: { fill: "#d8d8d0", glyph: "sword", ink: "#c02020" },
+  scimitars: { fill: "#d8d8d0", glyph: "sword", ink: "#c02020" },
+  armour: { fill: "#d8d8d0", glyph: "body", ink: "#4a4a5a" },
+  helmets: { fill: "#d8d8d0", glyph: "helmet", ink: "#4a4a5a" },
+  shields: { fill: "#d8d8d0", glyph: "shield", ink: "#4a4a5a" },
+  archery: { fill: "#d8d8d0", glyph: "bow", ink: "#7a5230" },
+  runes: { fill: "#d8d8d0", glyph: "rune", ink: "#c02ac0" },
+  fishing: { fill: "#d8d8d0", glyph: "fish", ink: "#2f6aa8" },
+};
+
+const OBJECT_ICONS: Record<string, IconSpec> = {
+  bank_chest: { fill: "#e8d24a", glyph: "bank", ink: "#3a2f00" },
+  altar: { fill: "#d8d8d0", glyph: "altar", ink: "#6a3f9a" },
+  furnace: { fill: "#d8d8d0", glyph: "furnace", ink: "#e0642a" },
+  anvil: { fill: "#d8d8d0", glyph: "anvil", ink: "#4a4a52" },
+  range: { fill: "#d8d8d0", glyph: "range", ink: "#c02020" },
+};
+
+/**
+ * Icons crowd together where a shop has three counters or a mine has six
+ * rocks, so only the first of each kind within a few tiles is drawn.
+ */
+function drawIcons(
+  ctx: CanvasRenderingContext2D,
+  state: GameState,
+  originX: number,
+  originY: number,
+  scale: number,
+): void {
+  const drawn: { x: number; y: number; key: string }[] = [];
+  const size = Math.max(7, scale * 3.4);
+
+  const visit = (object: WorldObject) => {
+    const spec = iconFor(object);
+    if (!spec) return;
+    const key = spec.glyph;
+    if (
+      drawn.some(
+        (was) =>
+          was.key === key && Math.hypot(was.x - object.x, was.y - object.y) < 6,
+      )
+    ) {
+      return;
+    }
+    drawn.push({ x: object.x, y: object.y, key });
+    icon(
+      ctx,
+      (object.x + 0.5 - originX) * scale,
+      (object.y + 0.5 - originY) * scale,
+      size,
+      spec,
+    );
+  };
+
+  const { map } = state;
+  const minX = Math.max(0, Math.floor(originX) - 1);
+  const minY = Math.max(0, Math.floor(originY) - 1);
+  const maxX = Math.min(map.size, Math.ceil(originX + MINIMAP_TILES) + 1);
+  const maxY = Math.min(map.size, Math.ceil(originY + MINIMAP_TILES) + 1);
+  for (let y = minY; y < maxY; y++) {
+    for (let x = minX; x < maxX; x++) {
+      const object = map.objects[tileIndex(map, x, y)];
+      if (object) visit(object);
+    }
+  }
+}
+
+function iconFor(object: WorldObject): IconSpec | null {
+  if (object.defId === "shop_counter") {
+    return SHOP_ICONS[object.shopId ?? "general"] ?? SHOP_ICONS.general;
+  }
+  if (object.defId.startsWith("fish_")) {
+    return { fill: "#2f6aa8", glyph: "fish", ink: "#dceaff" };
+  }
+  if (object.defId.startsWith("rock_") && object.defId !== "rock_empty") {
+    return { fill: "#d8d8d0", glyph: "mine", ink: "#4a4a52" };
+  }
+  return OBJECT_ICONS[object.defId] ?? null;
+}
+
+function icon(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  spec: IconSpec,
+): void {
+  const r = size / 2;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = spec.fill;
+  ctx.fill();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = "rgba(0,0,0,0.85)";
+  ctx.stroke();
+
+  ctx.fillStyle = spec.ink;
+  ctx.strokeStyle = spec.ink;
+  ctx.lineWidth = Math.max(1, size / 8);
+  const u = size / 10;
+  switch (spec.glyph) {
+    case "bank":
+      ctx.fillRect(x - 3 * u, y - u, 6 * u, 2 * u);
+      ctx.fillRect(x - u, y - 3.5 * u, 2 * u, 7 * u);
+      break;
+    case "sword":
+      ctx.fillRect(x - u, y - 3.5 * u, 2 * u, 5 * u);
+      ctx.fillRect(x - 2.5 * u, y + 1.5 * u, 5 * u, 1.5 * u);
+      break;
+    case "axe":
+      ctx.fillRect(x - 0.8 * u, y - 3 * u, 1.6 * u, 6.5 * u);
+      ctx.fillRect(x - 3.5 * u, y - 3.5 * u, 3.5 * u, 3 * u);
+      break;
+    case "bow":
+      ctx.beginPath();
+      ctx.arc(x - u, y, 3 * u, -1.1, 1.1);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x + 1.6 * u, y - 2.6 * u);
+      ctx.lineTo(x + 1.6 * u, y + 2.6 * u);
+      ctx.stroke();
+      break;
+    case "helmet":
+      ctx.beginPath();
+      ctx.arc(x, y, 3 * u, Math.PI, 0);
+      ctx.fill();
+      ctx.fillRect(x - 3 * u, y, 6 * u, 1.5 * u);
+      break;
+    case "body":
+      ctx.fillRect(x - 3 * u, y - 3 * u, 6 * u, 6 * u);
+      ctx.clearRect(x - u, y - 3 * u, 2 * u, 2 * u);
+      break;
+    case "shield":
+      ctx.beginPath();
+      ctx.moveTo(x - 3 * u, y - 3 * u);
+      ctx.lineTo(x + 3 * u, y - 3 * u);
+      ctx.lineTo(x, y + 3.5 * u);
+      ctx.closePath();
+      ctx.fill();
+      break;
+    case "rune":
+      ctx.beginPath();
+      ctx.moveTo(x, y - 3.5 * u);
+      ctx.lineTo(x + 3 * u, y);
+      ctx.lineTo(x, y + 3.5 * u);
+      ctx.lineTo(x - 3 * u, y);
+      ctx.closePath();
+      ctx.fill();
+      break;
+    case "fish":
+      ctx.beginPath();
+      ctx.moveTo(x - 3.5 * u, y);
+      ctx.quadraticCurveTo(x, y - 3 * u, x + 2.5 * u, y);
+      ctx.quadraticCurveTo(x, y + 3 * u, x - 3.5 * u, y);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(x + 2.2 * u, y);
+      ctx.lineTo(x + 4 * u, y - 2 * u);
+      ctx.lineTo(x + 4 * u, y + 2 * u);
+      ctx.closePath();
+      ctx.fill();
+      break;
+    case "mine":
+      ctx.beginPath();
+      ctx.moveTo(x - 3.5 * u, y + 1.5 * u);
+      ctx.lineTo(x, y - 3 * u);
+      ctx.lineTo(x + 3.5 * u, y + 1.5 * u);
+      ctx.closePath();
+      ctx.fill();
+      break;
+    case "furnace":
+      ctx.beginPath();
+      ctx.moveTo(x, y - 3.5 * u);
+      ctx.quadraticCurveTo(x + 3 * u, y, x, y + 3 * u);
+      ctx.quadraticCurveTo(x - 3 * u, y, x, y - 3.5 * u);
+      ctx.fill();
+      break;
+    case "anvil":
+      ctx.fillRect(x - 3.5 * u, y - 2 * u, 7 * u, 2 * u);
+      ctx.fillRect(x - 1.5 * u, y, 3 * u, 3 * u);
+      break;
+    case "range":
+      ctx.fillRect(x - 3 * u, y - 2.5 * u, 6 * u, 5 * u);
+      ctx.clearRect(x - 1.5 * u, y - u, 3 * u, 2.5 * u);
+      break;
+    default:
+      ctx.fillRect(x - 2.5 * u, y - 2.5 * u, 5 * u, 5 * u);
+      ctx.clearRect(x - u, y - 1.5 * u, 2 * u, 3 * u);
+  }
+}
+
+/* --------------------------------------------------------------- chrome */
+
+function drawFrame(ctx: CanvasRenderingContext2D, size: number): void {
+  const radius = size / 2;
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = "#0d0b06";
+  ctx.beginPath();
+  ctx.arc(radius, radius, radius - 1.5, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = "rgba(200,180,120,0.35)";
+  ctx.beginPath();
+  ctx.arc(radius, radius, radius - 4, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+function drawCompass(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  r: number,
+): void {
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(20,18,12,0.9)";
+  ctx.fill();
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = "#c8b478";
+  ctx.stroke();
+
+  // Two halves meeting at the centre: red points north, white points south.
+  const wing = r * 0.34;
+  ctx.beginPath();
+  ctx.moveTo(x, y - r * 0.8);
+  ctx.lineTo(x - wing, y);
+  ctx.lineTo(x + wing, y);
+  ctx.closePath();
+  ctx.fillStyle = "#d02020";
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(x, y + r * 0.8);
+  ctx.lineTo(x - wing, y);
+  ctx.lineTo(x + wing, y);
+  ctx.closePath();
+  ctx.fillStyle = "#f0ece0";
+  ctx.fill();
+}
+
+function cross(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  arm: number,
+): void {
+  ctx.lineCap = "round";
+  ctx.lineWidth = Math.max(2.5, arm / 1.6);
+  ctx.strokeStyle = "rgba(0,0,0,0.75)";
+  strokeCross(ctx, x, y, arm);
+  ctx.lineWidth = Math.max(1.2, arm / 3);
+  ctx.strokeStyle = "#ffe14a";
+  strokeCross(ctx, x, y, arm);
+  ctx.lineCap = "butt";
+}
+
+function strokeCross(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  arm: number,
+): void {
+  ctx.beginPath();
+  ctx.moveTo(x - arm, y - arm);
+  ctx.lineTo(x + arm, y + arm);
+  ctx.moveTo(x + arm, y - arm);
+  ctx.lineTo(x - arm, y + arm);
+  ctx.stroke();
 }
 
 function dot(
   ctx: CanvasRenderingContext2D,
-  originX: number,
-  originY: number,
-  scale: number,
-  x: number,
-  y: number,
+  spot: { x: number; y: number },
   size: number,
   colour: string,
 ): void {
   ctx.fillStyle = colour;
   ctx.beginPath();
-  ctx.arc((x - originX) * scale, (y - originY) * scale, size, 0, Math.PI * 2);
+  ctx.arc(spot.x, spot.y, size, 0, Math.PI * 2);
   ctx.fill();
 }
 
 function objectColour(defId: string): string | null {
   if (defId.startsWith("rock_")) return "#9a938c";
-  if (defId.startsWith("fish_")) return "#7fd8f0";
+  if (defId.startsWith("fish_")) return null;
   const art = getObjectDef(defId).art;
   switch (art.kind) {
     case "tree":
@@ -123,10 +404,8 @@ function objectColour(defId: string): string | null {
     case "fence":
     case "gate":
       return "#8a6136";
-    case "chest":
-      return "#f0c93f";
-    case "counter":
-      return "#f0a03f";
+    case "door":
+      return "#a67c47";
     case "fire":
       return "#f2a33c";
     default:

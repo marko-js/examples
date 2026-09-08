@@ -1,4 +1,4 @@
-import { Engine } from "../../game/engine";
+import { Engine, type HoverText } from "../../game/engine";
 import {
   bagIcon,
   chatIcon,
@@ -40,7 +40,7 @@ static const LONG_PRESS_MS = 420;
 <let/ui=initialUi()>
 <let/tab=null as string | null>
 <let/chatOpen=false>
-<let/hover="">
+<let/hover=null as HoverText | null>
 <let/menu=null as MenuState | null>
 
 // Values the animation loop and pointer handlers share without driving renders.
@@ -163,7 +163,7 @@ static const LONG_PRESS_MS = 420;
       if (event.pointerType !== "mouse") return;
       const tile = tileFrom(event.clientX, event.clientY, canvas);
       session.tile = tile;
-      hover = game.describeTile(tile.x, tile.y) ?? "";
+      hover = game.describeTile(tile.x, tile.y);
     }
     onPointerUp() {
       const press = session.press;
@@ -180,7 +180,7 @@ static const LONG_PRESS_MS = 420;
     onPointerLeave() {
       endPress();
       session.tile = null;
-      hover = "";
+      hover = null;
     }
     onContextMenu(event, canvas) {
       event.preventDefault();
@@ -194,7 +194,18 @@ static const LONG_PRESS_MS = 420;
     }
   />
 
-  <p class=styles.hover>${hover}</p>
+  <p class=styles.hover>
+    <if=hover>
+      <span class=styles.verb>${hover.verb}</span>
+      <if=hover.name><span class=styles.subject>${hover.name}</span></if>
+      <if=hover.level !== undefined>
+        <span class=styles.level>(level-${hover.level})</span>
+      </if>
+      <if=hover.more>
+        <span class=styles.more>/ ${hover.more} more options</span>
+      </if>
+    </if>
+  </p>
 
   <div class=styles.corner>
     <div class=styles.minimapWrap>
@@ -214,6 +225,7 @@ static const LONG_PRESS_MS = 420;
           );
           game.choose({
             label: "Walk here",
+            verb: "Walk here",
             action: "walk",
             target: { kind: "tile", ...tile },
           });

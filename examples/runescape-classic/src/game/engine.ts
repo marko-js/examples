@@ -80,9 +80,24 @@ import {
 import { generateWorld } from "./worldgen";
 
 export interface MenuOption {
+  /** Full line for the menu, e.g. "Attack Chicken (level-1)". */
   label: string;
+  /** Just the verb, shown in white in the hover text. */
+  verb: string;
+  /** What the verb acts on, shown in cyan. */
+  name?: string;
+  level?: number;
   action: string;
   target: Target;
+}
+
+/** The line drawn in the top corner while the pointer is over something. */
+export interface HoverText {
+  verb: string;
+  name?: string;
+  level?: number;
+  /** How many other options a long press would offer. */
+  more: number;
 }
 
 export interface EngineOptions {
@@ -115,6 +130,7 @@ export class Engine {
       splats: [],
       overlay: { kind: "none" },
       dialogue: null,
+      marker: null,
       shopStock: createStock(),
       nextUid: 1,
       nextMessageId: 1,
@@ -209,43 +225,53 @@ export class Engine {
     const using = state.player.selectedSlot;
     const usingItem = using === null ? null : state.player.inventory[using];
 
+    /** Build an entry, keeping the verb and target apart for the hover line. */
+    const entry = (
+      verb: string,
+      action: string,
+      target: Target,
+      name?: string,
+      level?: number,
+    ): MenuOption => ({
+      label: [verb, name, level === undefined ? "" : `(level-${level})`]
+        .filter(Boolean)
+        .join(" "),
+      verb,
+      name,
+      level,
+      action,
+      target,
+    });
+
     const npc = state.npcs.find(
-      (entry) => !entry.respawnTick && entry.x === x && entry.y === y,
+      (candidate) =>
+        !candidate.respawnTick && candidate.x === x && candidate.y === y,
     );
     if (npc) {
       const def = getNpcDef(npc.defId);
       const target: Target = { kind: "npc", uid: npc.uid };
-      const label = `${def.name} (level-${npcCombatLevel(def)})`;
+      const level = def.attackable ? npcCombatLevel(def) : undefined;
       if (state.player.selectedSpell) {
-        options.push({
-          label: `Cast ${getSpell(state.player.selectedSpell).name} on ${def.name}`,
-          action: "cast",
-          target,
-        });
+        const spell = getSpell(state.player.selectedSpell);
+        options.push(
+          entry(`Cast ${spell.name} on`, "cast", target, def.name, level),
+        );
       }
-      if (usingItem)
-        options.push({
-          label: `Use ${itemName(usingItem.id)} with ${def.name}`,
-          action: "use",
-          target,
-        });
+      if (usingItem) {
+        options.push(
+          entry(`Use ${itemName(usingItem.id)} with`, "use", target, def.name),
+        );
+      }
       if (def.attackable)
-        options.push({ label: `Attack ${label}`, action: "attack", target });
+        options.push(entry("Attack", "attack", target, def.name, level));
       if (def.role === "bank")
-        options.push({
-          label: `Bank with ${def.name}`,
-          action: "bank",
-          target,
-        });
+        options.push(entry("Bank with", "bank", target, def.name));
       if (def.role === "shop")
-        options.push({
-          label: `Trade with ${def.name}`,
-          action: "shop",
-          target,
-        });
-      if (def.chat)
-        options.push({ label: `Talk to ${def.name}`, action: "talk", target });
-      options.push({ label: `Examine ${def.name}`, action: "examine", target });
+        options.push(entry("Trade with", "shop", target, def.name));
+      if (def.dialogue || def.chat) {
+        options.push(entry("Talk to", "talk", target, def.name));
+      }
+      options.push(entry("Examine", "examine", target, def.name));
     }
 
     const ground = state.groundItems.find(
@@ -253,16 +279,8 @@ export class Engine {
     );
     if (ground) {
       const target: Target = { kind: "ground", uid: ground.uid };
-      options.push({
-        label: `Take ${itemName(ground.id)}`,
-        action: "take",
-        target,
-      });
-      options.push({
-        label: `Examine ${itemName(ground.id)}`,
-        action: "examine",
-        target,
-      });
+      options.push(entry("Take", "take", target, itemName(ground.id)));
+      options.push(entry("Examine", "examine", target, itemName(ground.id)));
     }
 
     const object = objectAt(state.map, x, y);
@@ -271,32 +289,30 @@ export class Engine {
       const target: Target = { kind: "object", index: object.index };
       if (object.defId === "tut_door") {
         return [
-          { label: "Open Door", action: "door", target },
-          { label: "Examine Door", action: "examine", target },
+          entry("Open", "door", target, "Door"),
+          entry("Examine", "examine", target, "Door"),
         ];
       }
-      if (usingItem)
-        options.push({
-          label: `Use ${itemName(usingItem.id)} with ${def.name}`,
-          action: "use",
-          target,
-        });
+      if (usingItem) {
+        options.push(
+          entry(`Use ${itemName(usingItem.id)} with`, "use", target, def.name),
+        );
+      }
       if (def.gather)
-        options.push({
-          label: `${def.gather.action} ${def.name}`,
-          action: "gather",
-          target,
-        });
+        options.push(entry(def.gather.action, "gather", target, def.name));
       if (def.use === "bank")
-        options.push({ label: `Open ${def.name}`, action: "bank", target });
+        options.push(entry("Open", "bank", target, def.name));
       if (def.use === "shop")
-        options.push({ label: `Trade at ${def.name}`, action: "shop", target });
-      options.push({ label: `Examine ${def.name}`, action: "examine", target });
+        options.push(entry("Trade at", "shop", target, def.name));
+      if (def.use === "cook")
+        options.push(entry("Cook on", "cook-at", target, def.name));
+      options.push(entry("Examine", "examine", target, def.name));
     }
 
     if (isWalkable(state.map, x, y)) {
       options.splice(options.length - (object || ground || npc ? 1 : 0), 0, {
         label: "Walk here",
+        verb: "Walk here",
         action: "walk",
         target: { kind: "tile", x, y },
       });
@@ -338,6 +354,7 @@ export class Engine {
     } else if (!isAdjacent(player, tile)) {
       const stand = adjacentTile(this.state.map, player, tile);
       if (stand) player.path = findPath(this.state.map, player, stand);
+      this.mark(tile);
     }
     this.tryPending();
     this.invalidate();
@@ -346,11 +363,25 @@ export class Engine {
   walkTo(tile: Point): void {
     const { player } = this.state;
     player.path = findPath(this.state.map, player, tile);
+    this.mark(player.path.at(-1) ?? tile);
   }
 
-  /** Short label describing what the mouse is over. */
-  describeTile(x: number, y: number): string | null {
-    return this.optionsAt(x, y)[0]?.label ?? null;
+  /** Drop the click marker the client draws while you walk. */
+  private mark(tile: Point): void {
+    this.state.marker = { x: tile.x, y: tile.y, bornAt: this.now };
+  }
+
+  /** What the pointer is over, split so the interface can colour it. */
+  describeTile(x: number, y: number): HoverText | null {
+    const options = this.optionsAt(x, y);
+    const first = options[0];
+    if (!first) return null;
+    return {
+      verb: first.verb,
+      name: first.name,
+      level: first.level,
+      more: options.length - 1,
+    };
   }
 
   /* ---------------------------------------------------------- inventory */
@@ -360,24 +391,25 @@ export class Engine {
     if (!stack) return [];
     const def = getItem(stack.id);
     const target: Target = { kind: "tile", x: slot, y: -1 };
-    const options: MenuOption[] = [];
-    if (def.equip)
-      options.push({
-        label: `${def.equip.slot === "weapon" ? "Wield" : "Wear"} ${def.name}`,
-        action: "equip",
-        target,
-      });
-    if (def.heals)
-      options.push({ label: `Eat ${def.name}`, action: "eat", target });
-    if (def.buryXp)
-      options.push({ label: `Bury ${def.name}`, action: "bury", target });
-    options.push({ label: `Use ${def.name}`, action: "select", target });
-    options.push({ label: `Drop ${def.name}`, action: "drop", target });
-    options.push({
-      label: `Examine ${def.name}`,
-      action: "examine-item",
+    const entry = (verb: string, action: string): MenuOption => ({
+      label: `${verb} ${def.name}`,
+      verb,
+      name: def.name,
+      action,
       target,
     });
+
+    const options: MenuOption[] = [];
+    if (def.equip) {
+      options.push(
+        entry(def.equip.slot === "weapon" ? "Wield" : "Wear", "equip"),
+      );
+    }
+    if (def.heals) options.push(entry("Eat", "eat"));
+    if (def.buryXp) options.push(entry("Bury", "bury"));
+    options.push(entry("Use", "select"));
+    options.push(entry("Drop", "drop"));
+    options.push(entry("Examine", "examine-item"));
     return options;
   }
 

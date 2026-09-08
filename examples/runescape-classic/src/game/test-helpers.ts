@@ -143,7 +143,7 @@ export function converse(
 }
 
 export function act(engine: Engine, action: string, target: Target): void {
-  engine.choose({ label: action, action, target });
+  engine.choose({ label: action, verb: action, action, target });
 }
 
 export function lastMessages(engine: Engine, count = 3): string[] {

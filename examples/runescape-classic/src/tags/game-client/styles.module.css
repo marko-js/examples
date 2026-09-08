@@ -21,16 +21,37 @@
   user-select: none;
 }
 
+/* The client draws the action in white, the subject in cyan, the rest grey. */
 .hover {
   position: absolute;
   top: var(--edge-top);
   left: var(--edge-left);
   max-width: 55%;
+  min-height: 1.2em;
   margin: 0;
-  color: var(--rs-gold);
-  font-size: 13px;
-  text-shadow: 1px 1px 0 #000;
+  font-size: 14px;
+  text-shadow:
+    1px 1px 0 #000,
+    -1px 1px 0 #000,
+    1px -1px 0 #000,
+    -1px -1px 0 #000;
   pointer-events: none;
+}
+
+.verb {
+  color: #ffffff;
+}
+
+.subject {
+  color: #00ffff;
+}
+
+.level {
+  color: #00ff00;
+}
+
+.more {
+  color: #c8c8c8;
 }
 
 /* ------------------------------------------------------------- minimap */
