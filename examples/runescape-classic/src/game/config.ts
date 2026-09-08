@@ -9,9 +9,20 @@ export const TILES_ACROSS_SHORT_AXIS = 12;
 export const MIN_TILE_SIZE = 26;
 export const MAX_TILE_SIZE = 56;
 
+/**
+ * The camera looks down at an angle rather than straight down, so a tile is
+ * drawn wider than it is tall and anything with height leans up the screen.
+ */
+export const FLATTEN = 0.58;
+export const RISE = 0.82;
+
+/** How many tiles tall a wall stands. */
+export const WALL_HEIGHT = 1.15;
+
 /** World pixels per tile for a surface of the given size. */
 export function tileSizeFor(width: number, height: number): number {
-  const target = Math.min(width, height) / TILES_ACROSS_SHORT_AXIS;
+  // Foreshortening means the vertical axis fits more tiles, so size from width.
+  const target = Math.min(width / TILES_ACROSS_SHORT_AXIS, height / 11);
   return Math.round(Math.min(MAX_TILE_SIZE, Math.max(MIN_TILE_SIZE, target)));
 }
 

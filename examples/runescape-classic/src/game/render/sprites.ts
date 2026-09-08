@@ -346,26 +346,27 @@ export function drawObjectArt(
   y: number,
   tile: number,
   time: number,
+  seed = 0,
 ): void {
   const s = tile / 32;
   switch (art.kind) {
     case "tree": {
       const size = art.size;
-      shadow(ctx, x, y, 11 * s * size, 4 * s);
+      shadow(ctx, x, y, 10 * s * size, 3.5 * s);
       ctx.fillStyle = art.trunk;
       ctx.fillRect(
-        x - 3 * s * size,
-        y - 18 * s * size,
-        6 * s * size,
-        18 * s * size,
+        x - 3.5 * s * size,
+        y - 26 * s * size,
+        7 * s * size,
+        26 * s * size,
       );
       const sway = Math.sin(time / 900 + x * 0.05) * s;
       ctx.fillStyle = art.canopyShade;
-      circle(ctx, x + sway, y - 26 * s * size, 15 * s * size);
+      circle(ctx, x + sway, y - 36 * s * size, 16 * s * size);
       ctx.fillStyle = art.canopy;
-      circle(ctx, x - 6 * s * size + sway, y - 30 * s * size, 10 * s * size);
-      circle(ctx, x + 7 * s * size + sway, y - 28 * s * size, 9 * s * size);
-      circle(ctx, x + sway, y - 36 * s * size, 9 * s * size);
+      circle(ctx, x - 7 * s * size + sway, y - 41 * s * size, 11 * s * size);
+      circle(ctx, x + 8 * s * size + sway, y - 39 * s * size, 10 * s * size);
+      circle(ctx, x + sway, y - 48 * s * size, 10 * s * size);
       break;
     }
     case "stump":
@@ -414,22 +415,44 @@ export function drawObjectArt(
       }
       break;
     case "wall": {
-      // Low walls, so the inside of a building stays visible from outside.
-      const height = tile * 0.68;
+      const height = tile * 0.94;
       ctx.fillStyle = art.face;
       ctx.fillRect(x - tile / 2, y - height, tile, height);
-      ctx.fillStyle = art.top;
-      ctx.fillRect(x - tile / 2, y - height - tile * 0.16, tile, tile * 0.18);
+
+      // Courses of blocks, then a lighter cap along the top of the wall.
       ctx.fillStyle = "rgba(0,0,0,0.16)";
-      for (let row = 0; row < 2; row++) {
+      const course = height / 4;
+      for (let i = 1; i < 4; i++) {
         ctx.fillRect(
           x - tile / 2,
-          Math.round(y - height + tile * (0.22 + row * 0.24)),
+          Math.round(y - height + course * i),
           tile,
           1,
         );
+        const offset = i % 2 ? tile * 0.25 : tile * 0.75;
+        ctx.fillRect(
+          Math.round(x - tile / 2 + offset),
+          y - height + course * (i - 1),
+          1,
+          course,
+        );
       }
-      ctx.fillRect(Math.round(x - tile * 0.02), y - height, 1, height);
+      ctx.fillStyle = art.top;
+      ctx.fillRect(x - tile / 2, y - height - tile * 0.16, tile, tile * 0.2);
+
+      // Roughly every fourth block carries a shuttered window.
+      if (seed % 4 === 1) {
+        const w = tile * 0.3;
+        const h = height * 0.34;
+        const wx = x - w / 2;
+        const wy = y - height * 0.78;
+        ctx.fillStyle = "#2b2b33";
+        ctx.fillRect(wx - 2, wy - 2, w + 4, h + 4);
+        ctx.fillStyle = "#6f9ad0";
+        ctx.fillRect(wx, wy, w, h);
+        ctx.fillStyle = "rgba(255,255,255,0.35)";
+        ctx.fillRect(wx, wy, w, h * 0.35);
+      }
       break;
     }
     case "fence":

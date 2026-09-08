@@ -17,6 +17,7 @@ export function generateWorld(seed = 20250907): WorldMap {
     objects: new Array(size * size),
     spawns: [],
     labels: [],
+    roofs: [],
   };
 
   layMainland(map, mulberry32(seed));

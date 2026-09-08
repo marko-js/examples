@@ -32,59 +32,59 @@ export interface TerrainDef {
 export const TERRAIN_DEFS: Record<TerrainId, TerrainDef> = {
   [TERRAIN.grass]: {
     name: "grass",
-    colour: "#3f7a35",
-    speckle: "#4a8c3e",
+    colour: "#3d9a30",
+    speckle: "#8cba2c",
     walkable: true,
-    minimap: "#3f7a35",
+    minimap: "#3d9a30",
   },
   [TERRAIN.darkGrass]: {
     name: "grass",
-    colour: "#2f5f28",
-    speckle: "#3a7031",
+    colour: "#256b22",
+    speckle: "#3d9a30",
     walkable: true,
-    minimap: "#2f5f28",
+    minimap: "#256b22",
   },
   [TERRAIN.dirt]: {
     name: "dirt",
-    colour: "#6b5334",
-    speckle: "#7b613e",
+    colour: "#7a6636",
+    speckle: "#8f7a45",
     walkable: true,
-    minimap: "#6b5334",
+    minimap: "#7a6636",
   },
   [TERRAIN.path]: {
     name: "path",
-    colour: "#8d7a58",
-    speckle: "#9c8964",
+    colour: "#8f8f8f",
+    speckle: "#9c9c9c",
     walkable: true,
-    minimap: "#8d7a58",
+    minimap: "#8f8f8f",
   },
   [TERRAIN.sand]: {
     name: "sand",
-    colour: "#c2ac74",
-    speckle: "#d0bb84",
+    colour: "#c9bd7c",
+    speckle: "#d8cc8c",
     walkable: true,
-    minimap: "#c2ac74",
+    minimap: "#c9bd7c",
   },
   [TERRAIN.water]: {
     name: "water",
-    colour: "#26568c",
-    speckle: "#2f6aa8",
+    colour: "#3a6ab5",
+    speckle: "#4a7cc8",
     walkable: false,
-    minimap: "#26568c",
+    minimap: "#3a6ab5",
   },
   [TERRAIN.woodFloor]: {
     name: "floor",
-    colour: "#7a5a34",
-    speckle: "#8a683e",
+    colour: "#8a6a41",
+    speckle: "#7a5a36",
     walkable: true,
-    minimap: "#7a5a34",
+    minimap: "#6a4c2c",
   },
   [TERRAIN.stoneFloor]: {
     name: "floor",
-    colour: "#7d7d78",
-    speckle: "#8b8b86",
+    colour: "#9a9a9a",
+    speckle: "#a6a6a6",
     walkable: true,
-    minimap: "#7d7d78",
+    minimap: "#9a9a9a",
   },
   [TERRAIN.bridge]: {
     name: "bridge",
@@ -96,16 +96,16 @@ export const TERRAIN_DEFS: Record<TerrainId, TerrainDef> = {
   [TERRAIN.swamp]: {
     name: "swamp",
     colour: "#41503a",
-    speckle: "#4c5c42",
+    speckle: "#526344",
     walkable: true,
     minimap: "#41503a",
   },
   [TERRAIN.gravel]: {
     name: "gravel",
-    colour: "#6d6862",
-    speckle: "#7c766f",
+    colour: "#7d786f",
+    speckle: "#8b867d",
     walkable: true,
-    minimap: "#6d6862",
+    minimap: "#7d786f",
   },
 };
 
@@ -482,14 +482,14 @@ OBJECT_LIST.push(
     name: "Wall",
     examine: "A sturdy stone wall.",
     blocking: true,
-    art: { kind: "wall", face: "#8b8b84", top: "#a3a39a" },
+    art: { kind: "wall", face: "#7f7f7f", top: "#9a9a9a" },
   },
   {
     id: "wall_wood",
     name: "Wall",
     examine: "A wooden wall.",
     blocking: true,
-    art: { kind: "wall", face: "#9a7440", top: "#bd9256" },
+    art: { kind: "wall", face: "#8a6535", top: "#a67c47" },
   },
   {
     id: "fence",
@@ -655,6 +655,16 @@ export interface RegionLabel {
   text: string;
 }
 
+/** A building's footprint, so the renderer can put a roof over it. */
+export interface Roof {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  /** Tiled red for houses, plank brown for wooden ones. */
+  colour: string;
+}
+
 export interface WorldMap {
   size: number;
   terrain: Uint8Array;
@@ -662,6 +672,19 @@ export interface WorldMap {
   objects: (WorldObject | undefined)[];
   spawns: NpcSpawn[];
   labels: RegionLabel[];
+  roofs: Roof[];
+}
+
+/** True when the tile is under a building's roof. */
+export function roofOver(
+  map: WorldMap,
+  x: number,
+  y: number,
+): Roof | undefined {
+  return map.roofs.find(
+    (roof) =>
+      x >= roof.x && y >= roof.y && x < roof.x + roof.w && y < roof.y + roof.h,
+  );
 }
 
 export function tileIndex(map: WorldMap, x: number, y: number): number {

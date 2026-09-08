@@ -143,6 +143,8 @@ export function bridgeOverWater(
 
 export interface BuildingOptions {
   wall: string;
+  /** Roof colour; omit for a walled area that should stay open to the sky. */
+  roof?: string;
   floor: TerrainId;
   doors: readonly (readonly [number, number])[];
 }
@@ -166,7 +168,14 @@ export function building(
     }
   }
   for (const [dx, dy] of options.doors) place(map, dx, dy, "gate");
+  if (options.roof !== null) {
+    map.roofs.push({ x, y, w, h, colour: options.roof ?? ROOF_TILE });
+  }
 }
+
+/** The red clay roof Classic put on almost everything. */
+export const ROOF_TILE = "#a0503c";
+export const ROOF_WOOD = "#8a5f33";
 
 /** Fenced enclosure with gates punched through the perimeter. */
 /** Fence around a rect's perimeter, leaving the inside untouched. */

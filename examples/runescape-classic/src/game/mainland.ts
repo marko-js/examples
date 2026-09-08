@@ -12,6 +12,8 @@ import {
   place,
   placeScenery,
   road,
+  ROOF_TILE,
+  ROOF_WOOD,
   scatter,
   setTerrain,
   terrain,
@@ -310,7 +312,12 @@ function house(map: WorldMap, at: { x: number; y: number }, room: Room): void {
   const y = at.y + room.dy;
   building(map, x, y, room.w, room.h, {
     wall: room.wall ?? "wall_stone",
-    floor: room.floor ?? TERRAIN.woodFloor,
+    roof: (room.wall ?? "wall_stone") === "wall_wood" ? ROOF_WOOD : ROOF_TILE,
+    floor:
+      room.floor ??
+      ((room.wall ?? "wall_stone") === "wall_stone"
+        ? TERRAIN.stoneFloor
+        : TERRAIN.woodFloor),
     doors: room.doors.map(([dx, dy]) => [x + dx, y + dy] as const),
   });
   for (const [dx, dy] of room.doors) {

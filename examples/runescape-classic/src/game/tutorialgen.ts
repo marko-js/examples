@@ -4,7 +4,15 @@
  * the chapel and the magic house. Land is painted only where an area sits, so
  * the sea keeps the player on the path and gated doors do the rest.
  */
-import { building, clear, fence, place, setTerrain } from "./mapbuild";
+import {
+  building,
+  clear,
+  fence,
+  place,
+  ROOF_TILE,
+  ROOF_WOOD,
+  setTerrain,
+} from "./mapbuild";
 import { TERRAIN, type TerrainId, type WorldMap } from "./world";
 
 /** Where the island's local grid sits in the world. */
@@ -125,6 +133,7 @@ function layRooms(map: WorldMap): void {
     const at = world(area.x, area.y);
     building(map, at.x, at.y, area.w, area.h, {
       wall: area.wall,
+      roof: area.wall === "wall_wood" ? ROOF_WOOD : ROOF_TILE,
       floor: area.floor,
       doors: [],
     });
