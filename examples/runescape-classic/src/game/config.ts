@@ -7,7 +7,7 @@
 export const CAMERA_PITCH = 56;
 /** How high the camera floats, and how far back it stands, in tiles. */
 export const CAMERA_HEIGHT = 9;
-export const CAMERA_BACK = 7;
+export const CAMERA_BACK = 8;
 /**
  * Focal length as a share of the buffer's shorter side, which sets the field
  * of view. Measuring off the short side keeps a phone held upright from

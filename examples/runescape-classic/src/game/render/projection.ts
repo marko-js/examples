@@ -53,13 +53,25 @@ export function cameraAt(
   const focal = Math.min(bufferWidth, bufferHeight) * FOCAL_TILES;
   const z = CAMERA_HEIGHT;
 
+  // The ground directly under the camera lands this far below the horizon, and
+  // everything below that row is behind the camera and cannot be drawn. Stand
+  // further back until that row is off the bottom of the buffer, so a tall
+  // window never opens a strip of void along its bottom edge.
+  const nadir = (focal * cos) / sin;
+  let back = CAMERA_BACK;
+  while (back < CAMERA_BACK * 4) {
+    const lift = (focal * (back * sin - z * cos)) / (back * cos + z * sin);
+    if (anchor.y + lift + nadir >= bufferHeight) break;
+    back += 0.25;
+  }
+
   // Where the focus tile would land if the principal point were the origin.
-  const depth = CAMERA_BACK * cos + z * sin;
-  const up = CAMERA_BACK * sin - z * cos;
+  const depth = back * cos + z * sin;
+  const up = back * sin - z * cos;
 
   return {
     x: focus.x,
-    y: focus.y + CAMERA_BACK,
+    y: focus.y + back,
     z,
     sin,
     cos,

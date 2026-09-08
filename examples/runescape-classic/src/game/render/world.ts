@@ -61,7 +61,7 @@ export function viewportFor(
     focus: {
       x: (visible?.width ?? width) / 2,
       // The player sits below centre so most of the view is the way ahead.
-      y: (visible?.height ?? height) * 0.62,
+      y: (visible?.height ?? height) * 0.64,
     },
   };
 }
@@ -161,6 +161,7 @@ function buildField(state: GameState, camera: Camera): Field {
   const y = Math.floor(camera.y) - DRAW_DISTANCE - 2;
   const width = (half * 2 + 1) * SAMPLES_PER_TILE;
   const height = (DRAW_DISTANCE + 5) * SAMPLES_PER_TILE;
+  const stride = 4;
   if (
     cached &&
     cached.map === state.map &&
@@ -171,13 +172,13 @@ function buildField(state: GameState, camera: Camera): Field {
   ) {
     return cached;
   }
-  const data = new Uint8ClampedArray(width * height * 3);
+  const data = new Uint8ClampedArray(width * height * stride);
 
   for (let j = 0; j < height; j++) {
     const worldY = y + (j + 0.5) / SAMPLES_PER_TILE;
     for (let i = 0; i < width; i++) {
       const worldX = x + (i + 0.5) / SAMPLES_PER_TILE;
-      sampleGround(state, worldX, worldY, data, (j * width + i) * 3);
+      sampleGround(state, worldX, worldY, data, (j * width + i) * stride);
     }
   }
   cached = { x, y, width, height, data, map: state.map };
@@ -206,6 +207,7 @@ function sampleGround(
     let red = 0;
     let green = 0;
     let blue = 0;
+    let rough = 0;
     let total = 0;
 
     for (const [corner, weight] of across.entries()) {
@@ -218,6 +220,7 @@ function sampleGround(
       red += rgb[0] * light;
       green += rgb[1] * light;
       blue += rgb[2] * light;
+      rough += ROUGHNESS[id] * weight;
       total += weight;
     }
 
@@ -225,6 +228,7 @@ function sampleGround(
     out[at] = red / total;
     out[at + 1] = green / total;
     out[at + 2] = blue / total;
+    out[at + 3] = rough / total;
     return;
   }
 }
@@ -243,6 +247,24 @@ function isSoft(id: TerrainId): boolean {
     id !== TERRAIN.stoneFloor
   );
 }
+
+/**
+ * How coarse each terrain looks close up, on the 0 to 255 scale the field
+ * stores it in. Gravel and dirt are grainy, grass and water nearly smooth.
+ */
+const ROUGHNESS: Record<TerrainId, number> = {
+  [TERRAIN.grass]: 26,
+  [TERRAIN.darkGrass]: 26,
+  [TERRAIN.dirt]: 44,
+  [TERRAIN.path]: 38,
+  [TERRAIN.sand]: 32,
+  [TERRAIN.water]: 0,
+  [TERRAIN.woodFloor]: 20,
+  [TERRAIN.stoneFloor]: 24,
+  [TERRAIN.bridge]: 20,
+  [TERRAIN.swamp]: 38,
+  [TERRAIN.gravel]: 58,
+};
 
 const TERRAIN_RGB = Object.fromEntries(
   Object.entries(TERRAIN_DEFS).map(([id, def]) => [id, rgbOf(def.colour)]),
@@ -286,18 +308,18 @@ function drawGround(
     const step = depth / camera.focal;
     let worldX = camera.x + (0.5 - camera.cx) * step;
 
+    const worldY = camera.y - forward;
+    const coarseY = Math.floor(worldY * 5);
+    const fineY = Math.floor(worldY * 13);
+
     for (let sx = 0; sx < width; sx++, at += 4, worldX += step) {
       const fx = (worldX - field.x) * SAMPLES_PER_TILE - 0.5;
-      // A fine grain over the top, standing in for Classic's ground texture.
+      // Two octaves of grain, standing in for Classic's ground textures.
       const grain =
-        0.93 +
-        hash2d(
-          Math.floor(worldX * 5),
-          Math.floor((camera.y - forward) * 5),
-          3,
-        ) *
-          0.14;
-      sampleField(field, fx, fy, fog * grain, pixels, at);
+        hash2d(Math.floor(worldX * 5), coarseY, 3) * 0.6 +
+        hash2d(Math.floor(worldX * 13), fineY, 7) * 0.4 -
+        0.5;
+      sampleField(field, fx, fy, fog, grain, pixels, at);
       pixels[at + 3] = 255;
     }
   }
@@ -309,6 +331,7 @@ function sampleField(
   fx: number,
   fy: number,
   fog: number,
+  grain: number,
   out: Uint8ClampedArray,
   at: number,
 ): void {
@@ -323,19 +346,22 @@ function sampleField(
   const rx = fx - x;
   const ry = fy - y;
   const row = y * field.width;
-  const a = (row + x) * 3;
-  const b = (row + x + 1) * 3;
-  const c = (row + field.width + x) * 3;
-  const d = (row + field.width + x + 1) * 3;
+  const a = (row + x) * 4;
+  const b = (row + x + 1) * 4;
+  const c = (row + field.width + x) * 4;
+  const d = (row + field.width + x + 1) * 4;
   const top = (1 - ry) * fog;
   const bottom = ry * fog;
+  const blend = (channel: number) =>
+    (field.data[a + channel] * (1 - rx) + field.data[b + channel] * rx) * top +
+    (field.data[c + channel] * (1 - rx) + field.data[d + channel] * rx) *
+      bottom;
 
+  // Roughness rides in the fourth channel, and decides how much grain shows.
+  const rough = (blend(3) / 255) * grain;
   for (let channel = 0; channel < 3; channel++) {
-    out[at + channel] =
-      (field.data[a + channel] * (1 - rx) + field.data[b + channel] * rx) *
-        top +
-      (field.data[c + channel] * (1 - rx) + field.data[d + channel] * rx) *
-        bottom;
+    const value = blend(channel);
+    out[at + channel] = value + value * rough;
   }
 }
 
