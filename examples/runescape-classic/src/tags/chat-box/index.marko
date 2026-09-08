@@ -8,9 +8,29 @@ export interface Input {
   onSay: (text: string) => void;
 }
 
-<let/draft="">
+/** The strip under the chat, filtering the log the way the client's does. */
+static const FILTERS: {
+  id: string;
+  name: string;
+  tones: ChatMessage["tone"][] | null;
+}[] = [
+  { id: "all", name: "All", tones: null },
+  { id: "game", name: "Game", tones: ["game", "skill", "quest", "combat"] },
+  { id: "public", name: "Public", tones: ["chat"] },
+];
 
-<const/visible=input.open ? input.messages : input.messages.slice(-4)>
+<let/draft="">
+<let/filter="all">
+
+<const/tones=FILTERS.find((entry) => entry.id === filter)?.tones ?? null>
+
+<const/kept=(
+  tones
+    ? input.messages.filter((message) => tones.includes(message.tone))
+    : input.messages
+)>
+
+<const/visible=input.open ? kept : kept.slice(-4)>
 
 <div class=[styles.chat, input.open && styles.open]>
   <ol/log class=styles.log>
@@ -43,11 +63,27 @@ export interface Input {
       >
     </form>
   </show>
+
+  <div class=styles.tabs>
+    <for|entry| of=FILTERS by="id">
+      <button
+        type="button"
+        class=[styles.tab, filter === entry.id && styles.tabOn]
+        aria-pressed=filter === entry.id && "true"
+        onClick() {
+          filter = entry.id;
+        }
+      >
+        ${entry.name}
+      </button>
+    </for>
+  </div>
 </div>
 
 <script>
   // Keep the newest message in view as the log grows.
   void input.messages.length;
   void input.open;
+  void filter;
   log().scrollTop = log().scrollHeight;
 </script>

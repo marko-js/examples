@@ -87,6 +87,9 @@ export interface Player extends Actor {
   equipment: Partial<Record<EquipSlot, string>>;
   bank: ItemStack[];
   combatStyle: CombatStyle;
+  /** Whether the run toggle is on, and how much energy is left to spend. */
+  running: boolean;
+  runEnergy: number;
   tutorial: TutorialProgress;
   activity: Activity | null;
   pending: PendingAction | null;
@@ -205,6 +208,8 @@ export function createPlayer(): Player {
     equipment: {},
     bank: [],
     combatStyle: "controlled",
+    running: false,
+    runEnergy: 100,
     tutorial: { stage: 0, done: false, flags: {} },
     activity: null,
     pending: null,

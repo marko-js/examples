@@ -207,52 +207,70 @@ static const LONG_PRESS_MS = 420;
     </if>
   </p>
 
+  <div class=styles.sidebar aria-hidden="true"/>
+
   <div class=styles.corner>
-    <div class=styles.minimapWrap>
-      <canvas/minimap
-        class=styles.minimap
-        style=`width:${MINIMAP}px;height:${MINIMAP}px`
-        aria-label="Minimap, tap to walk"
-        onClick(event, canvas) {
-          const game = session.engine;
-          if (!game) return;
-          const rect = canvas.getBoundingClientRect();
-          const tile = minimapTileAt(
-            game.state,
-            MINIMAP,
-            ((event.clientX - rect.left) / rect.width) * MINIMAP,
-            ((event.clientY - rect.top) / rect.height) * MINIMAP,
-          );
-          game.choose({
-            label: "Walk here",
-            verb: "Walk here",
-            action: "walk",
-            target: { kind: "tile", ...tile },
-          });
-        }
-      />
+    <div class=styles.orbs>
+      <div
+        class=styles.orb
+        style=`--fill:${Math.round((ui.hitpoints / ui.maxHitpoints) * 100)}%;--tint:#b02c2c`
+        title=`Hitpoints ${ui.hitpoints} of ${ui.maxHitpoints}`
+      >
+        ${ui.hitpoints}
+      </div>
       <button
         type="button"
-        class=styles.expand
-        title="Toggle full screen"
-        aria-label="Toggle full screen"
+        class=[styles.orb, styles.orbButton, ui.running && styles.orbOn]
+        style=`--fill:${ui.runEnergy}%;--tint:#c8a12a`
+        title=`Run energy ${ui.runEnergy}%`
+        aria-pressed=ui.running && "true"
         onClick() {
-          if (document.fullscreenElement) document.exitFullscreen();
-          else frame().requestFullscreen?.();
+          session.engine?.toggleRun();
         }
       >
-        ⛶
+        ${ui.runEnergy}
       </button>
     </div>
 
-    <p class=styles.region>${ui.region}</p>
+    <div class=styles.minimapStack>
+      <div class=styles.minimapWrap>
+        <canvas/minimap
+          class=styles.minimap
+          style=`width:${MINIMAP}px;height:${MINIMAP}px`
+          aria-label="Minimap, tap to walk"
+          onClick(event, canvas) {
+            const game = session.engine;
+            if (!game) return;
+            const rect = canvas.getBoundingClientRect();
+            const tile = minimapTileAt(
+              game.state,
+              MINIMAP,
+              ((event.clientX - rect.left) / rect.width) * MINIMAP,
+              ((event.clientY - rect.top) / rect.height) * MINIMAP,
+            );
+            game.choose({
+              label: "Walk here",
+              verb: "Walk here",
+              action: "walk",
+              target: { kind: "tile", ...tile },
+            });
+          }
+        />
+        <button
+          type="button"
+          class=styles.expand
+          title="Toggle full screen"
+          aria-label="Toggle full screen"
+          onClick() {
+            if (document.fullscreenElement) document.exitFullscreen();
+            else frame().requestFullscreen?.();
+          }
+        >
+          ⛶
+        </button>
+      </div>
 
-    <div
-      class=styles.orb
-      style=`--fill:${Math.round((ui.hitpoints / ui.maxHitpoints) * 100)}%`
-      title=`Hits ${ui.hitpoints} of ${ui.maxHitpoints}`
-    >
-      ${ui.hitpoints}
+      <p class=styles.region>${ui.region}</p>
     </div>
   </div>
 
@@ -468,12 +486,14 @@ static const LONG_PRESS_MS = 420;
     let surface = { width: 0, height: 0, ratio: 0 };
 
     const applyView = () => {
+      // The docked column is always there, so the player is always kept clear
+      // of it; a panel that slides up over the game only counts while open.
       const docked = box.panelWidth < box.width * 0.7;
-      const visible = !session.panelOpen
-        ? { width: box.width, height: box.height }
-        : docked
-          ? { width: box.panelLeft, height: box.height }
-          : { width: box.width, height: box.panelTop };
+      const visible = docked
+        ? { width: box.panelLeft, height: box.height }
+        : session.panelOpen
+          ? { width: box.width, height: box.panelTop }
+          : { width: box.width, height: box.height };
       session.view = viewportFor(box.width, box.height, visible);
     };
 

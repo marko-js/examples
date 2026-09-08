@@ -23,6 +23,8 @@ export interface SaveData {
   equipment: Partial<Record<EquipSlot, string>>;
   bank: ItemStack[];
   combatStyle: CombatStyle;
+  running?: boolean;
+  runEnergy?: number;
   tutorial?: TutorialProgress;
 }
 
@@ -40,6 +42,8 @@ export function saveGame(state: GameState): void {
     equipment: player.equipment,
     bank: player.bank,
     combatStyle: player.combatStyle,
+    running: player.running,
+    runEnergy: player.runEnergy,
     tutorial: player.tutorial,
   };
   try {
@@ -77,6 +81,8 @@ export function applySave(player: Player, data: SaveData): void {
     if (typeof xp === "number") player.skills.xp[id] = xp;
     player.skills.current[id] = baseLevel(player.skills, id);
   }
+  player.running = data.running ?? false;
+  player.runEnergy = data.runEnergy ?? 100;
   player.maxHitpoints = baseLevel(player.skills, "hitpoints");
   player.hitpoints = Math.min(
     player.maxHitpoints,

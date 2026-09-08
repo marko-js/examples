@@ -18,6 +18,9 @@ import {
   GROUND_ITEM_TICKS,
   MAX_CHAT_MESSAGES,
   RESPAWN_TILE,
+  RUN_DRAIN,
+  RUN_MULTIPLIER,
+  RUN_RECOVER,
   TICK_MS,
   TICKS_PER_ROUND,
   TILES_PER_SECOND,
@@ -200,7 +203,7 @@ export class Engine {
     }
 
     const seconds = elapsed / 1000;
-    this.step(this.state.player, seconds);
+    this.movePlayer(seconds);
     for (const npc of this.state.npcs)
       if (!npc.respawnTick) this.step(npc, seconds);
     this.state.splats = this.state.splats.filter(
@@ -1673,7 +1676,39 @@ export class Engine {
 
   /* -------------------------------------------------------------- helpers */
 
-  private step(actor: Player | Npc, seconds: number): void {
+  /**
+   * The player moves a tile a tick on foot and two at a run, which costs
+   * energy per tile. Energy comes back whenever they are not running.
+   */
+  private movePlayer(seconds: number): void {
+    const { player } = this.state;
+    const running = player.running && player.runEnergy > 0;
+    const before = player.path.length;
+    this.step(player, seconds, running ? RUN_MULTIPLIER : 1);
+
+    const tiles = before - player.path.length;
+    const energy = player.runEnergy;
+    player.runEnergy = running
+      ? Math.max(0, energy - tiles * RUN_DRAIN)
+      : Math.min(100, energy + seconds * RUN_RECOVER);
+    if (running && player.runEnergy === 0) {
+      player.running = false;
+      this.message("game", "You have run out of energy.");
+    }
+    if (Math.floor(energy) !== Math.floor(player.runEnergy)) {
+      this.uiDirty = true;
+    }
+  }
+
+  /** Turns running on or off, the way the run orb does. */
+  toggleRun(): void {
+    const { player } = this.state;
+    if (!player.running && player.runEnergy <= 0) return;
+    player.running = !player.running;
+    this.uiDirty = true;
+  }
+
+  private step(actor: Player | Npc, seconds: number, pace = 1): void {
     if (!actor.path.length) {
       actor.fx = actor.x;
       actor.fy = actor.y;
@@ -1683,7 +1718,7 @@ export class Engine {
     const dx = next.x - actor.fx;
     const dy = next.y - actor.fy;
     const distance = Math.hypot(dx, dy);
-    const travel = TILES_PER_SECOND * seconds;
+    const travel = TILES_PER_SECOND * pace * seconds;
     if (distance <= travel || distance === 0) {
       actor.fx = next.x;
       actor.fy = next.y;

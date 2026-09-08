@@ -36,8 +36,12 @@ export const TICK_MS = 600;
 /** The standard weapon speed: four ticks, so blows land every 2.4s. */
 export const TICKS_PER_ROUND = 4;
 
-/** Walking speed, roughly a tile every three tenths of a second. */
-export const TILES_PER_SECOND = 3.2;
+/** Walking is a tile a tick; running is two, and spends energy doing it. */
+export const TILES_PER_SECOND = 1000 / TICK_MS;
+export const RUN_MULTIPLIER = 2;
+/** Energy spent per tile run, and regained per second while not running. */
+export const RUN_DRAIN = 0.6;
+export const RUN_RECOVER = 1.2;
 
 /** The world is a square grid of this many tiles per side. */
 export const WORLD_SIZE = 256;

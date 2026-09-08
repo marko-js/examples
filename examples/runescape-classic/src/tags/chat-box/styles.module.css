@@ -1,18 +1,17 @@
+/* The chat box is parchment behind black text, tabbed along the bottom. */
 .chat {
   display: grid;
-  grid-template-rows: 1fr auto;
+  grid-template-rows: minmax(0, 1fr) auto;
   min-height: 0;
   height: 100%;
-  /* Collapsed, the log is a read-only overlay that taps pass straight through. */
+  border: 1px solid var(--rs-border);
+  background: var(--rs-parchment);
+  /* Collapsed, taps pass through to the game behind it. */
   pointer-events: none;
 }
 
 .open {
-  border: 1px solid #000;
-  border-radius: 6px;
-  background: rgba(8, 8, 8, 0.82);
   pointer-events: auto;
-  backdrop-filter: blur(2px);
 }
 
 .log {
@@ -21,10 +20,11 @@
   justify-content: flex-end;
   overflow: hidden;
   margin: 0;
-  padding: 6px 8px;
+  padding: 4px 6px;
   list-style: none;
-  font-size: 13px;
-  line-height: 1.4;
+  color: var(--rs-ink);
+  font-size: 12px;
+  line-height: 1.3;
 }
 
 .open .log {
@@ -36,39 +36,64 @@
 
 .line {
   overflow-wrap: anywhere;
-  text-shadow:
-    1px 1px 0 #000,
-    -1px 1px 0 #000,
-    1px -1px 0 #000,
-    -1px -1px 0 #000;
 }
 
 .game {
-  color: #ffd42a;
+  color: #16130c;
 }
 
 .skill {
-  color: #7fdc5a;
+  color: #0d5c14;
 }
 
 .combat {
-  color: #ff8a6a;
+  color: #8b1a1a;
 }
 
 .quest {
-  color: #4ad2e8;
+  color: #16307d;
 }
 
 .chatTone {
-  color: #ffffff;
+  color: #16130c;
+}
+
+.chatTone::before {
+  content: "";
+}
+
+/* The tab strip the client keeps under the chat. */
+.tabs {
+  display: flex;
+  gap: 1px;
+  border-top: 1px solid var(--rs-border);
+  background: var(--rs-stone);
+  padding: 2px;
+}
+
+.tab {
+  flex: 1 1 0;
+  border: 1px solid var(--rs-border);
+  background: linear-gradient(#5a5142, #3d3729);
+  padding: 2px 0;
+  color: var(--rs-text);
+  font-size: 11px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.tabOn {
+  background: linear-gradient(#7d715a, #5a5142);
+  color: var(--rs-gold);
 }
 
 .form {
   display: flex;
   gap: 6px;
   align-items: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-  padding: 6px;
+  border-top: 1px solid var(--rs-border);
+  background: var(--rs-stone);
+  padding: 4px;
 }
 
 .label {
@@ -79,11 +104,10 @@
 .input {
   flex: 1;
   min-width: 0;
-  border: 1px solid #303030;
-  border-radius: 3px;
-  background: #161616;
-  padding: 6px 8px;
-  color: #fff;
+  border: 1px solid var(--rs-border);
+  background: var(--rs-parchment);
+  padding: 5px 7px;
+  color: var(--rs-ink);
   font: inherit;
   font-size: 16px;
 }

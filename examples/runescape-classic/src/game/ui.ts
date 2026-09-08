@@ -107,6 +107,9 @@ export interface UiState {
   shopName: string;
   shop: UiShopEntry[];
   combatStyle: CombatStyle;
+  running: boolean;
+  /** Run energy left, 0 to 100. */
+  runEnergy: number;
   dialogue: UiDialogue | null;
   spells: UiSpell[];
   /** Current Tutorial Island objective, or null once it is finished. */
@@ -176,6 +179,8 @@ export function buildUi(input: UiInput): UiState {
         price: buyPrice(getItem(stock.id)),
       })),
     combatStyle: player.combatStyle,
+    running: player.running,
+    runEnergy: Math.round(player.runEnergy),
     dialogue: input.dialogue ?? null,
     spells: (input.spells ?? []).map((spell) => ({
       ...spell,

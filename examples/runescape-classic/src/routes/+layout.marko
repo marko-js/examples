@@ -21,16 +21,53 @@
 </html>
 
 <style>
+  /*
+   * The RuneScape 2 interface: carved olive stone around the game, a dark
+   * brown backing behind the panels, and parchment under the chat.
+   */
   :root {
     --rs-wood: #2f2519;
-    --rs-border: #191309;
-    --rs-panel: #3b3226;
-    --rs-slot: #4a3f2f;
-    --rs-slot-hover: #5b4e3a;
-    --rs-slot-border: #241c11;
+    --rs-border: #0d0b07;
+    --rs-panel: #4a4033;
+    --rs-slot: #574b3b;
+    --rs-slot-hover: #6a5c48;
+    --rs-slot-border: #2a2419;
     --rs-text: #e8e0c8;
     --rs-text-dim: #a89e84;
     --rs-gold: #ffd42a;
+    --rs-ink: #16130c;
+
+    /* Mottled stone and parchment, mixed from gradients: the game ships no images. */
+    --rs-stone:
+      repeating-linear-gradient(
+        37deg,
+        rgba(255, 255, 255, 0.05) 0 1px,
+        transparent 1px 3px
+      ),
+      repeating-linear-gradient(
+        -53deg,
+        rgba(0, 0, 0, 0.07) 0 1px,
+        transparent 1px 4px
+      ),
+      repeating-linear-gradient(
+        88deg,
+        rgba(0, 0, 0, 0.05) 0 2px,
+        transparent 2px 9px
+      ),
+      linear-gradient(#544c39, #3a3427);
+
+    --rs-parchment:
+      repeating-linear-gradient(
+        63deg,
+        rgba(0, 0, 0, 0.03) 0 1px,
+        transparent 1px 4px
+      ),
+      repeating-linear-gradient(
+        -41deg,
+        rgba(255, 255, 255, 0.14) 0 1px,
+        transparent 1px 5px
+      ),
+      linear-gradient(#cfc29e, #bcae88);
 
     color-scheme: dark;
   }
