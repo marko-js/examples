@@ -162,7 +162,7 @@ export interface ObjectDef {
   art: ObjectArt;
   gather?: GatherDef;
   /** Extra menu actions handled by the engine, such as "Bank" or "Trade". */
-  use?: "bank" | "shop" | "cook" | "smelt" | "smith" | "boat";
+  use?: "bank" | "shop" | "cook" | "smelt" | "smith" | "boat" | "altar";
   /** Drawn one tile tall rather than overlapping the tile above. */
   flat?: boolean;
 }
@@ -598,6 +598,7 @@ OBJECT_LIST.push(
     name: "Altar",
     examine: "A stone altar.",
     blocking: true,
+    use: "altar",
     art: { kind: "altar" },
   },
   {

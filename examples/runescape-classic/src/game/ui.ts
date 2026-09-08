@@ -12,6 +12,7 @@ import {
   getItem,
   itemName,
 } from "./items";
+import { PRAYERS } from "./prayers";
 import {
   baseLevels,
   combatLevel,
@@ -68,6 +69,16 @@ export interface UiDialogue {
   options: string[];
 }
 
+export interface UiPrayer {
+  id: string;
+  name: string;
+  level: number;
+  blurb: string;
+  active: boolean;
+  /** False until the player's Prayer level reaches it. */
+  ready: boolean;
+}
+
 export interface UiSpell {
   id: string;
   name: string;
@@ -110,6 +121,9 @@ export interface UiState {
   combatStyle: CombatStyle;
   /** What the player is fighting with, for the combat tab. */
   weapon: string;
+  prayerPoints: number;
+  maxPrayerPoints: number;
+  prayerBook: UiPrayer[];
   running: boolean;
   /** Run energy left, 0 to 100. */
   runEnergy: number;
@@ -185,6 +199,16 @@ export function buildUi(input: UiInput): UiState {
     weapon: player.equipment.weapon
       ? itemName(player.equipment.weapon)
       : "Unarmed",
+    prayerPoints: Math.floor(player.prayerPoints),
+    maxPrayerPoints: levels.prayer,
+    prayerBook: PRAYERS.map((prayer) => ({
+      id: prayer.id,
+      name: prayer.name,
+      level: prayer.level,
+      blurb: prayer.blurb,
+      active: player.prayers.includes(prayer.id),
+      ready: levels.prayer >= prayer.level,
+    })),
     running: player.running,
     runEnergy: Math.round(player.runEnergy),
     dialogue: input.dialogue ?? null,

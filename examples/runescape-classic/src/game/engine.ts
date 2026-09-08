@@ -41,6 +41,7 @@ import {
   isAdjacent,
   type Point,
 } from "./pathfinding";
+import { conflicts, drainRate, getPrayer } from "./prayers";
 import { pick, randInt } from "./rng";
 import { applySave, type SaveData } from "./save";
 import { createStock, getShop } from "./shops";
@@ -204,6 +205,7 @@ export class Engine {
 
     const seconds = elapsed / 1000;
     this.movePlayer(seconds);
+    this.burnPrayer(seconds);
     for (const npc of this.state.npcs)
       if (!npc.respawnTick) this.step(npc, seconds);
     this.state.splats = this.state.splats.filter(
@@ -324,6 +326,8 @@ export class Engine {
         options.push(entry("Trade at", "shop", target, def.name));
       if (def.use === "cook")
         options.push(entry("Cook on", "cook-at", target, def.name));
+      if (def.use === "altar")
+        options.push(entry("Pray at", "pray-at", target, def.name));
       options.push(entry("Examine", "examine", target, def.name));
     }
 
@@ -972,6 +976,9 @@ export class Engine {
         };
         break;
       }
+      case "pray-at":
+        this.prayAtAltar();
+        break;
       case "talk":
         this.talkTo(target);
         break;
@@ -1063,7 +1070,10 @@ export class Engine {
       return;
     }
 
-    const back = rollDamage(npcFighter(def), this.playerFighter(), this.random);
+    // Everything here swings a blade, so one overhead turns it all aside.
+    const back = this.protectedFrom("melee")
+      ? 0
+      : rollDamage(npcFighter(def), this.playerFighter(), this.random);
     this.damagePlayer(back);
     this.invalidate();
   }
@@ -1154,15 +1164,11 @@ export class Engine {
   private playerFighter(shooting = false): Fighter {
     const { player } = this.state;
     const bonus = equipmentBonus(player);
-    const level = shooting
-      ? player.skills.current.ranged
-      : player.skills.current.attack;
+    const level = shooting ? this.prayed("ranged") : this.prayed("attack");
     return {
       attack: level,
-      strength: shooting
-        ? player.skills.current.ranged
-        : player.skills.current.strength,
-      defence: player.skills.current.defence,
+      strength: shooting ? this.prayed("ranged") : this.prayed("strength"),
+      defence: this.prayed("defence"),
       aim: bonus.aim,
       power: bonus.power,
       armour: bonus.armour,
@@ -1665,6 +1671,7 @@ export class Engine {
         player.maxHitpoints = after;
         player.hitpoints += after - before;
       }
+      if (skill === "prayer") player.prayerPoints += after - before;
       this.message(
         "quest",
         `You have reached ${SKILL_NAMES[skill]} level ${after}!`,
@@ -1698,6 +1705,91 @@ export class Engine {
     if (Math.floor(energy) !== Math.floor(player.runEnergy)) {
       this.uiDirty = true;
     }
+  }
+
+  /* --------------------------------------------------------------- prayer */
+
+  get maxPrayerPoints(): number {
+    return baseLevel(this.state.player.skills, "prayer");
+  }
+
+  /**
+   * Light or put out a prayer. Prayers in the same group, and the ones that
+   * fight over the same style, go out when another is lit.
+   */
+  togglePrayer(id: string): void {
+    const { player } = this.state;
+    const prayer = getPrayer(id);
+    if (player.prayers.includes(id)) {
+      player.prayers = player.prayers.filter((active) => active !== id);
+      this.uiDirty = true;
+      return;
+    }
+    if (baseLevel(player.skills, "prayer") < prayer.level) {
+      this.message(
+        "game",
+        `You need Prayer level ${prayer.level} for ${prayer.name}.`,
+      );
+      return;
+    }
+    if (player.prayerPoints <= 0) {
+      this.message("game", "You have run out of prayer points.");
+      return;
+    }
+    player.prayers = [
+      ...player.prayers.filter(
+        (active) => !conflicts(prayer, getPrayer(active)),
+      ),
+      id,
+    ];
+    this.uiDirty = true;
+  }
+
+  /** An altar fills the prayer back up, which is what altars are for. */
+  private prayAtAltar(): void {
+    const { player } = this.state;
+    const full = this.maxPrayerPoints;
+    if (player.prayerPoints >= full) {
+      this.message("game", "You already feel closer to your god.");
+      return;
+    }
+    player.prayerPoints = full;
+    this.message("skill", "You pray, and feel your prayer restored.");
+    this.invalidate();
+  }
+
+  /** Burn prayer points at the rate everything lit adds up to. */
+  private burnPrayer(seconds: number): void {
+    const { player } = this.state;
+    if (!player.prayers.length) return;
+    player.prayerPoints = Math.max(
+      0,
+      player.prayerPoints - drainRate(player.prayers) * seconds,
+    );
+    if (player.prayerPoints <= 0) {
+      player.prayers = [];
+      this.message("game", "You have run out of prayer points.");
+    }
+    this.uiDirty = true;
+  }
+
+  /** A level with every lit prayer's share added, as the game rounds it. */
+  private prayed(skill: SkillId): number {
+    const { player } = this.state;
+    const level = player.skills.current[skill];
+    let share = 0;
+    for (const id of player.prayers) {
+      const boost = getPrayer(id).boost;
+      if (boost?.skill === skill) share += boost.share;
+    }
+    return Math.floor(level * (1 + share));
+  }
+
+  /** Whether an incoming attack of this style is being turned aside. */
+  private protectedFrom(style: "melee" | "missiles" | "magic"): boolean {
+    return this.state.player.prayers.some(
+      (id) => getPrayer(id).protect === style,
+    );
   }
 
   /** Turns running on or off, the way the run orb does. */

@@ -26,6 +26,8 @@ export interface SaveData {
   combatStyle: CombatStyle;
   running?: boolean;
   runEnergy?: number;
+  prayerPoints?: number;
+  prayers?: string[];
   tutorial?: TutorialProgress;
 }
 
@@ -45,6 +47,8 @@ export function saveGame(state: GameState): void {
     combatStyle: player.combatStyle,
     running: player.running,
     runEnergy: player.runEnergy,
+    prayerPoints: player.prayerPoints,
+    prayers: player.prayers,
     tutorial: player.tutorial,
   };
   try {
@@ -84,11 +88,14 @@ export function applySave(player: Player, data: SaveData): void {
   }
   player.running = data.running ?? false;
   player.runEnergy = data.runEnergy ?? 100;
+  player.prayers = Array.isArray(data.prayers) ? data.prayers : [];
   player.maxHitpoints = baseLevel(player.skills, "hitpoints");
   player.hitpoints = Math.min(
     player.maxHitpoints,
     data.hitpoints || player.maxHitpoints,
   );
+  const prayer = baseLevel(player.skills, "prayer");
+  player.prayerPoints = Math.min(prayer, data.prayerPoints ?? prayer);
   if (Array.isArray(data.inventory)) {
     // A save from another version can be any length; the pack is a fixed size.
     player.inventory = createInventory().map(

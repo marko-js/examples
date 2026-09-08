@@ -4,6 +4,7 @@ import {
   chatIcon,
   cogIcon,
   gearIcon,
+  prayerIcon,
   spellbookIcon,
   statsIcon,
   swordIcon,
@@ -28,6 +29,7 @@ static const TABS = [
   { id: "combat", name: "Combat", icon: swordIcon("#a97142", "#cd9560") },
   { id: "inventory", name: "Inventory", icon: bagIcon() },
   { id: "equipment", name: "Worn", icon: gearIcon() },
+  { id: "prayer", name: "Prayer", icon: prayerIcon() },
   { id: "magic", name: "Magic", icon: spellbookIcon() },
   { id: "stats", name: "Stats", icon: statsIcon() },
   { id: "settings", name: "Options", icon: cogIcon() },
@@ -223,6 +225,13 @@ static const LONG_PRESS_MS = 420;
       >
         ${ui.hitpoints}
       </div>
+      <div
+        class=styles.orb
+        style=`--fill:${Math.round((ui.prayerPoints / Math.max(1, ui.maxPrayerPoints)) * 100)}%;--tint:#7fa8c8`
+        title=`Prayer ${ui.prayerPoints} of ${ui.maxPrayerPoints}`
+      >
+        ${ui.prayerPoints}
+      </div>
       <button
         type="button"
         class=[styles.orb, styles.orbButton, ui.running && styles.orbOn]
@@ -378,6 +387,17 @@ static const LONG_PRESS_MS = 420;
           maxHit=ui.maxHit
           onRemove(slot: EquipSlot) {
             session.engine?.unequip(slot);
+          }
+        />
+      </show>
+
+      <show=tab === "prayer">
+        <prayer-panel
+          prayers=ui.prayerBook
+          points=ui.prayerPoints
+          maxPoints=ui.maxPrayerPoints
+          onToggle(id) {
+            session.engine?.togglePrayer(id);
           }
         />
       </show>

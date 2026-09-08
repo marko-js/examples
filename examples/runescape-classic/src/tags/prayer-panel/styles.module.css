@@ -1,0 +1,63 @@
+/* The prayer book: what is left to spend, then the prayers to spend it on. */
+.points {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 0 6px;
+  border-bottom: 1px solid var(--rs-slot-border);
+  padding-bottom: 4px;
+  color: var(--rs-text-dim);
+  font-size: 11px;
+}
+
+.value {
+  color: var(--rs-gold);
+  font-weight: bold;
+}
+
+.book {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.prayer {
+  display: grid;
+  gap: 1px;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--rs-slot-border);
+  background: var(--rs-slot);
+  padding: 4px;
+  color: var(--rs-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.prayer:not(:disabled):hover {
+  background: var(--rs-slot-hover);
+}
+
+.on {
+  border-color: var(--rs-gold);
+  box-shadow: inset 0 0 0 1px var(--rs-gold);
+}
+
+.locked {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.name {
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.blurb {
+  color: var(--rs-text-dim);
+  font-size: 10px;
+  line-height: 1.2;
+}

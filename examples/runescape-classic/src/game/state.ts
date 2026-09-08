@@ -91,6 +91,9 @@ export interface Player extends Actor {
   /** Whether the run toggle is on, and how much energy is left to spend. */
   running: boolean;
   runEnergy: number;
+  /** Prayer points left, and the ids of the prayers currently burning them. */
+  prayerPoints: number;
+  prayers: string[];
   tutorial: TutorialProgress;
   activity: Activity | null;
   pending: PendingAction | null;
@@ -211,6 +214,8 @@ export function createPlayer(): Player {
     combatStyle: "controlled",
     running: false,
     runEnergy: 100,
+    prayerPoints: 1,
+    prayers: [],
     tutorial: { stage: 0, done: false, flags: {} },
     activity: null,
     pending: null,

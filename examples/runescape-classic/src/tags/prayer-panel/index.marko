@@ -1,0 +1,40 @@
+import type { UiPrayer } from "../../game/ui";
+import styles from "./styles.module.css";
+
+export interface Input {
+  prayers: UiPrayer[];
+  points: number;
+  maxPoints: number;
+  onToggle: (id: string) => void;
+}
+
+<p class=styles.points>
+  Prayer points
+  <span class=styles.value>${input.points}/${input.maxPoints}</span>
+</p>
+
+<ul class=styles.book>
+  <for|prayer| of=input.prayers by="id">
+    <li>
+      <button
+        type="button"
+        class=[
+          styles.prayer,
+          prayer.active && styles.on,
+          !prayer.ready && styles.locked,
+        ]
+        disabled=!prayer.ready
+        title=`${prayer.name} — level ${prayer.level}, ${prayer.blurb}`
+        aria-pressed=prayer.active && "true"
+        onClick() {
+          input.onToggle(prayer.id);
+        }
+      >
+        <span class=styles.name>${prayer.name}</span>
+        <span class=styles.blurb>
+          ${prayer.ready ? prayer.blurb : `Level ${prayer.level}`}
+        </span>
+      </button>
+    </li>
+  </for>
+</ul>

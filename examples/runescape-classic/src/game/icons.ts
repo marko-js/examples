@@ -384,6 +384,19 @@ export function spellbookIcon(): Icon {
   ];
 }
 
+/** The prayer tab's glyph: the client's little gold orans symbol. */
+export function prayerIcon(): Icon {
+  return [
+    { kind: "circle", cx: 16, cy: 11, r: 5, fill: "#e8dfae" },
+    {
+      kind: "poly",
+      points: "16,14 24,20 24,27 8,27 8,20",
+      fill: "#d8c98a",
+    },
+    { kind: "rect", x: 14, y: 16, w: 4, h: 11, fill: "#f4ecc6" },
+  ];
+}
+
 export function cogIcon(): Icon {
   return [
     {
