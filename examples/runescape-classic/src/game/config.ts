@@ -32,8 +32,8 @@ export const MINIMAP_TILES = 52;
 /** Length of a game tick. Combat rounds and skilling attempts are tick aligned. */
 export const TICK_MS = 600;
 
-/** Ticks between combat rounds, so opponents trade blows every 1.2s. */
-export const TICKS_PER_ROUND = 2;
+/** The standard weapon speed: four ticks, so blows land every 2.4s. */
+export const TICKS_PER_ROUND = 4;
 
 /** Walking speed, roughly a tile every three tenths of a second. */
 export const TILES_PER_SECOND = 3.2;

@@ -59,6 +59,22 @@ test("cooked food heals what the tables say", () => {
   expect(getItem("bread").heals).toBe(5);
 });
 
+test("gear carries its published bonuses", () => {
+  const equip = (id: string) => getItem(id).equip?.bonus;
+
+  expect(equip("bronze_sword")).toEqual({ aim: 5, power: 7 });
+  expect(equip("rune_sword")).toEqual({ aim: 47, power: 49 });
+  expect(equip("bronze_axe")).toEqual({ aim: 4, power: 5 });
+  expect(equip("adamantite_pickaxe")).toEqual({ aim: 17, power: 19 });
+  expect(equip("bronze_dagger")).toEqual({ aim: 4, power: 3 });
+
+  expect(equip("bronze_platebody")).toEqual({ armour: 14 });
+  expect(equip("rune_platebody")).toEqual({ armour: 80 });
+  expect(equip("steel_helmet")).toEqual({ armour: 8 });
+  expect(equip("mithril_shield")).toEqual({ armour: 19 });
+  expect(equip("iron_platelegs")).toEqual({ armour: 10 });
+});
+
 test("monsters carry their published levels and combat levels", () => {
   const stats = {
     chicken: { attack: 1, strength: 1, defence: 1, hitpoints: 3, combat: 1 },

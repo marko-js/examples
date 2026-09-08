@@ -205,6 +205,91 @@ export const METALS: Metal[] = [
   },
 ];
 
+/**
+ * Published equipment bonuses. This model carries one attack and one defence
+ * number per item, so a weapon takes its primary attack bonus and its strength
+ * bonus, and armour takes its slash defence — the style most melee is rolled
+ * against.
+ *
+ * https://oldschool.runescape.wiki/w/Longsword
+ */
+interface GearBonuses {
+  /** Attack and strength bonus. */
+  sword: [number, number];
+  axe: [number, number];
+  pickaxe: [number, number];
+  helmet: number;
+  platebody: number;
+  platelegs: number;
+  shield: number;
+}
+
+const GEAR: Record<string, GearBonuses> = {
+  bronze: {
+    sword: [5, 7],
+    axe: [4, 5],
+    pickaxe: [4, 5],
+    helmet: 4,
+    platebody: 14,
+    platelegs: 7,
+    shield: 6,
+  },
+  iron: {
+    sword: [8, 10],
+    axe: [5, 7],
+    pickaxe: [5, 7],
+    helmet: 5,
+    platebody: 20,
+    platelegs: 10,
+    shield: 9,
+  },
+  steel: {
+    sword: [14, 16],
+    axe: [8, 9],
+    pickaxe: [8, 9],
+    helmet: 8,
+    platebody: 31,
+    platelegs: 16,
+    shield: 13,
+  },
+  black: {
+    sword: [18, 16],
+    axe: [10, 12],
+    pickaxe: [10, 11],
+    helmet: 10,
+    platebody: 40,
+    platelegs: 20,
+    shield: 16,
+  },
+  mithril: {
+    sword: [20, 22],
+    axe: [12, 13],
+    pickaxe: [12, 13],
+    helmet: 11,
+    platebody: 44,
+    platelegs: 22,
+    shield: 19,
+  },
+  adamantite: {
+    sword: [29, 31],
+    axe: [17, 19],
+    pickaxe: [17, 19],
+    helmet: 15,
+    platebody: 63,
+    platelegs: 31,
+    shield: 26,
+  },
+  rune: {
+    sword: [47, 49],
+    axe: [26, 29],
+    pickaxe: [26, 29],
+    helmet: 23,
+    platebody: 80,
+    platelegs: 49,
+    shield: 40,
+  },
+};
+
 const defs: ItemDef[] = [];
 
 function define(def: ItemDef): string {
@@ -218,6 +303,7 @@ for (const metal of METALS) {
     Math.round((12 + tier * tier * 22) * mult);
   const attack = { skill: "attack" as SkillId, level };
   const defence = { skill: "defence" as SkillId, level };
+  const gear = GEAR[id];
 
   define({
     id: `${id}_sword`,
@@ -229,7 +315,7 @@ for (const metal of METALS) {
       slot: "weapon",
       colour,
       requires: attack,
-      bonus: { aim: 5 + tier * 7, power: 5 + tier * 7 },
+      bonus: { aim: gear.sword[0], power: gear.sword[1] },
     },
   });
   define({
@@ -243,7 +329,7 @@ for (const metal of METALS) {
       slot: "weapon",
       colour,
       requires: attack,
-      bonus: { aim: 3 + tier * 5, power: 4 + tier * 5 },
+      bonus: { aim: gear.axe[0], power: gear.axe[1] },
     },
   });
   define({
@@ -257,7 +343,7 @@ for (const metal of METALS) {
       slot: "weapon",
       colour,
       requires: attack,
-      bonus: { aim: 2 + tier * 4, power: 3 + tier * 4 },
+      bonus: { aim: gear.pickaxe[0], power: gear.pickaxe[1] },
     },
   });
   define({
@@ -270,7 +356,7 @@ for (const metal of METALS) {
       slot: "helmet",
       colour,
       requires: defence,
-      bonus: { armour: 3 + tier * 4 },
+      bonus: { armour: gear.helmet },
     },
   });
   define({
@@ -283,7 +369,7 @@ for (const metal of METALS) {
       slot: "body",
       colour,
       requires: defence,
-      bonus: { armour: 6 + tier * 8 },
+      bonus: { armour: gear.platebody },
     },
   });
   define({
@@ -296,7 +382,7 @@ for (const metal of METALS) {
       slot: "legs",
       colour,
       requires: defence,
-      bonus: { armour: 4 + tier * 6 },
+      bonus: { armour: gear.platelegs },
     },
   });
   define({
@@ -309,7 +395,7 @@ for (const metal of METALS) {
       slot: "shield",
       colour,
       requires: defence,
-      bonus: { armour: 4 + tier * 5 },
+      bonus: { armour: gear.shield },
     },
   });
 }

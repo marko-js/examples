@@ -38,8 +38,9 @@ test("equipping a weapon shows up in the snapshot bonuses", () => {
   expect(ui.equipment.find((slot) => slot.slot === "weapon")?.item?.name).toBe(
     "Iron sword",
   );
-  expect(ui.bonus.aim).toBe(12);
-  expect(ui.bonus.power).toBe(12);
+  // An iron longsword: +8 to hit, +10 strength.
+  expect(ui.bonus.aim).toBe(8);
+  expect(ui.bonus.power).toBe(10);
   expect(ui.maxHit).toBe(6);
 });
 
