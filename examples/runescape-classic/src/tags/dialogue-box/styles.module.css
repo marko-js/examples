@@ -1,34 +1,39 @@
+/*
+ * The client puts a conversation in the chat box rather than over the game:
+ * parchment, the speaker named above centred lines, and blue text to click.
+ */
 .box {
   position: absolute;
-  right: var(--edge-right);
-  bottom: calc(var(--edge-bottom) + 56px);
+  bottom: calc(var(--edge-bottom) + 50px);
   left: var(--edge-left);
   z-index: 4;
-  max-width: 560px;
-  margin: 0 auto;
-  border: 2px solid #000;
-  border-radius: 6px;
-  background: rgba(20, 18, 12, 0.96);
-  padding: 10px 12px;
+  display: grid;
+  align-content: center;
+  width: min(460px, calc(100% - var(--edge-left) - var(--edge-right)));
+  min-height: 92px;
+  border: 1px solid var(--rs-border);
+  background: var(--rs-parchment);
+  padding: 8px 12px;
+  text-align: center;
 }
 
 .speaker {
   margin: 0 0 4px;
-  color: var(--rs-gold);
-  font-size: 13px;
+  color: #7b1010;
+  font-size: 14px;
   font-weight: bold;
 }
 
 .line {
   margin: 0 0 8px;
-  color: #fff;
-  font-size: 15px;
+  color: var(--rs-ink);
+  font-size: 14px;
   line-height: 1.4;
 }
 
 .options {
   display: grid;
-  gap: 4px;
+  gap: 2px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -36,29 +41,34 @@
 
 .option {
   width: 100%;
-  border: 1px solid var(--rs-slot-border);
-  border-radius: 3px;
-  background: var(--rs-slot);
-  padding: 8px 10px;
-  color: var(--rs-text);
+  border: 0;
+  background: transparent;
+  padding: 3px 6px;
+  color: #16307d;
   font: inherit;
   font-size: 14px;
-  text-align: left;
   cursor: pointer;
 }
 
-.option:hover {
-  border-color: var(--rs-gold);
-  color: var(--rs-gold);
+.option:hover,
+.option:focus-visible {
+  outline: none;
+  color: #7b1010;
 }
 
 .continue {
   width: 100%;
   border: 0;
   background: transparent;
-  padding: 4px;
-  color: var(--rs-text-dim);
+  padding: 2px;
+  color: #16307d;
   font: inherit;
-  font-size: 12px;
+  font-size: 13px;
   cursor: pointer;
+}
+
+@media (min-width: 900px) {
+  .box {
+    bottom: var(--edge-bottom);
+  }
 }

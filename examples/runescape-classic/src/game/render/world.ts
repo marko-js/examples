@@ -87,6 +87,81 @@ export function tileAtScreen(
   return { x: Math.floor(at.x), y: Math.floor(at.y) };
 }
 
+/**
+ * The tile a click means. Anything standing up covers the ground behind it, so
+ * a click on a person's chest or a tree's crown picks them rather than the
+ * tile they happen to be drawn over, which is what the client does.
+ */
+export function pickTile(
+  state: GameState,
+  camera: Camera,
+  view: Viewport,
+  screenX: number,
+  screenY: number,
+): Point {
+  const x = screenX * view.scale;
+  const y = screenY * view.scale;
+  const best = { depth: Infinity, tile: null as Point | null };
+
+  const consider = (
+    tile: Point,
+    fx: number,
+    fy: number,
+    across: number,
+    tall: number,
+  ) => {
+    const spot = project(camera, fx + 0.5, fy + 0.5, 0);
+    if (spot.depth <= 0.3 || fogAt(camera, spot.depth) <= 0) return;
+    const size = camera.focal / spot.depth;
+    const half = (size * across) / 2;
+    if (x < spot.sx - half || x > spot.sx + half) return;
+    if (y > spot.sy || y < spot.sy - size * tall) return;
+    if (spot.depth < best.depth) {
+      best.depth = spot.depth;
+      best.tile = tile;
+    }
+  };
+
+  for (const npc of state.npcs) {
+    if (npc.respawnTick !== null) continue;
+    consider({ x: npc.x, y: npc.y }, npc.fx, npc.fy, 0.75, 1.7);
+  }
+
+  const half = Math.ceil(reachHalf(camera));
+  const { map } = state;
+  const minY = Math.max(0, Math.floor(camera.y) - DRAW_DISTANCE);
+  const maxY = Math.min(map.size, Math.ceil(camera.y) + 2);
+  const minX = Math.max(0, Math.floor(camera.x) - half);
+  const maxX = Math.min(map.size, Math.ceil(camera.x) + half);
+  for (let ty = minY; ty < maxY; ty++) {
+    for (let tx = minX; tx < maxX; tx++) {
+      const object = map.objects[tileIndex(map, tx, ty)];
+      if (!object) continue;
+      const tall = STANDING[getObjectDef(object.defId).art.kind];
+      if (tall) consider({ x: tx, y: ty }, tx, ty, 1, tall);
+    }
+  }
+
+  return best.tile ?? tileAtScreen(camera, view, screenX, screenY);
+}
+
+/** How far up the screen each kind of scenery reaches, in tiles. */
+const STANDING: Partial<Record<ObjectArt["kind"], number>> = {
+  tree: 2.4,
+  wall: WALL_HEIGHT,
+  rock: 0.7,
+  furnace: 1.8,
+  range: 0.9,
+  altar: 1.1,
+  well: 1.9,
+  sign: 1,
+  boat: 2.1,
+  door: 1.5,
+  chest: 0.7,
+  counter: 0.8,
+  table: 0.8,
+};
+
 /* ---------------------------------------------------------------- surface */
 
 let buffer: HTMLCanvasElement | null = null;
@@ -430,8 +505,8 @@ function cobbles(
 function planks(x: number, y: number): number {
   const along = y * 3;
   const board = Math.floor(along);
-  const seam = Math.abs(along - board - 0.5) > 0.44 ? -0.22 : 0;
-  return 1 + seam + (hash2d(Math.floor(x), board, 4) - 0.5) * 0.16;
+  const seam = Math.abs(along - board - 0.5) > 0.45 ? -0.14 : 0;
+  return 1 + seam + (hash2d(Math.floor(x), board, 4) - 0.5) * 0.1;
 }
 
 /** Two octaves of value noise, for the surfaces that are simply grainy. */

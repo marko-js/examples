@@ -14,8 +14,8 @@ import type { Point } from "../../game/pathfinding";
 import { minimapTileAt, renderMinimap } from "../../game/render/minimap";
 import {
   cameraFor,
+  pickTile,
   renderWorld,
-  tileAtScreen,
   type Viewport,
   viewportFor,
 } from "../../game/render/world";
@@ -83,7 +83,8 @@ static const LONG_PRESS_MS = 420;
 <const/tileFrom(clientX: number, clientY: number, canvas: HTMLCanvasElement) {
   const game = session.engine!;
   const rect = canvas.getBoundingClientRect();
-  return tileAtScreen(
+  return pickTile(
+    game.state,
     cameraFor(game.state, session.view),
     session.view,
     clientX - rect.left,
