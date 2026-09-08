@@ -19,28 +19,46 @@ export function minimapTileAt(
   size: number,
   x: number,
   y: number,
+  yaw = 0,
 ): { x: number; y: number } {
   const scale = size / MINIMAP_TILES;
+  const sin = Math.sin(yaw);
+  const cos = Math.cos(yaw);
+  const across = (x - size / 2) / scale;
+  const down = (y - size / 2) / scale;
   return {
-    x: Math.floor(state.player.fx - MINIMAP_TILES / 2 + x / scale),
-    y: Math.floor(state.player.fy - MINIMAP_TILES / 2 + y / scale),
+    x: Math.floor(state.player.fx + across * cos - down * sin),
+    y: Math.floor(state.player.fy + across * sin + down * cos),
   };
 }
 
+/**
+ * The map turns with the camera, so what is ahead of you is at the top of it.
+ * The terrain is drawn through a rotated transform; everything with a face —
+ * the icons, the dots, the marker — is placed by hand so it stays upright.
+ */
 export function renderMinimap(
   ctx: CanvasRenderingContext2D,
   state: GameState,
   size: number,
+  yaw = 0,
 ): void {
   const { map, player } = state;
   const scale = size / MINIMAP_TILES;
   const radius = size / 2;
   const originX = player.fx - MINIMAP_TILES / 2;
   const originY = player.fy - MINIMAP_TILES / 2;
-  const at = (x: number, y: number) => ({
-    x: (x - originX) * scale,
-    y: (y - originY) * scale,
-  });
+  const sin = Math.sin(yaw);
+  const cos = Math.cos(yaw);
+  /** A world point on the turned map, in minimap pixels. */
+  const at = (x: number, y: number) => {
+    const dx = (x - player.fx) * scale;
+    const dy = (y - player.fy) * scale;
+    return {
+      x: radius + dx * cos + dy * sin,
+      y: radius - dx * sin + dy * cos,
+    };
+  };
 
   ctx.clearRect(0, 0, size, size);
   ctx.save();
@@ -48,11 +66,21 @@ export function renderMinimap(
   ctx.arc(radius, radius, radius - 1, 0, Math.PI * 2);
   ctx.clip();
 
-  for (let y = 0; y <= MINIMAP_TILES; y++) {
-    for (let x = 0; x <= MINIMAP_TILES; x++) {
+  ctx.save();
+  ctx.translate(radius, radius);
+  ctx.rotate(-yaw);
+  ctx.translate(-radius, -radius);
+  // A turned square needs its diagonal covered, so the grid runs wider.
+  const reach = Math.ceil(MINIMAP_TILES * 0.23);
+  const flat = (x: number, y: number) => ({
+    x: (x - originX) * scale,
+    y: (y - originY) * scale,
+  });
+  for (let y = -reach; y <= MINIMAP_TILES + reach; y++) {
+    for (let x = -reach; x <= MINIMAP_TILES + reach; x++) {
       const tx = Math.floor(originX) + x;
       const ty = Math.floor(originY) + y;
-      const spot = at(tx, ty);
+      const spot = flat(tx, ty);
       if (tx < 0 || ty < 0 || tx >= map.size || ty >= map.size) {
         ctx.fillStyle = "#16324f";
         ctx.fillRect(spot.x, spot.y, scale + 1, scale + 1);
@@ -70,8 +98,9 @@ export function renderMinimap(
       }
     }
   }
+  ctx.restore();
 
-  drawIcons(ctx, state, originX, originY, scale);
+  drawIcons(ctx, state, at, scale);
 
   if (state.marker && player.path.length) {
     const spot = at(state.marker.x + 0.5, state.marker.y + 0.5);
@@ -93,7 +122,7 @@ export function renderMinimap(
   ctx.restore();
 
   drawFrame(ctx, size);
-  drawCompass(ctx, size * 0.16, size * 0.16, size * 0.12);
+  drawCompass(ctx, size * 0.16, size * 0.16, size * 0.12, yaw);
 }
 
 /* ---------------------------------------------------------------- icons */
@@ -133,8 +162,7 @@ const OBJECT_ICONS: Record<string, IconSpec> = {
 function drawIcons(
   ctx: CanvasRenderingContext2D,
   state: GameState,
-  originX: number,
-  originY: number,
+  at: (x: number, y: number) => { x: number; y: number },
   scale: number,
 ): void {
   const drawn: { x: number; y: number; key: string }[] = [];
@@ -153,20 +181,17 @@ function drawIcons(
       return;
     }
     drawn.push({ x: object.x, y: object.y, key });
-    icon(
-      ctx,
-      (object.x + 0.5 - originX) * scale,
-      (object.y + 0.5 - originY) * scale,
-      size,
-      spec,
-    );
+    const spot = at(object.x + 0.5, object.y + 0.5);
+    icon(ctx, spot.x, spot.y, size, spec);
   };
 
-  const { map } = state;
-  const minX = Math.max(0, Math.floor(originX) - 1);
-  const minY = Math.max(0, Math.floor(originY) - 1);
-  const maxX = Math.min(map.size, Math.ceil(originX + MINIMAP_TILES) + 1);
-  const maxY = Math.min(map.size, Math.ceil(originY + MINIMAP_TILES) + 1);
+  // A turned map shows the corners of a wider square than it is tall.
+  const { map, player } = state;
+  const reach = MINIMAP_TILES * 0.75;
+  const minX = Math.max(0, Math.floor(player.fx - reach));
+  const minY = Math.max(0, Math.floor(player.fy - reach));
+  const maxX = Math.min(map.size, Math.ceil(player.fx + reach));
+  const maxY = Math.min(map.size, Math.ceil(player.fy + reach));
   for (let y = minY; y < maxY; y++) {
     for (let x = minX; x < maxX; x++) {
       const object = map.objects[tileIndex(map, x, y)];
@@ -320,6 +345,7 @@ function drawCompass(
   x: number,
   y: number,
   r: number,
+  yaw: number,
 ): void {
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
@@ -328,6 +354,12 @@ function drawCompass(
   ctx.lineWidth = 1.5;
   ctx.strokeStyle = "#c8b478";
   ctx.stroke();
+
+  // The needle keeps pointing north however far the camera has been swung.
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(-yaw);
+  ctx.translate(-x, -y);
 
   // Two halves meeting at the centre: red points north, white points south.
   const wing = r * 0.34;
@@ -346,6 +378,7 @@ function drawCompass(
   ctx.closePath();
   ctx.fillStyle = "#f0ece0";
   ctx.fill();
+  ctx.restore();
 }
 
 function cross(

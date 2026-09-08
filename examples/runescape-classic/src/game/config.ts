@@ -5,6 +5,12 @@
  * behind the player, near enough to half way between level and straight down.
  */
 export const CAMERA_PITCH = 56;
+/** How far the camera can be tilted, in degrees down from the horizontal. */
+export const MIN_PITCH = 38;
+export const MAX_PITCH = 82;
+/** How far it can be pulled in and pushed out, as a scale on the focal length. */
+export const MIN_ZOOM = 0.6;
+export const MAX_ZOOM = 2.6;
 /** How high the camera floats, and how far back it stands, in tiles. */
 export const CAMERA_HEIGHT = 9;
 export const CAMERA_BACK = 8;

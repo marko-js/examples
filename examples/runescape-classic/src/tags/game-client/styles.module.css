@@ -3,6 +3,14 @@
   inset: 0;
   overflow: hidden;
   background: #06121e;
+  /*
+   * A long press stands in for a right click, so nothing anywhere in the
+   * interface may answer it by selecting text or raising a callout instead.
+   */
+  /* eslint-disable-next-line css/use-baseline -- needed for touch play; supported everywhere this game runs */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
   /* Keep the HUD clear of notches and the home indicator. */
   --edge-top: max(8px, env(safe-area-inset-top));
   --edge-bottom: max(8px, env(safe-area-inset-bottom));
@@ -17,8 +25,6 @@
   cursor: crosshair;
   /* Pointer events drive the game, so the browser must not pan or zoom. */
   touch-action: none;
-  /* eslint-disable-next-line css/use-baseline -- needed for touch play; supported everywhere this game runs */
-  user-select: none;
 }
 
 /* The client draws the action in white, the subject in cyan, the rest grey. */
@@ -94,6 +100,19 @@
   background: #16324f;
   cursor: crosshair;
   touch-action: none;
+}
+
+/* Sits over the compass the minimap draws, so tapping it faces north. */
+.compass {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
 }
 
 .expand {

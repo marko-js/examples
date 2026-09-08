@@ -28,9 +28,12 @@ import { box, face, fogAt, rgbOf, shingles, type Vertex } from "./paint";
 import {
   type Camera,
   cameraAt,
+  type CameraView,
+  defaultView,
   depthAtRow,
   groundAt,
   project,
+  type Projected,
 } from "./projection";
 import { drawScenery } from "./scenery";
 import { type CharacterLook, drawItemIcon, drawObjectArt } from "./sprites";
@@ -66,14 +69,55 @@ export function viewportFor(
   };
 }
 
-export function cameraFor(state: GameState, view: Viewport): Camera {
+export function cameraFor(
+  state: GameState,
+  view: Viewport,
+  look: CameraView = defaultView(),
+): Camera {
   const { player } = state;
   return cameraAt(
     { x: player.fx + 0.5, y: player.fy + 0.5 },
     { x: view.focus.x * view.scale, y: view.focus.y * view.scale },
     Math.max(1, Math.round(view.width * view.scale)),
     Math.max(1, Math.round(view.height * view.scale)),
+    look,
   );
+}
+
+/** The stretch of ground the camera can see, as a box in tiles. */
+export interface ViewBox {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
+export function viewBox(
+  camera: Camera,
+  width: number,
+  height: number,
+): ViewBox {
+  const far = DRAW_DISTANCE * camera.cos + camera.z * camera.sin;
+  const edge = (sx: number, forward: number, depth: number) => {
+    const across = ((sx - camera.cx) * depth) / camera.focal;
+    return {
+      x: camera.x + camera.fx * forward + camera.rx * across,
+      y: camera.y + camera.fy * forward + camera.ry * across,
+    };
+  };
+  const corners = [
+    groundAt(camera, 0, height - 0.5) ?? { x: camera.x, y: camera.y },
+    groundAt(camera, width, height - 0.5) ?? { x: camera.x, y: camera.y },
+    edge(0, DRAW_DISTANCE, far),
+    edge(width, DRAW_DISTANCE, far),
+    { x: camera.x, y: camera.y },
+  ];
+  return {
+    minX: Math.min(...corners.map((at) => at.x)) - 2,
+    minY: Math.min(...corners.map((at) => at.y)) - 2,
+    maxX: Math.max(...corners.map((at) => at.x)) + 2,
+    maxY: Math.max(...corners.map((at) => at.y)) + 2,
+  };
 }
 
 export function tileAtScreen(
@@ -127,12 +171,16 @@ export function pickTile(
     consider({ x: npc.x, y: npc.y }, npc.fx, npc.fy, 0.75, 1.7);
   }
 
-  const half = Math.ceil(reachHalf(camera));
   const { map } = state;
-  const minY = Math.max(0, Math.floor(camera.y) - DRAW_DISTANCE);
-  const maxY = Math.min(map.size, Math.ceil(camera.y) + 2);
-  const minX = Math.max(0, Math.floor(camera.x) - half);
-  const maxX = Math.min(map.size, Math.ceil(camera.x) + half);
+  const box = viewBox(
+    camera,
+    view.width * view.scale,
+    view.height * view.scale,
+  );
+  const minY = Math.max(0, Math.floor(box.minY));
+  const maxY = Math.min(map.size, Math.ceil(box.maxY));
+  const minX = Math.max(0, Math.floor(box.minX));
+  const maxX = Math.min(map.size, Math.ceil(box.maxX));
   for (let ty = minY; ty < maxY; ty++) {
     for (let tx = minX; tx < maxX; tx++) {
       const object = map.objects[tileIndex(map, tx, ty)];
@@ -181,14 +229,16 @@ export function renderWorld(
   view: Viewport,
   time: number,
   hover: Point | null,
+  look: CameraView = defaultView(),
 ): void {
   const width = Math.max(1, Math.round(view.width * view.scale));
   const height = Math.max(1, Math.round(view.height * view.scale));
   const scene = bufferFor(width, height);
-  const camera = cameraFor(state, view);
+  const camera = cameraFor(state, view, look);
+  const box = viewBox(camera, width, height);
 
-  drawGround(scene, state, camera, width, height);
-  drawScene(scene, state, camera, time, hover);
+  drawGround(scene, state, camera, box, width, height);
+  drawScene(scene, state, camera, box, width, height, time, hover);
 
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, view.width, view.height);
@@ -215,27 +265,17 @@ interface Field {
   data: Uint8ClampedArray;
 }
 
-/** Half the width of the ground the camera can see, in tiles. */
-function reachHalf(camera: Camera): number {
-  return (
-    (camera.cx * (DRAW_DISTANCE * camera.cos + camera.z * camera.sin)) /
-      camera.focal +
-    3
-  );
-}
-
 /**
  * Terrain does not change while you play and the field only shifts when the
  * player crosses a tile, so it is worth keeping between frames.
  */
 let cached: (Field & { map: unknown }) | null = null;
 
-function buildField(state: GameState, camera: Camera): Field {
-  const half = Math.ceil(reachHalf(camera));
-  const x = Math.floor(camera.x) - half;
-  const y = Math.floor(camera.y) - DRAW_DISTANCE - 2;
-  const width = (half * 2 + 1) * SAMPLES_PER_TILE;
-  const height = (DRAW_DISTANCE + 5) * SAMPLES_PER_TILE;
+function buildField(state: GameState, box: ViewBox): Field {
+  const x = Math.floor(box.minX);
+  const y = Math.floor(box.minY);
+  const width = (Math.ceil(box.maxX) - x) * SAMPLES_PER_TILE;
+  const height = (Math.ceil(box.maxY) - y) * SAMPLES_PER_TILE;
   const stride = 4;
   if (
     cached &&
@@ -380,10 +420,11 @@ function drawGround(
   ctx: CanvasRenderingContext2D,
   state: GameState,
   camera: Camera,
+  box: ViewBox,
   width: number,
   height: number,
 ): void {
-  const field = buildField(state, camera);
+  const field = buildField(state, box);
   const image = ctx.createImageData(width, height);
   const pixels = image.data;
 
@@ -401,17 +442,30 @@ function drawGround(
       continue;
     }
 
+    // A screen row still meets the ground along a straight line, whichever way
+    // the camera is turned, so the walk across it stays two additions a pixel.
     const fog = Math.min(1, (DRAW_DISTANCE - forward) / FOG_TILES);
-    const fy = (camera.y - forward - field.y) * SAMPLES_PER_TILE - 0.5;
-    const step = depth / camera.focal;
-    let worldX = camera.x + (0.5 - camera.cx) * step;
+    const across = depth / camera.focal;
+    const start = (0.5 - camera.cx) * across;
+    let worldX = camera.x + camera.fx * forward + camera.rx * start;
+    let worldY = camera.y + camera.fy * forward + camera.ry * start;
+    const stepX = camera.rx * across;
+    const stepY = camera.ry * across;
 
-    const worldY = camera.y - forward;
-
-    for (let sx = 0; sx < width; sx++, at += 4, worldX += step) {
-      const fx = (worldX - field.x) * SAMPLES_PER_TILE - 0.5;
-      sampleField(field, fx, fy, fog, worldX, worldY, pixels, at);
+    for (let sx = 0; sx < width; sx++, at += 4) {
+      sampleField(
+        field,
+        (worldX - field.x) * SAMPLES_PER_TILE - 0.5,
+        (worldY - field.y) * SAMPLES_PER_TILE - 0.5,
+        fog,
+        worldX,
+        worldY,
+        pixels,
+        at,
+      );
       pixels[at + 3] = 255;
+      worldX += stepX;
+      worldY += stepY;
     }
   }
   ctx.putImageData(image, 0, 0);
@@ -530,31 +584,38 @@ interface Drawable {
   draw: () => void;
 }
 
-type Add = (depth: number, draw: () => void) => void;
+/** Hands a drawable to the scene, given where on the buffer it lands. */
+type Add = (spot: Projected, draw: () => void) => void;
 
 function drawScene(
   ctx: CanvasRenderingContext2D,
   state: GameState,
   camera: Camera,
+  box: ViewBox,
+  width: number,
+  height: number,
   time: number,
   hover: Point | null,
 ): void {
   const { map, player } = state;
   const drawables: Drawable[] = [];
-  const half = Math.ceil(reachHalf(camera));
-  const add: Add = (depth, draw) => {
-    if (depth > 0.3 && fogAt(camera, depth) > 0) {
-      drawables.push({ depth, draw });
-    }
+  // Everything is anchored at its base, so allow for what stands above it and
+  // for how wide it might be, then drop whatever misses the buffer entirely.
+  const add: Add = (spot, draw) => {
+    if (spot.depth <= 0.3 || fogAt(camera, spot.depth) <= 0) return;
+    const size = camera.focal / spot.depth;
+    if (spot.sx + size * 2.5 < 0 || spot.sx - size * 2.5 > width) return;
+    if (spot.sy + size < 0 || spot.sy - size * 3.5 > height) return;
+    drawables.push({ depth: spot.depth, draw });
   };
 
   if (hover) addHover(ctx, camera, hover, add);
   addMarker(ctx, state, camera, time, add);
 
-  const minY = Math.max(0, Math.floor(camera.y) - DRAW_DISTANCE);
-  const maxY = Math.min(map.size, Math.ceil(camera.y) + 2);
-  const minX = Math.max(0, Math.floor(camera.x) - half);
-  const maxX = Math.min(map.size, Math.ceil(camera.x) + half);
+  const minY = Math.max(0, Math.floor(box.minY));
+  const maxY = Math.min(map.size, Math.ceil(box.maxY));
+  const minX = Math.max(0, Math.floor(box.minX));
+  const maxX = Math.min(map.size, Math.ceil(box.maxX));
   for (let y = minY; y < maxY; y++) {
     for (let x = minX; x < maxX; x++) {
       const object = map.objects[tileIndex(map, x, y)];
@@ -568,23 +629,23 @@ function drawScene(
   for (const roof of map.roofs) {
     if (inside(roof, player.x, player.y)) continue;
     const spot = project(camera, roof.x + roof.w / 2, roof.y + roof.h / 2, 0);
-    add(spot.depth, () => drawRoof(ctx, camera, roof));
+    add(spot, () => drawRoof(ctx, camera, roof, near(spot)));
   }
 
   for (const item of state.groundItems) {
     const spot = project(camera, item.x + 0.5, item.y + 0.5, 0);
-    add(spot.depth, () => drawGroundItem(ctx, camera, item));
+    add(spot, () => drawGroundItem(ctx, camera, item));
   }
 
   for (const npc of state.npcs) {
     if (npc.respawnTick !== null) continue;
     const spot = project(camera, npc.fx + 0.5, npc.fy + 0.5, 0);
-    add(spot.depth, () => drawNpcActor(ctx, camera, npc, time));
+    add(spot, () => drawNpcActor(ctx, camera, npc, time));
   }
 
   if (player.respawnTick === null) {
     const spot = project(camera, player.fx + 0.5, player.fy + 0.5, 0);
-    add(spot.depth, () => drawPlayer(ctx, camera, player, time));
+    add(spot, () => drawPlayer(ctx, camera, player, time));
   }
 
   drawables.sort((a, b) => b.depth - a.depth);
@@ -602,7 +663,7 @@ function addRipples(
 ): void {
   const spot = project(camera, x + 0.5, y + 0.5, 0);
   if (spot.depth > 16) return;
-  add(spot.depth - 0.01, () => {
+  add(spot, () => {
     for (let i = 0; i < 2; i++) {
       const drift = (time / 2600 + hash2d(x, y, i)) % 1;
       const width = 0.25 + hash2d(x, y, i + 8) * 0.45;
@@ -652,25 +713,25 @@ function addObject(
 
   switch (art.kind) {
     case "wall":
-      add(spot.depth, () => drawWall(ctx, state, camera, object, art));
+      add(spot, () => drawWall(ctx, state, camera, object, art, near(spot)));
       return;
     case "tree":
-      add(spot.depth, () => drawTree(ctx, camera, object, art, time));
+      add(spot, () => drawTree(ctx, camera, object, art, time));
       return;
     case "fence":
     case "gate":
-      add(spot.depth, () => drawFence(ctx, camera, object, art.kind));
+      add(spot, () => drawFence(ctx, camera, object, art.kind));
       return;
     case "rock":
-      add(spot.depth, () => drawRock(ctx, camera, object, art.vein));
+      add(spot, () => drawRock(ctx, camera, object, art.vein));
       return;
     case "table":
     case "counter":
     case "chest":
-      add(spot.depth, () => drawFurniture(ctx, camera, object, art));
+      add(spot, () => drawFurniture(ctx, camera, object, art));
       return;
     default:
-      add(spot.depth, () => {
+      add(spot, () => {
         if (drawScenery(ctx, camera, art, object.x, object.y, time)) return;
         // The few kinds with no model yet stay flat sprites.
         ctx.globalAlpha = fogAt(camera, spot.depth);
@@ -695,12 +756,20 @@ function addObject(
  */
 const WALL_THICKNESS = 0.34;
 
+/** Close enough for the mortar and the roof tiles to be worth ruling in. */
+const DETAIL_TILES = 15;
+
+function near(spot: Projected): boolean {
+  return spot.depth < DETAIL_TILES;
+}
+
 function drawWall(
   ctx: CanvasRenderingContext2D,
   state: GameState,
   camera: Camera,
   object: WorldObject,
   art: Extract<ObjectArt, { kind: "wall" }>,
+  detail: boolean,
 ): void {
   const { x, y } = object;
   const joined = (dx: number, dy: number) => {
@@ -726,7 +795,7 @@ function drawWall(
       WALL_HEIGHT,
       art.face,
       [true, true, !joined(-1, 0), !joined(1, 0)],
-      4,
+      detail ? 4 : 0,
     );
     window(ctx, camera, object, x, y + inset, 1, WALL_THICKNESS, true);
   }
@@ -742,7 +811,7 @@ function drawWall(
       WALL_HEIGHT,
       art.face,
       [!joined(0, -1), !joined(0, 1), true, true],
-      4,
+      detail ? 4 : 0,
     );
     window(ctx, camera, object, x + inset, y, WALL_THICKNESS, 1, false);
   }
@@ -803,6 +872,7 @@ function drawRoof(
   ctx: CanvasRenderingContext2D,
   camera: Camera,
   roof: Roof,
+  detail: boolean,
 ): void {
   const eave = 0.38;
   const x1 = roof.x - eave;
@@ -865,6 +935,7 @@ function drawRoof(
     face(ctx, camera, points, roof.colour, light * tint);
   }
   // Courses of tile up the two long slopes.
+  if (!detail) return;
   const courses = Math.max(3, Math.round((high - low) * 4));
   for (const [points, light] of slopes.slice(0, 2)) {
     shingles(
@@ -907,10 +978,12 @@ function drawTree(
 
   box(ctx, camera, cx - 0.09, cy - 0.09, 0.18, 0.18, 0, 0.7 * size, art.trunk);
 
+  // Far side of the crown first, wherever the camera happens to be standing.
+  const toward = Math.atan2(camera.y - cy, camera.x - cx);
   const blades = Array.from({ length: CROWN_BLADES }, (_, i) => {
     const from = (i / CROWN_BLADES) * Math.PI * 2;
     const to = ((i + 1) / CROWN_BLADES) * Math.PI * 2;
-    return { from, to, near: Math.sin(from) + Math.sin(to) };
+    return { from, to, near: Math.cos((from + to) / 2 - toward) };
   }).sort((a, b) => a.near - b.near);
 
   const at = (angle: number, ring: number, lift: number) =>
@@ -1094,7 +1167,7 @@ function addHover(
   add: Add,
 ): void {
   const spot = project(camera, hover.x + 0.5, hover.y + 0.5, 0);
-  add(spot.depth, () => {
+  add(spot, () => {
     ctx.strokeStyle = "rgba(255,255,255,0.45)";
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -1129,7 +1202,7 @@ function addMarker(
   const age = Math.min(1, (time - marker.bornAt) / 220);
   const arm = tile * (0.3 - 0.12 * age);
 
-  add(spot.depth, () => {
+  add(spot, () => {
     ctx.lineCap = "round";
     for (const [colour, width] of [
       ["rgba(0,0,0,0.7)", Math.max(3, tile / 7)],

@@ -13,6 +13,7 @@ import type { EquipSlot } from "../../game/items";
 import type { MenuEntry, MenuState } from "../../game/menu";
 import type { Point } from "../../game/pathfinding";
 import { minimapTileAt, renderMinimap } from "../../game/render/minimap";
+import { clampView, defaultView } from "../../game/render/projection";
 import {
   cameraFor,
   pickTile,
@@ -39,7 +40,15 @@ static const TABS = [
 static const MINIMAP = 132;
 
 /** A press this long without moving opens the menu, standing in for a right click. */
-static const LONG_PRESS_MS = 420;
+static const LONG_PRESS_MS = 380;
+
+/** How far a finger may wander and still count as a tap, in pixels. */
+static const DRAG_SLOP = 10;
+
+/** How far the camera swings and tilts per pixel dragged, in radians. */
+static const YAW_PER_PIXEL = 0.007;
+static const PITCH_PER_PIXEL = 0.004;
+static const ZOOM_STEP = 1.12;
 
 <let/ui=initialUi()>
 <let/tab=null as string | null>
@@ -59,6 +68,27 @@ static const LONG_PRESS_MS = 420;
   applyView: null as (() => void) | null,
   press: null as { x: number; y: number; tile: Point; held: boolean } | null,
   timer: 0,
+  /** Where the player has swung the camera to. */
+  look: defaultView(),
+  /** Live pointers, so one finger can turn the camera and two can pinch. */
+  pointers: new Map<number, { x: number; y: number }>(),
+  gesture: null as null | "turn" | "pinch",
+  pinch: 0,
+}>
+
+/** How far apart the two live fingers are, for a pinch. */
+<const/pointerSpread() {
+  const [a, b] = [...session.pointers.values()];
+  return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0;
+}>
+
+/** Swing, tilt and pull the camera, keeping it inside what it can do. */
+<const/turnCamera(yaw: number, pitch: number, zoom = 1) {
+  session.look = clampView({
+    yaw: session.look.yaw + yaw,
+    pitch: session.look.pitch + pitch,
+    zoom: session.look.zoom * zoom,
+  });
 }>
 
 <const/setTab(next: string | null) {
@@ -87,7 +117,7 @@ static const LONG_PRESS_MS = 420;
   const rect = canvas.getBoundingClientRect();
   return pickTile(
     game.state,
-    cameraFor(game.state, session.view),
+    cameraFor(game.state, session.view, session.look),
     session.view,
     clientX - rect.left,
     clientY - rect.top,
@@ -147,12 +177,34 @@ static const LONG_PRESS_MS = 420;
     onPointerDown(event, canvas) {
       if (event.pointerType === "mouse" && event.button !== 0) return;
       if (!session.engine) return;
+      // Stops a held finger raising the browser's own selection and callout.
+      if (event.pointerType !== "mouse") event.preventDefault();
+      try {
+        canvas.setPointerCapture(event.pointerId);
+      } catch {
+        // A pointer can vanish before capture; the gesture still tracks fine.
+      }
+      session.pointers.set(event.pointerId, {
+        x: event.clientX,
+        y: event.clientY,
+      });
+
+      if (session.pointers.size === 2) {
+        // A second finger down turns the gesture into a pinch.
+        endPress();
+        session.gesture = "pinch";
+        session.pinch = pointerSpread();
+        return;
+      }
+      if (session.pointers.size > 2) return;
+
       const tile = tileFrom(event.clientX, event.clientY, canvas);
       const { clientX, clientY } = event;
+      session.gesture = null;
       session.press = { x: clientX, y: clientY, tile, held: false };
       clearTimeout(session.timer);
       session.timer = window.setTimeout(() => {
-        if (!session.press) return;
+        if (!session.press || session.gesture) return;
         session.press.held = true;
         openWorldMenu(tile, clientX, clientY);
       }, LONG_PRESS_MS);
@@ -160,34 +212,79 @@ static const LONG_PRESS_MS = 420;
     onPointerMove(event, canvas) {
       const game = session.engine;
       if (!game) return;
-      const press = session.press;
-      if (
-        press &&
-        Math.hypot(event.clientX - press.x, event.clientY - press.y) > 12
-      ) {
-        endPress();
+      const last = session.pointers.get(event.pointerId);
+
+      if (last && session.gesture === "pinch") {
+        session.pointers.set(event.pointerId, {
+          x: event.clientX,
+          y: event.clientY,
+        });
+        const spread = pointerSpread();
+        if (session.pinch > 0 && spread > 0) {
+          turnCamera(0, 0, spread / session.pinch);
+        }
+        session.pinch = spread;
+        return;
       }
+
+      if (last) {
+        const press = session.press;
+        const dx = event.clientX - last.x;
+        const dy = event.clientY - last.y;
+        session.pointers.set(event.pointerId, {
+          x: event.clientX,
+          y: event.clientY,
+        });
+        // Past a little slop a drag stops being a tap and starts being a turn.
+        if (
+          session.gesture !== "turn" &&
+          press &&
+          Math.hypot(event.clientX - press.x, event.clientY - press.y) >
+            DRAG_SLOP
+        ) {
+          endPress();
+          session.gesture = "turn";
+        }
+        if (session.gesture === "turn") {
+          turnCamera(dx * YAW_PER_PIXEL, dy * PITCH_PER_PIXEL);
+          return;
+        }
+      }
+
       if (event.pointerType !== "mouse") return;
       const tile = tileFrom(event.clientX, event.clientY, canvas);
       session.tile = tile;
       hover = game.describeTile(tile.x, tile.y);
     }
-    onPointerUp() {
+    onPointerUp(event) {
+      session.pointers.delete(event.pointerId);
+      if (!session.pointers.size) session.pinch = 0;
+      const turning = session.gesture;
+      if (session.pointers.size < 2) session.gesture = null;
+
       const press = session.press;
       clearTimeout(session.timer);
       session.press = null;
-      if (!press || press.held) return;
+      if (!press || press.held || turning) return;
       const game = session.engine;
       const option = game?.optionsAt(press.tile.x, press.tile.y)[0];
       if (option) game!.choose(option);
     }
-    onPointerCancel() {
+    onPointerCancel(event) {
+      session.pointers.delete(event.pointerId);
+      session.gesture = null;
       endPress();
     }
-    onPointerLeave() {
-      endPress();
+    onPointerLeave(event) {
+      // Capturing a pointer makes the browser send a leave for it, so a press
+      // must only ever end on an up or a cancel. This just clears the hover.
+      if (event.pointerType !== "mouse") return;
       session.tile = null;
       hover = null;
+    }
+    onWheel(event) {
+      event.preventDefault();
+      turnCamera(0, 0, event.deltaY > 0 ? 1 / ZOOM_STEP : ZOOM_STEP);
     }
     onContextMenu(event, canvas) {
       event.preventDefault();
@@ -261,6 +358,7 @@ static const LONG_PRESS_MS = 420;
               MINIMAP,
               ((event.clientX - rect.left) / rect.width) * MINIMAP,
               ((event.clientY - rect.top) / rect.height) * MINIMAP,
+              session.look.yaw,
             );
             game.choose({
               label: "Walk here",
@@ -268,6 +366,15 @@ static const LONG_PRESS_MS = 420;
               action: "walk",
               target: { kind: "tile", ...tile },
             });
+          }
+        />
+        <button
+          type="button"
+          class=styles.compass
+          title="Face north"
+          aria-label="Face north"
+          onClick() {
+            session.look = { ...session.look, yaw: 0 };
           }
         />
         <button
@@ -573,9 +680,31 @@ static const LONG_PRESS_MS = 420;
     const loop = (now: number) => {
       frameId = requestAnimationFrame(loop);
       game.advance(now);
-      renderWorld(viewContext, game.state, session.view, now, session.tile);
-      renderMinimap(minimapContext, game.state, MINIMAP);
+      renderWorld(
+        viewContext,
+        game.state,
+        session.view,
+        now,
+        session.tile,
+        session.look,
+      );
+      renderMinimap(minimapContext, game.state, MINIMAP, session.look.yaw);
     };
+
+    // The arrow keys swing and tilt the camera, as they always have.
+    const keys: Record<string, [number, number]> = {
+      ArrowLeft: [-0.08, 0],
+      ArrowRight: [0.08, 0],
+      ArrowUp: [0, -0.05],
+      ArrowDown: [0, 0.05],
+    };
+    const onKey = (event: KeyboardEvent) => {
+      const turn = keys[event.key];
+      if (!turn || event.target !== document.body) return;
+      event.preventDefault();
+      turnCamera(turn[0], turn[1]);
+    };
+    window.addEventListener("keydown", onKey);
 
     session.engine = game;
     frameId = requestAnimationFrame(loop);
@@ -585,6 +714,7 @@ static const LONG_PRESS_MS = 420;
     return {
       stop() {
         cancelAnimationFrame(frameId);
+        window.removeEventListener("keydown", onKey);
         observer.disconnect();
         unsubscribe();
         session.applyView = null;

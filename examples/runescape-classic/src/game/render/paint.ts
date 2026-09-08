@@ -241,15 +241,23 @@ export function prism(
     corner(-size.right, size.forward),
   ];
 
-  // The camera looks north, so the further north a side is the sooner it goes
-  // down and the near sides cover it.
+  // Furthest side down first, so the near ones cover it, whichever way the
+  // camera is turned.
+  const away = (
+    from: readonly [number, number],
+    to: readonly [number, number],
+  ) =>
+    Math.hypot(
+      (from[0] + to[0]) / 2 - camera.x,
+      (from[1] + to[1]) / 2 - camera.y,
+    );
   const walls = corners
     .map((from, index) => ({
       from,
       to: corners[(index + 1) % 4],
       light: SIDE_LIGHT[index],
     }))
-    .sort((a, b) => a.from[1] + a.to[1] - (b.from[1] + b.to[1]));
+    .sort((a, b) => away(b.from, b.to) - away(a.from, a.to));
 
   for (const wall of walls) {
     quad(

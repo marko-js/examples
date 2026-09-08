@@ -160,6 +160,7 @@ export class Engine {
       "game",
       "Tap to interact. Hold, or right click, for more options.",
     );
+    this.message("game", "Drag to turn the camera, pinch or scroll to zoom.");
   }
 
   /* ------------------------------------------------------------ lifecycle */
