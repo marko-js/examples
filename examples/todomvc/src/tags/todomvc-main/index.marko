@@ -1,0 +1,38 @@
+import { type Filter, type Todo, isVisible } from "../../todo";
+
+export interface Input {
+  todos: Todo[];
+  todosChange: (todos: Todo[]) => void;
+  filter: Filter;
+}
+
+<id/toggleAllId>
+
+<section class="main">
+  <input
+    id=toggleAllId
+    class="toggle-all"
+    type="checkbox"
+    checked=input.todos.every((todo) => todo.completed)
+    checkedChange(completed) {
+      input.todosChange(input.todos.map((todo) => ({ ...todo, completed })));
+    }
+  >
+  <label for=toggleAllId>Mark all as complete</label>
+
+  <ul class="todo-list">
+    <for|todo, i| of=input.todos by="id">
+      <if=isVisible(todo, input.filter)>
+        <todomvc-todo-item
+          todo=todo
+          todoChange(updated) {
+            input.todosChange(input.todos.toSpliced(i, 1, updated));
+          }
+          onRemove() {
+            input.todosChange(input.todos.toSpliced(i, 1));
+          }
+        />
+      </if>
+    </for>
+  </ul>
+</section>

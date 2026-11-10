@@ -1,0 +1,100 @@
+.tic-tac-toe {
+  width: 240px;
+  margin: 0 auto;
+}
+
+.players {
+  display: flex;
+  justify-content: space-between;
+  height: 100px;
+}
+
+.players .mark {
+  width: 80px;
+  height: 80px;
+  border-bottom: 3px solid transparent;
+}
+
+.players .mark.active {
+  border-bottom-color: #7d0;
+}
+
+.board {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 2px;
+  height: 240px;
+  background: black;
+}
+
+.cell {
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: white;
+  font: inherit;
+  cursor: pointer;
+}
+
+.cell:disabled {
+  cursor: default;
+}
+
+.mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 50px;
+  line-height: 1;
+  transform: scale(0);
+  transition: transform 0.2s ease-in-out;
+}
+
+.mark.X,
+.mark.O {
+  transform: scale(1);
+}
+
+.mark.X::before {
+  content: "✕";
+}
+
+.mark.O::before {
+  content: "◯";
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffc400;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 1s;
+}
+
+.overlay.game-over {
+  visibility: visible;
+  opacity: 1;
+}
+
+.overlay .mark {
+  height: auto;
+  font-size: 80px;
+}
+
+.new-game {
+  width: 100%;
+  height: 60px;
+  margin-top: 10px;
+  font-size: 1.5em;
+  cursor: pointer;
+}

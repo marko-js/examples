@@ -1,0 +1,41 @@
+import "todomvc-app-css/index.css";
+import { type Filter, type Todo, getFilter } from "../../todo";
+
+static const initialTodos: Todo[] = [
+  { id: 0, title: "Learn Marko", completed: true },
+  { id: 1, title: "Build an awesome web app", completed: false },
+  { id: 2, title: "Profit", completed: false },
+];
+
+<let/todos=initialTodos>
+<let/nextId=initialTodos.length>
+<let/filter="all" as Filter>
+<const/remainingCount=todos.filter((todo) => !todo.completed).length>
+
+// The filter follows the location hash (eg "#/active").
+<script>
+  const syncFilter = () => {
+    filter = getFilter(location.hash);
+  };
+  syncFilter();
+  window.addEventListener("hashchange", syncFilter, { signal: $signal });
+</script>
+
+<section class="todoapp">
+  <todomvc-header
+    onAdd(title) {
+      todos = [...todos, { id: nextId++, title, completed: false }];
+    }
+  />
+  <if=todos.length>
+    <todomvc-main todos:=todos filter=filter/>
+    <todomvc-footer
+      remainingCount=remainingCount
+      completedCount=(todos.length - remainingCount)
+      filter=filter
+      onClearCompleted() {
+        todos = todos.filter((todo) => !todo.completed);
+      }
+    />
+  </if>
+</section>

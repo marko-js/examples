@@ -1,0 +1,69 @@
+import type { Todo } from "../../todo";
+
+export interface Input {
+  todo: Todo;
+  todoChange: (todo: Todo) => void;
+  onRemove: () => void;
+}
+
+<let/editing=false>
+<let/title=input.todo.title>
+
+<const/save() {
+  if (!editing) return;
+  editing = false;
+  const trimmed = title.trim();
+  if (!trimmed) {
+    input.onRemove();
+  } else if (trimmed !== input.todo.title) {
+    input.todoChange({ ...input.todo, title: trimmed });
+  }
+}>
+
+<li class={ completed: input.todo.completed, editing }>
+  <div class="view">
+    <input
+      class="toggle"
+      type="checkbox"
+      aria-label="Toggle todo completed"
+      checked=input.todo.completed
+      checkedChange(completed) {
+        input.todoChange({ ...input.todo, completed });
+      }
+    >
+    <label
+      onDblClick() {
+        title = input.todo.title;
+        editing = true;
+      }
+    >
+      ${input.todo.title}
+    </label>
+    <button
+      type="button"
+      class="destroy"
+      aria-label="Delete todo"
+      onClick=input.onRemove
+    />
+  </div>
+
+  <if=editing>
+    <input/$editInput
+      class="edit"
+      aria-label="Edit todo"
+      value:=title
+      onBlur=save
+      onKeyDown(event) {
+        if (event.key === "Enter") {
+          save();
+        } else if (event.key === "Escape") {
+          editing = false;
+        }
+      }
+    >
+  </if>
+</li>
+
+<script>
+  if (editing) $editInput().focus();
+</script>

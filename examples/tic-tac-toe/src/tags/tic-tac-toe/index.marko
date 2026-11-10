@@ -1,0 +1,65 @@
+import { emptyBoard, getRandomEmptyCell, getWinner } from "./game";
+
+// The board is the only state; everything else is derived from it.
+<let/board=emptyBoard>
+<const/moveCount=board.filter(Boolean).length>
+<const/currentPlayer=moveCount % 2 ? "O" : "X">
+<const/winner=getWinner(board)>
+<const/gameOver=Boolean(winner) || moveCount === board.length>
+
+// The computer plays "O" a second after each move by "X". When the board
+// changes first (eg a new game), the pending move is cancelled.
+<script>
+  if (currentPlayer === "O" && !gameOver) {
+    const timeout = setTimeout(() => {
+      board = board.with(getRandomEmptyCell(board), "O");
+    }, 1000);
+    $signal.onabort = () => clearTimeout(timeout);
+  }
+</script>
+
+<div class="tic-tac-toe">
+  <div class="players">
+    <if=!gameOver>
+      <for|player| of=["X", "O"]>
+        <span class=["mark", player, player === currentPlayer && "active"]/>
+      </for>
+    </if>
+  </div>
+
+  <div class="board">
+    <for|player, cell| of=board>
+      <button
+        type="button"
+        class="cell"
+        aria-label=`Cell ${cell + 1}`
+        disabled=(Boolean(player) || currentPlayer !== "X" || gameOver)
+        onClick() {
+          board = board.with(cell, "X");
+        }
+      >
+        <span class=["mark", player]/>
+      </button>
+    </for>
+
+    <div class=["overlay", gameOver && "game-over"]>
+      <if=winner>
+        <span class=["mark", winner]/>
+        <h2>WINNER!</h2>
+      </if>
+      <else>
+        <h2>DRAW!</h2>
+      </else>
+    </div>
+  </div>
+
+  <button
+    type="button"
+    class="new-game"
+    onClick() {
+      board = emptyBoard;
+    }
+  >
+    New Game
+  </button>
+</div>
