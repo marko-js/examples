@@ -1,0 +1,32 @@
+export interface Input {
+  onAdd: (title: string) => void;
+}
+
+<let/title="">
+
+<header class="header">
+  <h1>todos</h1>
+  <form
+    onSubmit(event) {
+      event.preventDefault();
+      const trimmed = title.trim();
+      if (trimmed) {
+        input.onAdd(trimmed);
+        title = "";
+      }
+    }
+  >
+    <input
+      class="new-todo"
+      aria-label="New todo"
+      placeholder="What needs to be done?"
+      value:=title
+    >
+  </form>
+</header>
+
+<style>
+  .header form {
+    margin: 0;
+  }
+</style>

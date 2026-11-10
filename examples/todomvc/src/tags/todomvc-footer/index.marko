@@ -1,0 +1,39 @@
+import type { Filter } from "../../todo";
+
+export interface Input {
+  remainingCount: number;
+  completedCount: number;
+  filter: Filter;
+  onClearCompleted: () => void;
+}
+
+static const filters = [
+  { filter: "all", label: "All", href: "#/" },
+  { filter: "active", label: "Active", href: "#/active" },
+  { filter: "completed", label: "Completed", href: "#/completed" },
+];
+
+<footer class="footer">
+  <span class="todo-count">
+    <strong>${input.remainingCount}</strong>
+    ${input.remainingCount === 1 ? " item" : " items"} left
+  </span>
+
+  <ul class="filters">
+    <for|{ filter, label, href }| of=filters>
+      <li>
+        <a href=href class={ selected: filter === input.filter }>${label}</a>
+      </li>
+    </for>
+  </ul>
+
+  <if=input.completedCount>
+    <button
+      type="button"
+      class="clear-completed"
+      onClick=input.onClearCompleted
+    >
+      Clear completed (${input.completedCount})
+    </button>
+  </if>
+</footer>

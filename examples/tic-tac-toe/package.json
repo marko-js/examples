@@ -1,0 +1,19 @@
+{
+  "name": "tic-tac-toe",
+  "description": "Marko Tic-Tac-Toe example",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "marko": "^6.4.12"
+  },
+  "devDependencies": {
+    "@marko/run": "^0.11.17"
+  },
+  "private": true,
+  "scripts": {
+    "dev": "marko-run",
+    "build": "marko-run build",
+    "preview": "marko-run preview",
+    "start": "node --enable-source-maps ./dist/index.mjs"
+  }
+}

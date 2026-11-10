@@ -1,0 +1,34 @@
+export interface Input {
+  colors: string[];
+  color: string;
+  colorChange: (color: string) => void;
+}
+
+<div class="color-picker-footer">
+  <div class="color-picker-selection-container">
+    <for|color| of=input.colors>
+      <color-picker-selection
+        color=color
+        onSelect() {
+          input.colorChange(color);
+        }
+      />
+    </for>
+    <input/$hexInput
+      aria-label="Hex value"
+      placeholder="Hex value"
+      onInput() {
+        const { value } = $hexInput();
+        const hex = value.startsWith("#") ? value : `#${value}`;
+
+        if (isHexColor(hex)) {
+          input.colorChange(hex);
+        }
+      }
+    >
+  </div>
+</div>
+
+static function isHexColor(value: string) {
+  return /^#[0-9a-f]{6}$/i.test(value);
+}

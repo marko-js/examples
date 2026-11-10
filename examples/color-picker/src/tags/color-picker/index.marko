@@ -1,0 +1,13 @@
+import { defaultColors } from "../../util/default-colors";
+
+export interface Input {
+  colors?: string[];
+}
+
+<const/colors=input.colors || defaultColors>
+<let/selectedColor=colors[0]>
+
+<div class="color-picker">
+  <color-picker-header color=selectedColor/>
+  <color-picker-footer colors=colors color:=selectedColor/>
+</div>

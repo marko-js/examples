@@ -1,0 +1,25 @@
+export interface Input {
+  color: string;
+  onSelect: () => void;
+}
+
+<button
+  type="button"
+  class="color-picker-selection"
+  aria-label=input.color
+  style={ "background-color": input.color }
+  onClick=input.onSelect
+/>
+
+<style>
+  .color-picker-selection {
+    width: 25px;
+    height: 25px;
+    padding: 0;
+    border: 0;
+    border-radius: 5px;
+    margin: 5px 0px 0px 5px;
+    float: left;
+    cursor: pointer;
+  }
+</style>
